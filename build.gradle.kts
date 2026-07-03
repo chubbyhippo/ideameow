@@ -20,7 +20,7 @@ dependencies {
     intellijPlatform {
         // Unified IntelliJ IDEA distribution (the IC/IU split ended with
         // 2025.3, so the intellijIdeaCommunity helper no longer applies).
-        // Still a JBR-21 platform — jvmTarget stays 21 below.
+        // Still a JBR-21 platform — hence the 21 toolchain/target below.
         intellijIdea("2026.1.4")
         testFramework(TestFrameworkType.Platform)
     }
@@ -42,18 +42,12 @@ intellijPlatform {
 }
 
 kotlin {
-    // Build with a JDK 25 toolchain, but emit Java 21 bytecode: every current
-    // IDE (through 2026.1) runs on JBR 21, so 21 is the highest classfile
-    // version a plugin may ship. Raise jvmTarget only when the platform's
-    // Java baseline moves.
-    jvmToolchain(25)
+    // JDK 21 toolchain: every current IDE (through 2026.1) runs on JBR 21,
+    // so 21 is the highest classfile version a plugin may ship. Bump only
+    // when the platform's Java baseline moves.
+    jvmToolchain(21)
     compilerOptions {
+        // pinned so a toolchain bump can't silently raise the bytecode version
         jvmTarget = JvmTarget.JVM_21
     }
-}
-
-// keep javac (no sources, but the task exists) on the same 21 target so
-// KGP's jvm-target validation doesn't flag a 25/21 mismatch
-tasks.withType<JavaCompile>().configureEach {
-    options.release = 21
 }
