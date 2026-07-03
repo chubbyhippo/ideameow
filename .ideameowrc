@@ -1,0 +1,319 @@
+" ============================================================================
+" ~/.ideameowrc — default config for the ideameow plugin
+" ----------------------------------------------------------------------------
+" Copy this file to your home directory (Linux/macOS: ~/.ideameowrc,
+" Windows: C:\Users\<you>\.ideameowrc) or open it in the IDE with SPC c v.
+" Reload after editing with SPC c V (or the "Reload .ideameowrc" action).
+"
+" Syntax (see the README for the full guide):
+"   nmap <key> <action>(ActionId)     NORMAL-mode key -> IDE action
+"   nmap <key> <meow keys>            NORMAL-mode key -> replayed meow keys
+"   nnoremap ...                      like nmap, but the RHS skips user maps
+"   map <leader><seq> <target>        keypad (SPC) entry, layered over builtins
+"   desc <leader><seq> <text>         which-key label for an entry or a group
+"   set timeoutlen=300                which-key popup delay in ms
+"   set nowhich-key                   turn the which-key popup off
+"
+" Ported from intellij-community-settings/ideavim/.ideavimrc. Not portable
+" (and why) is listed at the bottom. The meow layout itself (w e b x s d c...)
+" needs NO porting — the plugin implements it natively.
+" ============================================================================
+
+set which-key
+set timeoutlen=300
+
+" --- avy jumps, mirroring init.el (needs the AceJump plugin) ----------------
+" init.el: S = avy-goto-char-timer, Q = avy-goto-line. X still goes-to-line,
+" so overriding Q costs nothing.
+nmap S <action>(AceAction)
+nmap Q <action>(AceLineAction)
+
+" --- split resizing (ideavimrc: - = _ +) ------------------------------------
+" '-' stays meow's negative-argument (the reason ideavimrc used '-' here was
+" that vim lacks negative counts — this plugin doesn't). The other three keys
+" are free in the meow layout:
+nmap = <action>(StretchSplitToTop)
+nmap _ <action>(StretchSplitToLeft)
+nmap + <action>(StretchSplitToRight)
+
+" --- which-key labels for the builtin keypad groups -------------------------
+desc <leader>b buffers (RecentFiles)
+desc <leader>x C-x · file / buffer / window
+desc <leader>xp C-x p · project
+desc <leader>c C-c · commands (= M-m)
+desc <leader>cj C-c j · avy jump
+desc <leader>m M- · meta
+desc <leader>ms M-s · search
+desc <leader>w window map (Emacs C-c w)
+
+" ============================================================================
+" IntelliJ feature groups, ported 1:1 from the .ideavimrc leader
+" (b / c / m / w / x and digits stay builtin — identical entries are omitted)
+" ============================================================================
+
+" --- SPC . — settings / UI ---------------------------------------------------
+desc <leader>. settings / UI
+map <leader>.c <action>(ToggleCompactMode)
+map <leader>.C <action>(CloseProject)
+map <leader>.d <action>(ToggleDistractionFreeMode)
+map <leader>.f <action>(ToggleFullScreen)
+map <leader>.k <action>(ChangeKeymap)
+map <leader>.l <action>(EditorToggleShowLineNumbers)
+map <leader>.m <action>(ExternalSystem.ProjectRefreshAction)
+map <leader>.p <action>(WelcomeScreen.Plugins)
+map <leader>.r <action>(RunConfiguration)
+map <leader>.R <action>(RestartIde)
+map <leader>.s <action>(SettingsEntryPoint)
+map <leader>.t <action>(ChangeLaf)
+map <leader>.T <action>(ViewToolButtons)
+map <leader>.z <action>(ToggleZenMode)
+
+" --- SPC a — activate tool windows -------------------------------------------
+desc <leader>a activate tool window
+map <leader>ab <action>(ActivateBookmarksToolWindow)
+map <leader>aB <action>(ActivateBuildToolWindow)
+map <leader>ac <action>(ActivateCommitToolWindow)
+map <leader>aC <action>(ActivateCoverageToolWindow)
+map <leader>ad <action>(ActivateDebugToolWindow)
+map <leader>aD <action>(ActivateServicesToolWindow)
+map <leader>af <action>(ActivateFindToolWindow)
+map <leader>ag <action>(ActivateVersionControlToolWindow)
+map <leader>aG <action>(ActivateGradleToolWindow)
+map <leader>ah <action>(ActivateHierarchyToolWindow)
+map <leader>ai <action>(ActivateAIAssistantToolWindow)
+map <leader>ak <action>(TogglePresentationAssistantAction)
+map <leader>am <action>(ActivateMavenToolWindow)
+map <leader>an <action>(ActivateNotificationsToolWindow)
+map <leader>ap <action>(ActivateProjectToolWindow)
+map <leader>aP <action>(ActivateProblemsViewToolWindow)
+map <leader>ar <action>(ActivateRunToolWindow)
+map <leader>as <action>(ActivateStructureToolWindow)
+map <leader>aS <action>(ActivateServicesToolWindow)
+map <leader>at <action>(ActivateTerminalToolWindow)
+map <leader>aT <action>(ActivateTaskToolWindow)
+map <leader>av <action>(ActivateVersionControlToolWindow)
+map <leader>aw <action>(Git.Show.WorkingTrees)
+
+" --- SPC d — debug / run ------------------------------------------------------
+desc <leader>d debug / run
+map <leader>db <action>(Debug)
+map <leader>dd <action>(ContextDebug)
+map <leader>de <action>(Debug)
+
+" --- SPC e — extract / edit / expand -----------------------------------------
+desc <leader>e extract / refactor
+map <leader>eI <action>(ShowSettings)
+map <leader>eP <action>(ShowProjectStructureSettings)
+map <leader>eR <action>(editRunConfigurations)
+map <leader>eS <action>(ShowSettings)
+map <leader>ea <action>(ExpandAllRegions)
+map <leader>ec <action>(IntroduceConstant)
+map <leader>ef <action>(IntroduceField)
+map <leader>ei <action>(ExtractInterface)
+map <leader>em <action>(ExtractMethod)
+map <leader>ep <action>(IntroduceParameter)
+map <leader>er <action>(ExpandRegion)
+map <leader>ev <action>(IntroduceVariable)
+map <leader>eV <action>(refactoring.introduce.property)
+
+" --- SPC f — find / format ----------------------------------------------------
+desc <leader>f find / format
+map <leader>fe <action>(RevealIn)
+map <leader>ff <action>(FindInPath)
+map <leader>fi <action>(Find)
+map <leader>fm <action>(ReformatCode)
+map <leader>fn <action>(NewElement)
+map <leader>fo <action>(ReformatCode)
+map <leader>fp <action>(FindInPath)
+map <leader>fr <action>(RecentFiles)
+map <leader>fs <action>(ToggleFullScreen)
+map <leader>fu <action>(FindUsages)
+
+" --- SPC g — git / goto / generate ---------------------------------------------
+desc <leader>g git / goto / generate
+map <leader>gP <action>(Vcs.Push)
+map <leader>gT <action>(GotoTest)
+map <leader>ga <action>(Git.Add)
+map <leader>gb <action>(Annotate)
+map <leader>gc <action>(CheckinProject)
+map <leader>ge <action>(Generate)
+map <leader>gf <action>(Git.Fetch)
+map <leader>gg <action>(ActivateVersionControlToolWindow)
+map <leader>gh <action>(Vcs.ShowTabbedFileHistory)
+map <leader>gi <action>(GotoImplementation)
+map <leader>gl <action>(Vcs.Show.Log)
+map <leader>gp <action>(Git.Pull)
+map <leader>gs <action>(GotoSuperMethod)
+map <leader>gt <action>(GotoTest)
+map <leader>gw <action>(Git.Show.WorkingTrees)
+
+" --- SPC h — hide all tool windows ----------------------------------------------
+desc <leader>h hide all tool windows
+map <leader>h <action>(HideAllWindows)
+
+" --- SPC i — introduce / inline / id ---------------------------------------------
+desc <leader>i introduce / inline
+map <leader>ic <action>(IntroduceConstant)
+map <leader>if <action>(IntroduceField)
+map <leader>il <action>(Inline)
+map <leader>im <action>(ImplementMethods)
+map <leader>in <action>(Inline)
+map <leader>ip <action>(IntroduceParameter)
+map <leader>iP <action>(refactoring.introduce.property)
+map <leader>iv <action>(IntroduceVariable)
+
+" --- SPC j — quick docs / implementations -----------------------------------------
+desc <leader>j docs / implementations
+map <leader>jd <action>(QuickJavaDoc)
+map <leader>ji <action>(QuickImplementations)
+
+" --- SPC k — change keymap ----------------------------------------------------------
+desc <leader>k change keymap
+map <leader>k <action>(ChangeKeymap)
+
+" --- SPC l — local history ----------------------------------------------------------
+desc <leader>l local history
+map <leader>lh <action>(LocalHistory.ShowHistory)
+map <leader>lH <action>(LocalHistory.ShowSelectionHistory)
+
+" --- SPC n — new (file / dir / scratch / ...) ----------------------------------------
+desc <leader>n new
+map <leader>nd <action>(NewDir)
+map <leader>ne <action>(NewElement)
+map <leader>nf <action>(NewFile)
+map <leader>np <action>(NewProject)
+map <leader>ns <action>(NewScratchFile)
+map <leader>nt <action>(TerminalNewPredefinedSession)
+
+" --- SPC o — open / optimize / override ------------------------------------------------
+desc <leader>o open / optimize / override
+map <leader>oP <action>(OpenFile)
+map <leader>ob <action>(OpenInBrowser)
+map <leader>oe <action>(RevealIn)
+map <leader>of <action>(OpenFile)
+map <leader>og <action>(Vcs.Log.OpenAnotherTabInEditor)
+map <leader>oi <action>(OptimizeImports)
+map <leader>om <action>(OverrideMethods)
+map <leader>op <action>(ActivateProjectToolWindow)
+map <leader>or <action>(RecentProjectListGroup)
+map <leader>ot <action>(Terminal.OpenInTerminal)
+
+" --- SPC p — popup / project / parameter info / docs -------------------------------------
+desc <leader>p popup / project / docs
+map <leader>pd <action>(QuickJavaDoc)
+map <leader>pf <action>(GotoFile)
+map <leader>ph <action>(ShowHoverInfo)
+map <leader>pi <action>(QuickImplementations)
+map <leader>pm <action>(ShowPopupMenu)
+map <leader>pp <action>(ParameterInfo)
+map <leader>pr <action>(RunConfiguration)
+map <leader>pt <action>(PinActiveTabToggle)
+
+" --- SPC q — close the current tab ---------------------------------------------------------
+desc <leader>q close editor tab
+map <leader>q <action>(CloseContent)
+
+" --- SPC r — run / refactor / replace -------------------------------------------------------
+desc <leader>r run / refactor / replace
+map <leader>rA <action>(RunnerActions)
+map <leader>rB <action>(ChangesView.Revert)
+map <leader>rC <action>(Coverage)
+map <leader>ra <action>(RunAnything)
+map <leader>rb <action>(Vcs.RollbackChangedLines)
+map <leader>rc <action>(RunCoverage)
+map <leader>rd <action>(DebugClass)
+map <leader>re <action>(Refactorings.QuickListPopupAction)
+map <leader>rf <action>(RecentFiles)
+map <leader>ri <action>(RevealIn)
+map <leader>rl <action>(RecentLocations)
+map <leader>rm <action>(RunMenu)
+map <leader>rn <action>(RenameElement)
+map <leader>ro <action>(ChangesView.Revert)
+map <leader>rp <action>(Replace)
+map <leader>rr <action>(RunClass)
+map <leader>rs <action>(runShellFileAction)
+map <leader>ru <action>(ChooseRunConfiguration)
+map <leader>rw <action>(ReplaceInPath)
+
+" --- SPC s — search / show / surround / debug-step -------------------------------------------
+desc <leader>s search / show / step
+map <leader>ss <action>(Find)
+map <leader>sS <action>(GotoSymbol)
+map <leader>sG <action>(ExternalSystem.ProjectRefreshAction)
+map <leader>sH <action>(Vcs.ShowTabbedFileHistory)
+map <leader>sI <action>(ShowIntentionActions)
+map <leader>sa <action>(GotoAction)
+map <leader>sc <action>(GotoClass)
+map <leader>sd <action>(QuickJavaDoc)
+map <leader>se <action>(ShowErrorDescription)
+map <leader>sf <action>(GotoFile)
+map <leader>sh <action>(ShowHoverInfo)
+map <leader>si <action>(StepInto)
+map <leader>sk <action>(TogglePresentationAssistantAction)
+map <leader>sM <action>(ExternalSystem.ProjectRefreshAction)
+map <leader>sO <action>(StepOut)
+map <leader>sP <action>(ShowPopupMenu)
+map <leader>sT <action>(Stop)
+map <leader>sm <action>(ShowPopupMenu)
+map <leader>sn <action>(ShowNavBar)
+map <leader>so <action>(StepOver)
+map <leader>sp <action>(TextSearchAction)
+map <leader>sr <action>(ReplaceInPath)
+map <leader>st <action>(TextSearchAction)
+map <leader>su <action>(ShowUsages)
+" ideavimrc: SPC s v sourced ~/.ideavimrc — here it reloads ~/.ideameowrc
+map <leader>sv <action>(Ideameow.ReloadRc)
+map <leader>sw <action>(SurroundWith)
+
+" --- SPC t — toggle / breakpoints ---------------------------------------------------------------
+desc <leader>t toggle / breakpoints
+map <leader>tb <action>(ToggleLineBreakpoint)
+map <leader>tc <action>(ToggleCompactMode)
+map <leader>tf <action>(ToggleFullScreen)
+map <leader>tk <action>(TogglePresentationAssistantAction)
+map <leader>tt <action>(ViewToolButtons)
+map <leader>tz <action>(ToggleZenMode)
+
+" --- SPC u — unwrap / pin tab -----------------------------------------------------------------
+desc <leader>u unwrap / pin
+map <leader>up <action>(PinActiveTabToggle)
+map <leader>uw <action>(Unwrap)
+
+" --- SPC v — VCS -------------------------------------------------------------------------------
+desc <leader>v VCS
+map <leader>vb <action>(ViewBreakpoints)
+map <leader>vc <action>(CheckinProject)
+map <leader>vh <action>(Vcs.ShowTabbedFileHistory)
+map <leader>vl <action>(Vcs.Show.Log)
+map <leader>vp <action>(Git.Pull)
+map <leader>vP <action>(Vcs.Push)
+
+" --- SPC ] / SPC [ — next / prev navigation ------------------------------------------------------
+" ideavimrc used ]c [c ]d [d ]e [e in NORMAL; multi-key NORMAL sequences don't
+" exist here ([ ] are meow's beginning/end-of-thing), so they live on the
+" keypad instead.
+desc <leader>] next (change / diff / error)
+map <leader>]c <action>(VcsShowNextChangeMarker)
+map <leader>]d <action>(NextDiff)
+map <leader>]e <action>(GotoNextError)
+desc <leader>[ previous (change / diff / error)
+map <leader>[c <action>(VcsShowPrevChangeMarker)
+map <leader>[d <action>(PreviousDiff)
+map <leader>[e <action>(GotoPreviousError)
+
+" ============================================================================
+" NOT ported from .ideavimrc, and why
+" ----------------------------------------------------------------------------
+" * the whole meow-emulation section (w e b x s d c y r H-L, digits, , . < >,
+"   G/R/Y, m, z, ') — the plugin implements real meow; nothing to emulate.
+" * set clipboard/ideajoin/number/relativenumber/sethandler — IdeaVim/vim
+"   options; the IDE and the plugin handle these themselves. Any such lines
+"   are ignored if pasted, so copying your .ideavimrc wholesale is safe.
+" * <A-m> leader alias, C-key routing — only printable keys reach the meow
+"   engine; use the IDE keymap for modifier chords.
+" * SPC / (comment) and SPC ? — reserved by the keypad for describe-key and
+"   the cheatsheet. Comment-line is on the IDE's usual Ctrl-/ chord.
+" * :tabm / :delmarks / :set number! ex-commands — no ex layer here.
+" * SPC <CR> (intentions): Enter can't be a keypad key; use Alt-Enter or
+"   SPC s I (ShowIntentionActions).
+" ============================================================================

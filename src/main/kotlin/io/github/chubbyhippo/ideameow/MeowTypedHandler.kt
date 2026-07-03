@@ -1,0 +1,36 @@
+// Copyright (C) 2026 Chubby Hippo
+//
+// This program is free software: you can redistribute it and/or modify it
+// under the terms of the GNU General Public License as published by the Free
+// Software Foundation, either version 3 of the License, or (at your option)
+// any later version.
+//
+// This program is distributed in the hope that it will be useful, but WITHOUT
+// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+// FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
+// more details.
+//
+// You should have received a copy of the GNU General Public License along
+// with this program. If not, see <https://www.gnu.org/licenses/>.
+//
+// SPDX-License-Identifier: GPL-3.0-or-later
+
+package io.github.chubbyhippo.ideameow
+
+import com.intellij.openapi.actionSystem.DataContext
+import com.intellij.openapi.editor.Editor
+import com.intellij.openapi.editor.actionSystem.TypedActionHandler
+
+/**
+ * Raw typed handler (registered via com.intellij.rawEditorTypedHandler):
+ * intercepts printable keys before any write command starts, dispatches them
+ * as meow commands in NORMAL/MOTION/KEYPAD, and delegates in INSERT or in
+ * editors that have no meow state (consoles, injected fragments, ...).
+ */
+class MeowTypedHandler(private val original: TypedActionHandler) : TypedActionHandler {
+    override fun execute(editor: Editor, charTyped: Char, dataContext: DataContext) {
+        if (!Engine.handleChar(editor, charTyped, dataContext)) {
+            original.execute(editor, charTyped, dataContext)
+        }
+    }
+}

@@ -1,0 +1,185 @@
+// Copyright (C) 2026 Chubby Hippo
+//
+// This program is free software: you can redistribute it and/or modify it
+// under the terms of the GNU General Public License as published by the Free
+// Software Foundation, either version 3 of the License, or (at your option)
+// any later version.
+//
+// This program is distributed in the hope that it will be useful, but WITHOUT
+// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+// FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
+// more details.
+//
+// You should have received a copy of the GNU General Public License along
+// with this program. If not, see <https://www.gnu.org/licenses/>.
+//
+// SPDX-License-Identifier: GPL-3.0-or-later
+
+package io.github.chubbyhippo.ideameow
+
+/**
+ * meow-mark-word/symbol, next/back word/symbol, meow-line, goto-line,
+ * meow-expand digits, meow-reverse, meow-pop-selection.
+ */
+class SelectionSpec : MeowSpec() {
+
+    fun `test given caret on a word when w then the word is marked and caret sits at its end`() {
+        given("two words", "<caret>hello world")
+        whenKeys("w")
+        thenSelection("hello")
+        thenSelType(SelType.WORD)
+        thenCaretAtSelectionEnd()
+    }
+
+    fun `test given caret between words when w then the next word is marked`() {
+        given("gap between words", "hello <caret> world") // caret between two spaces
+        whenKeys("w")
+        thenSelection("world")
+    }
+
+    fun `test given a symbol with underscore when W then the whole symbol is marked`() {
+        given("snake case", "<caret>foo_bar baz")
+        whenKeys("W")
+        thenSelection("foo_bar")
+        thenSelType(SelType.SYMBOL)
+    }
+
+    fun `test given w then W distinction - w stops at underscore boundary chars`() {
+        given("snake case", "<caret>foo_bar baz")
+        whenKeys("w")
+        thenSelection("foo")
+    }
+
+    fun `test given a bare e when pressed twice then it steps word by word (non-expandable)`() {
+        given("three words", "<caret>one two three")
+        whenKeys("e")
+        thenSelection("one")
+        whenKeys("e")
+        thenSelection(" two")
+    }
+
+    fun `test given w first when e then the word selection extends (meow expand-word rule)`() {
+        given("three words", "<caret>one two three")
+        whenKeys("we")
+        thenSelection("one two")
+        whenKeys("e")
+        thenSelection("one two three")
+    }
+
+    fun `test given caret at end when b then selects back to word beginning`() {
+        given("two words", "hello world<caret>")
+        whenKeys("b")
+        thenSelection("world")
+        thenCaretAtSelectionStart()
+    }
+
+    fun `test given negative argument when - e then selects backward like b`() {
+        given("two words", "hello<caret> world")
+        whenKeys("-e")
+        thenSelection("hello")
+        thenCaretAtSelectionStart()
+    }
+
+    fun `test given E and B then symbol variants honor underscores`() {
+        given("snake case", "<caret>foo_bar baz")
+        whenKeys("E")
+        thenSelection("foo_bar")
+        thenSelType(SelType.SYMBOL)
+    }
+
+    fun `test given x then the current line is selected without the newline`() {
+        given("two lines", "li<caret>ne one\nline two")
+        whenKeys("x")
+        thenSelection("line one")
+        thenSelType(SelType.LINE)
+        thenCaretAtSelectionEnd()
+    }
+
+    fun `test given a line selection when x again then it extends one line down`() {
+        given("three lines", "<caret>one\ntwo\nthree")
+        whenKeys("xx")
+        thenSelection("one\ntwo")
+    }
+
+    fun `test given a reversed line selection when x then it extends upward`() {
+        given("three lines", "one\ntwo\nth<caret>ree")
+        whenKeys("x;x")
+        thenSelection("two\nthree")
+        thenCaretAtSelectionStart()
+    }
+
+    fun `test given digits after w then the selection expands by that many words`() {
+        given("five words", "<caret>one two three four five")
+        whenKeys("w2")
+        thenSelection("one two three")
+    }
+
+    fun `test given 0 after a word mark then the selection expands by ten units`() {
+        given("twelve words", "<caret>a b c d e f g h i j k l")
+        whenKeys("w0")
+        thenSelection("a b c d e f g h i j k")
+    }
+
+    fun `test given digits after x then the selection expands by lines`() {
+        given("three lines", "<caret>one\ntwo\nthree")
+        whenKeys("x2")
+        thenSelection("one\ntwo\nthree")
+    }
+
+    fun `test given a reversed selection when digit then it expands backward`() {
+        given("three lines", "one\ntwo\nthr<caret>ee")
+        whenKeys("x;1")
+        thenSelection("two\nthree")
+    }
+
+    fun `test given semicolon then point and mark swap (meow-reverse)`() {
+        given("two words", "<caret>hello world")
+        whenKeys("w")
+        thenCaretAtSelectionEnd()
+        whenKeys(";")
+        thenSelection("hello")
+        thenCaretAtSelectionStart()
+        whenKeys(";")
+        thenCaretAtSelectionEnd()
+    }
+
+    fun `test given goto line via minibuffer then that line is selected (meow-goto-line expands line selection)`() {
+        given("three lines", "<caret>one\ntwo\nthree")
+        givenMinibufferAnswers("2")
+        whenKeys("X")
+        thenSelection("two")
+        thenSelType(SelType.LINE)
+    }
+
+    fun `test given Q then goto-line as well (QWERTY binds both Q and X)`() {
+        given("three lines", "<caret>one\ntwo\nthree")
+        givenMinibufferAnswers("3")
+        whenKeys("Q")
+        thenSelection("three")
+    }
+
+    fun `test given a selection history when z then the previous selection is restored`() {
+        given("two words", "<caret>hello world")
+        whenKeys("w") // selection 1: hello
+        whenKeys("x") // selection 2: whole line, pushes selection 1
+        whenKeys("z")
+        thenSelection("hello")
+    }
+
+    fun `test given no history but a grab when z then the grab becomes the selection (meow-pop-grab fallback)`() {
+        given("two words", "<caret>hello world")
+        whenKeys("wG") // grab "hello", no selection, empty history after grab
+        st.selectionHistory.clear()
+        whenKeys("z")
+        thenSelection("hello")
+        assertNull("grab is consumed by pop", st.grab)
+    }
+
+    fun `test given g then the selection is cancelled`() {
+        given("two words", "<caret>hello world")
+        whenKeys("w")
+        thenSelection("hello")
+        whenKeys("g")
+        thenNoSelection()
+    }
+}
