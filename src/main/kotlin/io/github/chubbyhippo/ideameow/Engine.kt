@@ -281,28 +281,42 @@ object Engine {
 
     private fun wordType(symbol: Boolean) = if (symbol) SelType.SYMBOL else SelType.WORD
 
-    private fun nextWord(editor: Editor, st: MeowState, symbol: Boolean) {
-        val n = st.takeCount(1)
-        val text = editor.document.charsSequence
-        val type = wordType(symbol)
-        val extend = st.selExpand && st.selType == type && editor.selectionModel.hasSelection()
-        val cur = editor.caretModel.offset
-        val target =
-            if (n >= 0) Words.nextEnd(text, cur, n, pred(symbol))
-            else Words.prevStart(text, cur, -n, pred(symbol))
-        select(editor, st, type, if (extend) mark(editor) else cur, target, expand = extend)
-    }
+    private fun nextWord(editor: Editor, st: MeowState, symbol: Boolean) =
+        wordMotion(editor, st, symbol, st.takeCount(1))
 
-    private fun backWord(editor: Editor, st: MeowState, symbol: Boolean) {
-        val n = st.takeCount(1)
+    private fun backWord(editor: Editor, st: MeowState, symbol: Boolean) =
+        wordMotion(editor, st, symbol, -st.takeCount(1)) // meow-back-word = next-thing with -N
+
+    /**
+     * meow-next-thing for word/symbol: when the current selection is the
+     * matching (expand . type), the selection direction is normalized to the
+     * motion FIRST (meow--direction-forward/-backward) — so after `w`, `e`
+     * extends from the right end and `b` extends from the left end, anchored
+     * at the opposite end (meow--make-selection keeps min/max of the original
+     * region as the mark). Without a matching selection: fresh (select . type)
+     * from point. No motion -> no selection change.
+     */
+    private fun wordMotion(editor: Editor, st: MeowState, symbol: Boolean, n: Int) {
+        if (n == 0) return
         val text = editor.document.charsSequence
         val type = wordType(symbol)
-        val extend = st.selExpand && st.selType == type && editor.selectionModel.hasSelection()
-        val cur = editor.caretModel.offset
+        val sm = editor.selectionModel
+        val extend = st.selExpand && st.selType == type && sm.hasSelection()
+        val from = when {
+            extend && n < 0 -> sm.selectionStart
+            extend -> sm.selectionEnd
+            else -> editor.caretModel.offset
+        }
+        val anchor = when {
+            extend && n < 0 -> sm.selectionEnd
+            extend -> sm.selectionStart
+            else -> from
+        }
         val target =
-            if (n >= 0) Words.prevStart(text, cur, n, pred(symbol))
-            else Words.nextEnd(text, cur, -n, pred(symbol))
-        select(editor, st, type, if (extend) mark(editor) else cur, target, expand = extend)
+            if (n > 0) Words.nextEnd(text, from, n, pred(symbol))
+            else Words.prevStart(text, from, -n, pred(symbol))
+        if (target == from) return
+        select(editor, st, type, anchor, target, expand = extend)
     }
 
     private fun markWord(editor: Editor, st: MeowState, symbol: Boolean) {

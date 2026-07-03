@@ -66,6 +66,31 @@ class SelectionSpec : MeowSpec() {
         thenSelection("one two three")
     }
 
+    fun `test given w then b extends the selection backward anchored at the word end`() {
+        given("three words", "one t<caret>wo three")
+        whenKeys("w")
+        thenSelection("two")
+        whenKeys("b")
+        thenSelection("one two")
+        thenCaretAtSelectionStart()
+    }
+
+    fun `test given w b then e re-normalizes forward and extends to the right`() {
+        given("three words", "one t<caret>wo three")
+        whenKeys("wbe")
+        thenSelection("one two three")
+        thenCaretAtSelectionEnd()
+    }
+
+    fun `test given W then B extends the symbol selection backward`() {
+        given("symbols", "foo_a bar_b<caret> baz_c")
+        whenKeys("W")
+        thenSelection("bar_b")
+        whenKeys("B")
+        thenSelection("foo_a bar_b")
+        thenCaretAtSelectionStart()
+    }
+
     fun `test given caret at end when b then selects back to word beginning`() {
         given("two words", "hello world<caret>")
         whenKeys("b")
