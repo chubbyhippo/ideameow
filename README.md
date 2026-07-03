@@ -22,7 +22,7 @@ gradle buildPlugin          # or: gradle runIde  (sandbox IDE for a test drive)
 ```
 
 Then *Settings → Plugins → ⚙ → Install Plugin from Disk…* and pick
-`build/distributions/ideameow-0.1.0.zip`. Requires a JDK 25 toolchain (emits Java 21 bytecode);
+`build/distributions/ideameow-0.1.0.zip`. Requires a JDK 21 toolchain (emits Java 21 bytecode);
 targets IDE 2026.1 and anything newer.
 
 ## The layout (meow KEYBINDING_QWERTY, verified against meow's source)
