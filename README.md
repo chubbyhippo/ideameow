@@ -14,6 +14,10 @@ the current state.
 
 ```bash
 cd ideameow
+./setup.sh                  # build + install into every detected 2026.1+ IDE
+                            # (Linux, macOS, and Windows IDEs from WSL) and
+                            # install the default ~/.ideameowrc
+./setup.sh --list           # just show which IDE dirs it would target
 gradle buildPlugin          # or: gradle runIde  (sandbox IDE for a test drive)
 ```
 
