@@ -65,7 +65,7 @@ object Engine {
         }
 
         WhichKey.hide()
-        ExpandHints.clear(editor, st)
+        ExpandHints.clear(st)
 
         if (!st.replaying && c != '\'') {
             if (st.pending == null && st.pendingCount == 0 && !st.negative) st.unit.clear()
@@ -77,7 +77,7 @@ object Engine {
         when {
             pend != null -> {
                 st.pending = null
-                resolvePending(editor, st, pend, c, ctx)
+                resolvePending(editor, st, pend, c)
             }
             motionish -> motionKey(editor, st, c)
             else -> normalKey(editor, st, c, ctx)
@@ -153,7 +153,7 @@ object Engine {
             'n' -> search(editor, st)
             'o' -> block(editor, st)
             'O' -> toBlock(editor, st)
-            'p' -> yank(editor, st)
+            'p' -> yank(editor)
             'q' -> act(editor, ctx, "CloseContent")
             'Q' -> gotoLine(editor, st)
             'r' -> replace(editor, st)
@@ -178,7 +178,7 @@ object Engine {
         }
     }
 
-    private fun resolvePending(editor: Editor, st: MeowState, p: Pending, c: Char, ctx: DataContext?) {
+    private fun resolvePending(editor: Editor, st: MeowState, p: Pending, c: Char) {
         when (p) {
             Pending.FIND -> findTill(editor, st, c, till = false)
             Pending.TILL -> findTill(editor, st, c, till = true)
@@ -521,7 +521,7 @@ object Engine {
                     while (stack.isNotEmpty()) {
                         val o = stack.removeLast()
                         if (opens.indexOf(text[o]) == kind) {
-                            if (o < s && i + 1 >= e && (best == null || i - o < best!!.close - best!!.open)) {
+                            if (o < s && i + 1 >= e && (best == null || i - o < best.close - best.open)) {
                                 best = PairRange(o, i)
                             }
                             break
@@ -767,7 +767,7 @@ object Engine {
         CopyPasteManager.getInstance().getContents(DataFlavor.stringFlavor)
 
     private fun runWrite(editor: Editor, name: String, body: () -> Unit) {
-        WriteCommandAction.runWriteCommandAction(editor.project, name, "meow", Runnable { body() })
+        WriteCommandAction.runWriteCommandAction(editor.project, name, "meow", { body() })
     }
 
     fun act(editor: Editor, ctx: DataContext?, id: String) {
@@ -802,7 +802,7 @@ object Engine {
         if (editor.selectionModel.hasSelection()) act(editor, ctx, IdeActions.ACTION_EDITOR_COPY)
     }
 
-    private fun yank(editor: Editor, st: MeowState) {
+    private fun yank(editor: Editor) {
         val clip = clipboard() ?: return
         runWrite(editor, "Meow Yank") {
             for (caret in editor.caretModel.allCarets.sortedByDescending { it.offset }) {

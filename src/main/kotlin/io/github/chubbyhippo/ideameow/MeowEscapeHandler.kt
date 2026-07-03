@@ -38,7 +38,7 @@ class MeowEscapeHandler(private val original: EditorActionHandler) : EditorActio
         }
         st.pending = null
         WhichKey.hide()
-        ExpandHints.clear(editor, st)
+        ExpandHints.clear(st)
         when {
             st.mode == MeowMode.INSERT -> Meow.setMode(editor, st, MeowMode.NORMAL)
             st.mode == MeowMode.KEYPAD -> Meow.setMode(editor, st, MeowMode.NORMAL)

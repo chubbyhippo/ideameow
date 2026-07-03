@@ -38,7 +38,7 @@ object ExpandHints {
     private val HINT_COLOR = JBColor(Color(0xD0, 0x5C, 0x0A), Color(0xFF, 0xB0, 0x50))
 
     fun show(editor: Editor, st: MeowState) {
-        clear(editor, st)
+        clear(st)
         if (!editor.selectionModel.hasSelection()) return
         val positions = positions(editor, st, 10)
         for ((i, off) in positions.withIndex()) {
@@ -47,11 +47,11 @@ object ExpandHints {
             st.hints.add(inlay)
         }
         if (st.hints.isNotEmpty()) {
-            st.hintTimer = Timer(1000) { clear(editor, st) }.apply { isRepeats = false; start() }
+            st.hintTimer = Timer(1000) { clear(st) }.apply { isRepeats = false; start() }
         }
     }
 
-    fun clear(editor: Editor, st: MeowState) {
+    fun clear(st: MeowState) {
         st.hintTimer?.stop()
         st.hintTimer = null
         for (h in st.hints) if (h.isValid) com.intellij.openapi.util.Disposer.dispose(h)
