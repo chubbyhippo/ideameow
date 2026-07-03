@@ -20,6 +20,7 @@ package io.github.chubbyhippo.ideameow
 import com.intellij.codeInsight.hint.HintManager
 import com.intellij.ide.DataManager
 import com.intellij.openapi.actionSystem.ActionManager
+import com.intellij.openapi.actionSystem.ActionUiKind
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.DataContext
 import com.intellij.openapi.actionSystem.IdeActions
@@ -773,8 +774,8 @@ object Engine {
         val action = ActionManager.getInstance().getAction(id)
             ?: run { hint(editor, "Unknown action: $id"); return }
         val dc = ctx ?: DataManager.getInstance().getDataContext(editor.contentComponent)
-        val event = AnActionEvent.createFromAnAction(action, null, "MeowPlugin", dc)
-        ActionUtil.performActionDumbAwareWithCallbacks(action, event)
+        val event = AnActionEvent.createEvent(action, dc, null, "MeowPlugin", ActionUiKind.NONE, null)
+        ActionUtil.performAction(action, event)
     }
 
     private fun kill(editor: Editor, st: MeowState, ctx: DataContext?) {
