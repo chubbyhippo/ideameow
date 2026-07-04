@@ -17,22 +17,34 @@
 
 package io.github.chubbyhippo.ideameow
 
+import com.intellij.openapi.application.ApplicationManager
+import com.intellij.openapi.application.ModalityState
+import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.editor.EditorKind
 import com.intellij.openapi.editor.event.EditorFactoryEvent
 import com.intellij.openapi.editor.event.EditorFactoryListener
 
-/** Attaches meow state to every main file editor; read-only ones start in MOTION. */
+/**
+ * Attaches meow state to every main file editor (read-only ones start in
+ * MOTION), and to dialog / tool-window fields (EditorKind.UNTYPED — the
+ * commit message box, ...) when they are multi-line and writable, mirroring
+ * IdeaVim's default `ideavimsupport=dialog`. EditorTextField switches on
+ * one-line mode only after the editor is created, so the UNTYPED decision is
+ * deferred until the current EDT event finishes; ModalityState.any() keeps it
+ * working for editors born inside modal dialogs.
+ */
 class MeowEditorFactoryListener : EditorFactoryListener {
 
     override fun editorCreated(event: EditorFactoryEvent) {
         val editor = event.editor
-        if (editor.editorKind != EditorKind.MAIN_EDITOR) return
-        val st = MeowState()
-        st.savedBlockCursor = editor.settings.isBlockCursor
-        st.mode = if (editor.isViewer || !editor.document.isWritable) MeowMode.MOTION else MeowMode.NORMAL
-        editor.putUserData(Meow.KEY, st)
-        editor.settings.isBlockCursor = true
-        Meow.updateWidgets()
+        when (editor.editorKind) {
+            EditorKind.MAIN_EDITOR -> attach(editor)
+            EditorKind.UNTYPED -> ApplicationManager.getApplication().invokeLater(
+                { if (shouldAttachUntyped(editor)) attach(editor) },
+                ModalityState.any(),
+            )
+            else -> Unit
+        }
     }
 
     override fun editorReleased(event: EditorFactoryEvent) {
@@ -43,5 +55,25 @@ class MeowEditorFactoryListener : EditorFactoryListener {
         Engine.clearGrab(editor, st)
         st.savedBlockCursor?.let { editor.settings.isBlockCursor = it }
         editor.putUserData(Meow.KEY, null)
+    }
+
+    private fun attach(editor: Editor) {
+        val st = MeowState()
+        st.savedBlockCursor = editor.settings.isBlockCursor
+        st.mode = if (editor.isViewer || !editor.document.isWritable) MeowMode.MOTION else MeowMode.NORMAL
+        editor.putUserData(Meow.KEY, st)
+        editor.settings.isBlockCursor = true
+        Meow.updateWidgets()
+    }
+
+    companion object {
+        /** One-line fields (Evaluate Expression, ...), viewers, and read-only
+         * documents keep native editing; the commit message box qualifies. */
+        fun shouldAttachUntyped(editor: Editor): Boolean =
+            !editor.isDisposed &&
+                !editor.isOneLineMode &&
+                !editor.isViewer &&
+                editor.document.isWritable &&
+                Meow.state(editor) == null
     }
 }

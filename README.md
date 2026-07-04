@@ -10,6 +10,10 @@ enter, `ESC` leaves), **MOTION** (read-only editors: `j`/`k`/`SPC`),
 approximation built on IntelliJ's native multiple carets. The status bar shows
 the current state.
 
+Meow runs in main file editors and in multi-line writable dialog fields such
+as the VCS commit message box (like IdeaVim's `ideavimsupport=dialog`);
+one-line fields, consoles, and diff viewers keep native editing.
+
 ## Build & install
 
 ```bash
@@ -129,7 +133,8 @@ because unlike vim this engine has real negative counts.
   a PSI heuristic for defun — close to, but not literally, Emacs' syntax-ppss.
 - The kill-ring is the system clipboard (`meow-use-clipboard` behavior);
   `kill-line` does not append consecutive kills.
-- MOTION covers read-only file editors; IDE tool windows keep their own keys.
+- MOTION covers read-only file editors; IDE tool windows keep their own keys
+  (the commit message box is the exception — it gets full meow editing).
 
 ## License
 

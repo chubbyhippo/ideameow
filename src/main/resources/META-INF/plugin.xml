@@ -11,6 +11,8 @@
         sync-grab, and a beacon approximation built on native multiple carets.
         Configurable via ~/.ideameowrc (.ideavimrc-style nmap / map &lt;leader&gt; /
         desc lines) with a which-key popup for pending prefixes.
+        Works in main editors and in multi-line dialog fields such as the
+        commit message box.
         Disable IdeaVim while using this plugin — both intercept typing.
     ]]></description>
     <depends>com.intellij.modules.platform</depends>
