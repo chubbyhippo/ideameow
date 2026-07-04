@@ -514,9 +514,9 @@ object Engine {
                 }
                 if (j < text.length && text[j] == c) { i = j + 1; continue }
             }
-            when {
-                c in opens -> stack.addLast(i)
-                c in closes -> {
+            when (c) {
+                in opens -> stack.addLast(i)
+                in closes -> {
                     val kind = closes.indexOf(c)
                     while (stack.isNotEmpty()) {
                         val o = stack.removeLast()
