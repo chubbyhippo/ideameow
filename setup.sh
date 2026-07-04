@@ -105,9 +105,37 @@ fi
 
 # ------------------------------------------------------------------- build
 
+# The build's toolchain needs the exact java major pinned in mise.toml; a
+# different PATH java runs the wrapper but then fails toolchain resolution.
+req_java="$(sed -n 's/^java *= *"\([0-9][0-9]*\).*/\1/p' mise.toml 2>/dev/null)"
+req_java="${req_java:-21}"
+
+java_ok() { # a java that runs (macOS ships a /usr/bin/java stub that doesn't) AND matches the pin
+    local v
+    v="$(java -version 2>&1 | sed -n '1s/.*version "\([0-9][0-9]*\).*/\1/p')"
+    [[ -n "$v" && "$v" -eq "$req_java" ]]
+}
+
 if ((do_build)); then
     info "building the plugin"
-    if [[ -x ./gradlew ]]; then ./gradlew -q buildPlugin; else gradle -q buildPlugin; fi
+    build=()
+    if [[ -x ./gradlew ]]; then
+        if java_ok; then
+            build=(./gradlew)
+        elif command -v mise >/dev/null 2>&1; then
+            info "no java $req_java on PATH — running the wrapper via mise (mise.toml pins java $req_java)"
+            build=(mise exec -- ./gradlew)
+        fi
+    else
+        if java_ok && command -v gradle >/dev/null 2>&1; then
+            build=(gradle)
+        elif command -v mise >/dev/null 2>&1; then
+            info "no gradle wrapper — running gradle via mise (mise.toml pins java + gradle)"
+            build=(mise exec -- gradle)
+        fi
+    fi
+    ((${#build[@]})) || { echo "no way to build: need java $req_java (for ./gradlew or gradle) or mise on the PATH" >&2; exit 1; }
+    "${build[@]}" -q buildPlugin
 fi
 
 zip=""
