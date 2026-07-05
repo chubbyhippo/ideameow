@@ -5,10 +5,14 @@ suggested **QWERTY layout** as a native modal editing engine — no IdeaVim
 involved (disable IdeaVim while this is enabled; both intercept typing).
 
 States: **NORMAL** (keys are commands, block cursor), **INSERT** (`i a c I A`
-enter, `ESC` leaves), **MOTION** (read-only editors: `j`/`k`/`SPC`),
-**KEYPAD** (`SPC` leader dispatching IDE actions), and a **BEACON**
+enter, `ESC` leaves), **MOTION** (read-only editors: `j`/`k`/`SPC` by
+default), **KEYPAD** (`SPC` leader dispatching IDE actions), and a **BEACON**
 approximation built on IntelliJ's native multiple carets. The status bar shows
-the current state.
+the current state. Like meow itself, the plugin binds **no keys in code**: the
+whole keymap — the NORMAL/MOTION layout *and* the `SPC` keypad table — lives
+in an `.ideameowrc` bundled with the plugin (meow's suggested QWERTY layout,
+written as `meow-normal-define-key`-style lines), and `~/.ideameowrc`
+overrides it entry by entry.
 
 Meow runs in main file editors and in multi-line writable dialog fields such
 as the VCS commit message box (like IdeaVim's `ideavimsupport=dialog`);
@@ -29,7 +33,13 @@ Then *Settings → Plugins → ⚙ → Install Plugin from Disk…* and pick
 `build/distributions/ideameow-0.1.0.zip`. Requires a JDK 21 toolchain (emits Java 21 bytecode);
 targets IDE 2026.1 and anything newer.
 
-## The layout (meow KEYBINDING_QWERTY, verified against meow's source)
+## The default layout (meow KEYBINDING_QWERTY, verified against meow's source)
+
+There is no key table in the plugin's code: this whole layout is the repo's
+`.ideameowrc`, bundled into the plugin jar as the default layer and written
+as `nmap <key> <meow-command>` lines, so any key can be rebound from
+`~/.ideameowrc` (Dvorak, Colemak, or piecemeal) — see the configuration
+guide below.
 
 Movement/selection: `h j k l` move (a char-selection survives, anything else
 is cancelled), `H J K L` extend a char selection, `w/W` mark word/symbol (and
@@ -63,9 +73,11 @@ ideameow reads an `.ideavimrc`-style file from your home directory:
 
 **Getting started**
 
-1. Copy the shipped default from this repo (`.ideameowrc`, which ports the
-   whole `.ideavimrc` leader scheme) into your home directory — or press
-   `SPC c v` in the IDE: it creates and opens the file for you.
+1. The repo's `.ideameowrc` ships *inside* the plugin as the default keymap
+   (the QWERTY layout, the keypad table, the ported `.ideavimrc` leader
+   scheme), so a home file only needs the lines you want changed. Press
+   `SPC c v` in the IDE to create and open it — or copy the whole shipped
+   file there and edit anything.
 2. Edit, then reload with `SPC c V` (or *Find Action → Reload .ideameowrc*).
    A balloon confirms how many mappings loaded; parse problems are listed
    with their line numbers.
@@ -75,29 +87,46 @@ ideameow reads an `.ideavimrc`-style file from your home directory:
 | Line | Meaning |
 |---|---|
 | `" text` or `# text` | comment (also allowed at the end of a line: `nmap S <action>(X) " jump`) |
-| `nmap <key> <action>(ActionId)` | NORMAL-mode key runs an IDE action (overrides the builtin meow key) |
+| `nmap <key> <meow-command>` | bind a NORMAL-mode key to a named meow command, e.g. `nmap n meow-mark-word` — this is how the whole layout is remapped |
+| `nmap <key> <action>(ActionId)` | NORMAL-mode key runs an IDE action (overrides the default meow key) |
 | `nmap <key> <keys>` | NORMAL-mode key replays a meow key sequence, e.g. `nmap Z ,b` |
-| `nnoremap` / `noremap` | like `nmap`/`map`, but the replayed keys ignore your other mappings |
-| `map <leader><seq> <action>(Id)` | keypad entry: `SPC` + sequence runs the action (yours override builtins) |
+| `nnoremap` / `noremap` | like `nmap`/`map`, but the replayed keys resolve through the bundled defaults, ignoring your other mappings |
+| `mmap` / `mnoremap` | the same three target forms, for MOTION mode (read-only editors) |
+| `map <leader><seq> <action>(Id)` | keypad entry: `SPC` + sequence runs the action (yours override the bundled defaults) |
 | `map <leader><seq> <keys>` | keypad entry replaying meow keys after the keypad closes |
 | `desc <leader><seq> <text>` | which-key label for an entry (exact seq) or a group (prefix) |
 | `let g:WhichKeyDesc_x = "<leader>x text"` | same as `desc` — paste `.ideavimrc` lines unchanged |
-| `set timeoutlen=300` | which-key popup delay in milliseconds (default 250) |
+| `set timeoutlen=300` | which-key popup delay in milliseconds (the bundled default sets 300) |
 | `set which-key` / `set nowhich-key` | popup on/off (default on) |
 
 Key notation: plain printable characters, plus `<Space>` and `<lt>`. Find an
 action's id via *Tools → Internal Actions* or IdeaVim's `:actionlist` —
 they're the same ids `.ideavimrc` uses in `<action>(...)`.
 
+**Relayouting (Dvorak, Colemak, …)**
+
+The layout section of the bundled `.ideameowrc` IS the default keymap — an
+`nmap`/`mmap` line per key, exactly like a `meow-normal-define-key` /
+`meow-motion-define-key` block in Emacs. The command names are meow's own
+(`meow-next-word`, `meow-kill`, …) plus `repeat` and `ignore` — that section
+doubles as the full command reference. A right-hand side that names a known
+command binds the command; `ignore` disables a key; a misspelled `meow-*`
+name is reported as an error; anything else is replayed as keys. In a home
+`~/.ideameowrc`, a key you don't mention keeps its bundled binding — rebind
+it or `ignore` it to change that.
+
 **Semantics worth knowing**
 
 - Mapped keys work with `'` (repeat): repeating a mapped key re-runs its
   binding. Key-replay mappings are recursion-guarded (a self-referencing map
   stops at depth 8 with a hint instead of freezing the IDE).
+- `repeat` itself is a bindable command — put it on any key and the default
+  `'` can be reassigned like everything else.
 - Reserved: keypad `0-9` (digit argument), `?` (cheatsheet), `/` (describe
-  key); `SPC` itself can't be remapped. Only printable keys reach the modal
-  engine, so `<CR>`, `<Esc>`, and modifier chords can't be a LHS — put those
-  on the IDE keymap instead.
+  key); `SPC` itself can't be remapped (it is always the keypad key in both
+  NORMAL and MOTION). Only printable keys reach the modal engine, so `<CR>`,
+  `<Esc>`, and modifier chords can't be a LHS — put those on the IDE keymap
+  instead.
 - Unknown `set` options and `let` lines are ignored, so pasting your whole
   `.ideavimrc` won't error — only the lines ideameow understands take effect.
 
@@ -110,18 +139,24 @@ action id or key sequence), groups show the group's `desc` (falling back to
 `+more`). It never takes focus; just keep typing. `SPC ?` still opens the
 full cheatsheet and `SPC / <key>` describes one prefix in detail.
 
-**What the shipped default gives you**
+**What the bundled default gives you**
 
-The repo's `.ideameowrc` ports the companion `.ideavimrc` 1:1 where the modal
-models overlap: all the IntelliJ leader groups (`SPC .` settings, `SPC a`
-tool windows, `SPC d/e/f/g/h/i/j/k/l/n/o/p/q/r/s/t/u/v` …) with which-key
-labels for every group, `S`/`Q` as the avy jumps (AceJump plugin), split
-resizing on `=` `_` `+`, and `SPC ]`/`SPC [` for next/prev change, diff, and
-error (the `]c [c ]d [d ]e [e` of the vim config). Deliberately not ported —
+The repo's `.ideameowrc` opens with the full meow QWERTY layout as
+`nmap`/`mmap` lines and the complete keypad (`SPC`) table as
+`map <leader>` lines — these ARE the plugin's defaults, bundled into the jar —
+then ports the companion `.ideavimrc` 1:1 where the modal models overlap: all
+the IntelliJ leader groups (`SPC .` settings, `SPC a` tool windows,
+`SPC d/e/f/g/h/i/j/k/l/n/o/p/q/r/s/t/u/v` …) with which-key labels for every
+group, `S`/`Q` as the avy jumps (AceJump plugin), split resizing on `=` `_`
+`+`, and `SPC ]`/`SPC [` for next/prev change, diff, and error (the
+`]c [c ]d [d ]e [e` of the vim config). Deliberately not ported —
 with reasons in the file's footer — are the meow emulation itself (native
-here), vim/ex options and commands, and modifier-key bindings. One
-divergence: `-` keeps meow's negative-argument instead of split-resize,
-because unlike vim this engine has real negative counts.
+here), vim/ex options and commands, and modifier-key bindings. Two
+divergences: `-` keeps meow's negative-argument instead of split-resize,
+because unlike vim this engine has real negative counts; and since a later
+line for the same key wins within a file, the avy section makes
+`Q = AceLineAction` the effective default — `nmap Q meow-goto-line` in your
+home rc restores meow's own binding (`X` always has it).
 
 ## Known deviations from meow (documented, not accidental)
 

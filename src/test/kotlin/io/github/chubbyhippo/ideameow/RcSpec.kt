@@ -17,7 +17,8 @@
 
 package io.github.chubbyhippo.ideameow
 
-/** ~/.ideameowrc parsing, nmap/map dispatch, and which-key rows. */
+/** ~/.ideameowrc parsing, nmap/mmap/map dispatch (including relayouting the
+ *  meow keys themselves), and which-key rows. */
 class RcSpec : MeowSpec() {
 
     // ------------------------------------------------------------- parsing
@@ -39,6 +40,29 @@ class RcSpec : MeowSpec() {
         assertFalse(c.normal['Z']!!.recursive)
     }
 
+    fun `test given a meow command name then it parses into a command binding`() {
+        val c = Rc.parse(listOf("nmap n meow-mark-word", "nmap d ignore", "nmap Z repeat"))
+        assertEquals("meow-mark-word", c.normal['n']!!.command)
+        assertEquals("ignore", c.normal['d']!!.command)
+        assertEquals("repeat", c.normal['Z']!!.command)
+        assertTrue(c.errors.isEmpty())
+    }
+
+    fun `test given mmap then the binding lands in the motion map`() {
+        val c = Rc.parse(listOf("mmap n meow-next", "mnoremap e k"))
+        assertEquals("meow-next", c.motion['n']!!.command)
+        assertEquals("k", c.motion['e']!!.keys)
+        assertFalse(c.motion['e']!!.recursive)
+        assertTrue(c.normal.isEmpty())
+        assertTrue(c.errors.isEmpty())
+    }
+
+    fun `test given an unknown meow command then an error is collected`() {
+        val c = Rc.parse(listOf("nmap Z meow-frobnicate"))
+        assertEquals(1, c.errors.size)
+        assertTrue(c.errors[0].contains("meow-frobnicate"))
+    }
+
     fun `test given leader mappings and descriptions then the keypad table extends`() {
         val c = Rc.parse(
             listOf(
@@ -46,10 +70,11 @@ class RcSpec : MeowSpec() {
                 "desc <leader>g goto things",
             )
         )
-        assertEquals("GotoDeclaration", c.keypadUser["gd"]!!.action)
-        assertEquals("goto things", c.keypadDesc["g"])
         assertEquals("GotoDeclaration", c.keypad["gd"]!!.action)
-        assertEquals("RecentFiles", c.keypad["b"]!!.action) // builtin table survives
+        assertEquals("goto things", c.keypadDesc["g"])
+        Rc.setForTest(c)
+        assertEquals("GotoDeclaration", Rc.keypad()["gd"]!!.action)
+        assertEquals("RecentFiles", Rc.keypad()["b"]!!.action) // bundled defaults beneath
     }
 
     fun `test given the ideavimrc WhichKeyDesc let syntax then descriptions parse`() {
@@ -67,9 +92,18 @@ class RcSpec : MeowSpec() {
                 "let mapleader=\" \"",
             )
         )
-        assertFalse(c.whichKey)
+        assertEquals(false, c.whichKey)
         assertEquals(400, c.whichKeyDelayMs)
         assertTrue(c.errors.isEmpty())
+    }
+
+    fun `test which-key settings layer user over bundled defaults`() {
+        // empty user config: the bundled file's `set which-key` / timeoutlen=300
+        assertTrue(Rc.whichKeyEnabled())
+        assertEquals(300, Rc.whichKeyDelayMs())
+        givenRc("set nowhich-key\nset timeoutlen=150")
+        assertFalse(Rc.whichKeyEnabled())
+        assertEquals(150, Rc.whichKeyDelayMs())
     }
 
     fun `test given a trailing comment then it is stripped from the line`() {
@@ -80,16 +114,28 @@ class RcSpec : MeowSpec() {
             )
         )
         assertEquals("AceAction", c.normal['S']!!.action)
-        assertEquals(",b", c.keypadUser["zz"]!!.keys)
+        assertEquals(",b", c.keypad["zz"]!!.keys)
         assertTrue(c.errors.isEmpty())
     }
 
-    fun `test the shipped default ideameowrc parses without errors`() {
-        val f = java.io.File(System.getProperty("user.dir"), Rc.FILE_NAME)
-        if (!f.isFile) return // some runners relocate the working dir; nothing to check
-        val c = Rc.parse(f.readLines())
-        assertTrue("shipped default must parse clean, got: ${c.errors}", c.errors.isEmpty())
-        assertTrue("shipped default should carry the ported leader groups", c.keypadUser.size > 100)
+    fun `test the bundled default ideameowrc defines the whole keymap`() {
+        val d = Rc.defaults()
+        assertTrue("bundled default must parse clean, got: ${d.errors}", d.errors.isEmpty())
+        // the layout block must define meow's full QWERTY layout (Q is the
+        // deliberate avy override further down the file)
+        for ((key, cmd) in QWERTY) {
+            if (key == 'Q') continue
+            assertEquals("bundled layout line for '$key'", cmd, d.normal[key]?.command)
+        }
+        assertEquals("AceLineAction", d.normal['Q']?.action)
+        assertEquals("meow-next", d.motion['j']?.command)
+        assertEquals("meow-prev", d.motion['k']?.command)
+        // the keypad table lives in the file too — nothing is bound in code
+        assertEquals("RecentFiles", d.keypad["b"]?.action)
+        assertEquals("Switcher", d.keypad[" "]?.action)
+        assertEquals("Ideameow.EditRc", d.keypad["cv"]?.action)
+        assertEquals("Ideameow.ReloadRc", d.keypad["cV"]?.action)
+        assertTrue("keypad table + ported leader groups", d.keypad.size > 150)
     }
 
     fun `test given bad lines then errors are collected with line numbers`() {
@@ -99,9 +145,10 @@ class RcSpec : MeowSpec() {
                 "nmap <Space> ,b",          // SPC is reserved
                 "map <leader>1 <action>(X)", // keypad digits are reserved
                 "nmap Q <CR>",               // unsupported key token
+                "mmap <leader>x ,b",         // keypad entries are mode-independent
             )
         )
-        assertEquals(4, c.errors.size)
+        assertEquals(5, c.errors.size)
         assertTrue(c.errors[0].startsWith("line 1"))
     }
 
@@ -121,11 +168,11 @@ class RcSpec : MeowSpec() {
         thenSelection("one two") // Y -> user B -> whole buffer
     }
 
-    fun `test given nnoremap then the RHS runs the builtin key instead`() {
+    fun `test given nnoremap then the RHS runs the bundled default instead`() {
         given("two words", "one two<caret>")
         givenRc("nmap B ,b\nnnoremap Z B")
         whenKeys("Z")
-        thenSelection("two") // builtin B = back-symbol, not the user map
+        thenSelection("two") // bundled-default B = back-symbol, not the user map
     }
 
     fun `test given a self-referencing map then recursion is depth-limited`() {
@@ -143,11 +190,48 @@ class RcSpec : MeowSpec() {
         thenMode(MeowMode.NORMAL)
     }
 
-    fun `test given an rc keypad mapping then it overrides the builtin entry`() {
+    fun `test given an rc keypad mapping then it overrides the bundled entry`() {
         given("two words", "on<caret>e two")
-        givenRc("map <leader>b ,b") // builtin SPC b = RecentFiles
+        givenRc("map <leader>b ,b") // bundled-default SPC b = RecentFiles
         whenKeys(" b")
         thenSelection("one two")
+    }
+
+    fun `test given a layout rebinding then the key runs the meow command`() {
+        given("two words", "on<caret>e two")
+        givenRc("nmap n meow-mark-word") // bundled-default n = meow-search
+        whenKeys("n")
+        thenSelection("one")
+    }
+
+    fun `test given ignore then the key is disabled`() {
+        given("chars", "<caret>abc")
+        givenRc("nmap d ignore")
+        whenKeys("d")
+        thenText("abc")
+    }
+
+    fun `test given a motion rebinding then read-only editors use it`() {
+        given("three lines", "<caret>one\ntwo\nthree")
+        givenRc("mmap n meow-next")
+        doc.setReadOnly(true)
+        try {
+            whenKeys("n")
+            assertEquals(1, doc.getLineNumber(ed.caretModel.offset))
+            whenKeys("j") // the default motion keys stay underneath
+            assertEquals(2, doc.getLineNumber(ed.caretModel.offset))
+        } finally {
+            doc.setReadOnly(false)
+        }
+    }
+
+    fun `test given repeat on another key then it repeats the last command`() {
+        given("chars", "<caret>abcdef")
+        givenRc("nmap Z repeat")
+        whenKeys("d")
+        thenText("bcdef")
+        whenKeys("Z")
+        thenText("cdef")
     }
 
     fun `test given a mapped key when quote then the mapping repeats`() {
@@ -174,7 +258,70 @@ class RcSpec : MeowSpec() {
         assertTrue(WhichKey.keypadRows("z").contains("z" to "open a file"))
     }
 
-    fun `test given the builtin table then the SPC SPC entry renders as SPC`() {
+    fun `test given the default table then the SPC SPC entry renders as SPC`() {
         assertTrue(WhichKey.keypadRows("").any { it.first == "SPC" })
+    }
+
+    companion object {
+        /**
+         * meow's suggested QWERTY layout (KEYBINDING_QWERTY in meow's README;
+         * `<` and `>` are plugin aliases for `[` and `]`) — the contract the
+         * bundled .ideameowrc layout block must satisfy.
+         */
+        private val QWERTY: Map<Char, String> = buildMap {
+            for (n in 0..9) put('0' + n, "meow-expand-$n")
+            put('-', "meow-negative-argument")
+            put(';', "meow-reverse")
+            put(',', "meow-inner-of-thing")
+            put('.', "meow-bounds-of-thing")
+            put('[', "meow-beginning-of-thing")
+            put(']', "meow-end-of-thing")
+            put('<', "meow-beginning-of-thing")
+            put('>', "meow-end-of-thing")
+            put('a', "meow-append")
+            put('A', "meow-open-below")
+            put('b', "meow-back-word")
+            put('B', "meow-back-symbol")
+            put('c', "meow-change")
+            put('d', "meow-delete")
+            put('D', "meow-backward-delete")
+            put('e', "meow-next-word")
+            put('E', "meow-next-symbol")
+            put('f', "meow-find")
+            put('g', "meow-cancel-selection")
+            put('G', "meow-grab")
+            put('h', "meow-left")
+            put('H', "meow-left-expand")
+            put('i', "meow-insert")
+            put('I', "meow-open-above")
+            put('j', "meow-next")
+            put('J', "meow-next-expand")
+            put('k', "meow-prev")
+            put('K', "meow-prev-expand")
+            put('l', "meow-right")
+            put('L', "meow-right-expand")
+            put('m', "meow-join")
+            put('n', "meow-search")
+            put('o', "meow-block")
+            put('O', "meow-to-block")
+            put('p', "meow-yank")
+            put('q', "meow-quit")
+            put('Q', "meow-goto-line")
+            put('r', "meow-replace")
+            put('R', "meow-swap-grab")
+            put('s', "meow-kill")
+            put('t', "meow-till")
+            put('u', "meow-undo")
+            put('U', "meow-undo-in-selection")
+            put('v', "meow-visit")
+            put('w', "meow-mark-word")
+            put('W', "meow-mark-symbol")
+            put('x', "meow-line")
+            put('X', "meow-goto-line")
+            put('y', "meow-save")
+            put('Y', "meow-sync-grab")
+            put('z', "meow-pop-selection")
+            put('\'', "repeat")
+        }
     }
 }

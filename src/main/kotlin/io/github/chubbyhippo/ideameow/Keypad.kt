@@ -23,52 +23,18 @@ import com.intellij.openapi.ui.Messages
 
 /**
  * KEYPAD state. In Emacs, SPC x/c/m reach the C-x / C-c / M- keymaps; here the
- * same key sequences dispatch IDE actions. BUILTIN mirrors the leader scheme
- * of the companion .ideavimrc; ~/.ideameowrc `map <leader>...` entries layer
- * on top (see Rc). SPC 1-9 = digit argument, SPC ? = cheatsheet,
- * SPC / = describe key. A which-key popup lists continuations of a prefix.
+ * same key sequences dispatch IDE actions. Like the NORMAL/MOTION layout, the
+ * whole table lives in rc lines: the bundled default .ideameowrc defines it
+ * (mirroring the companion .ideavimrc leader scheme) and ~/.ideameowrc
+ * `map <leader>...` entries layer on top (see Rc.keypad()). SPC 1-9 = digit
+ * argument, SPC ? = cheatsheet, SPC / = describe key. A which-key popup lists
+ * continuations of a prefix.
  */
 object Keypad {
 
-    val BUILTIN: Map<String, String> = mapOf(
-        "b" to "RecentFiles",
-        " " to "Switcher",
-        // SPC x = C-x: files / buffers / windows
-        "xf" to "GotoFile", "xs" to "SaveAll", "xb" to "RecentFiles", "xk" to "CloseContent",
-        "xd" to "ActivateProjectToolWindow", "xg" to "ActivateVersionControlToolWindow",
-        "xo" to "NextSplitter", "xu" to "LocalHistory.ShowHistory", "xv" to "Vcs.Operations.Popup",
-        "xc" to "CloseProject", "x0" to "Unsplit", "x1" to "UnsplitAll",
-        "x2" to "SplitHorizontally", "x3" to "SplitVertically",
-        // SPC x p = C-x p: project.el
-        "xpf" to "GotoFile", "xpb" to "RecentFiles", "xpg" to "FindInPath",
-        "xpr" to "ReplaceInPath", "xpc" to "CompileProject",
-        // SPC c = C-c: personal commands
-        "cf" to "GotoFile", "cs" to "SaveAll", "ck" to "CloseContent", "cb" to "RecentFiles",
-        "cr" to "FindInPath", "ce" to "EditorSelectWord", "ca" to "ActivateTODOToolWindow",
-        "cc" to "NewScratchFile", "cl" to "CopyReference", "cg" to "Vcs.Operations.Popup",
-        // SPC c v / V: edit / reload ~/.ideameowrc (mirrors the .ideavimrc keys)
-        "cv" to "Ideameow.EditRc", "cV" to "Ideameow.ReloadRc",
-        // SPC c j: avy jumps — AceJump actions when the plugin is installed
-        "cjw" to "AceAction", "cjc" to "AceAction", "cjl" to "AceLineAction",
-        // SPC m = M-: meta
-        "mx" to "GotoAction", "mo" to "AceAction", "mr" to "EditorSelectWord",
-        "mR" to "EditorUnSelectWord", "my" to "PasteMultiple", "m." to "GotoDeclaration",
-        "mg" to "GotoLine",
-        "msr" to "FindInPath", "msl" to "Find", "mss" to "Find",
-        "msL" to "FindInPath", "mso" to "FileStructurePopup",
-        // SPC w: the window map
-        "wv" to "SplitVertically", "ws" to "SplitHorizontally", "wd" to "Unsplit",
-        "wD" to "UnsplitAll", "wm" to "UnsplitAll", "ww" to "NextSplitter",
-        "wW" to "MoveEditorToOppositeTabGroup",
-        "wh" to "PrevSplitter", "wj" to "NextSplitter", "wk" to "PrevSplitter", "wl" to "NextSplitter",
-        "wi" to "EditorIncreaseFontSize", "w=" to "EditorIncreaseFontSize",
-        "wo" to "EditorDecreaseFontSize", "w-" to "EditorDecreaseFontSize",
-        "wu" to "EditorResetFontSize", "w0" to "EditorResetFontSize",
-    )
-
     fun key(editor: Editor, st: MeowState, c: Char, ctx: DataContext?) {
         WhichKey.hide()
-        val cfg = Rc.cfg()
+        val keypad = Rc.keypad()
         val buf = st.keypad.toString()
 
         if (buf == "/") {
@@ -97,13 +63,13 @@ object Keypad {
 
         st.keypad.append(c)
         val cur = st.keypad.toString()
-        val binding = cfg.keypad[cur]
+        val binding = keypad[cur]
         if (binding != null) {
             exit(editor, st)
             Engine.runBinding(editor, st, binding, ctx)
             return
         }
-        if (cfg.keypad.keys.none { it.startsWith(cur) }) {
+        if (keypad.keys.none { it.startsWith(cur) }) {
             exit(editor, st)
             Engine.hint(editor, "SPC ${cur.toCharArray().joinToString(" ")} is undefined")
         } else {
@@ -117,13 +83,13 @@ object Keypad {
     }
 
     private fun describe(editor: Editor, c: Char) {
-        val cfg = Rc.cfg()
-        val entries = cfg.keypad.entries
+        val descs = Rc.keypadDescs()
+        val entries = Rc.keypad().entries
             .filter { it.key.startsWith(c.toString()) }
             .sortedBy { it.key }
             .joinToString("\n") { (seq, b) ->
-                val target = b.action ?: b.keys.orEmpty()
-                val desc = cfg.keypadDesc[seq]?.let { "  ($it)" } ?: ""
+                val target = b.action ?: b.command ?: b.keys.orEmpty()
+                val desc = descs[seq]?.let { "  ($it)" } ?: ""
                 "SPC ${seq.toCharArray().joinToString(" ")}  ->  $target$desc"
             }
         Messages.showInfoMessage(
@@ -163,7 +129,9 @@ object Keypad {
           SPC w windows   SPC 1-9 count   SPC ? this sheet   SPC / describe key
           SPC c v edit ~/.ideameowrc   SPC c V reload it
 
-        ~/.ideameowrc: nmap <key> <action>(Id) | nmap <key> <meow keys>
-          map <leader><seq> ... | desc <leader><seq> text | set nowhich-key
+        ~/.ideameowrc: nmap <key> <action>(Id) | nmap <key> meow-command | nmap <key> <meow keys>
+          mmap ... (MOTION mode) | map <leader><seq> ... | desc <leader><seq> text | set nowhich-key
+          every binding above is an rc line — the defaults ship as a bundled
+          .ideameowrc inside the plugin; ~/.ideameowrc overrides them key by key
     """.trimIndent()
 }

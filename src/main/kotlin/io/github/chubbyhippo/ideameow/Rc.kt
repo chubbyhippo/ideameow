@@ -26,8 +26,10 @@ import java.io.File
  *
  *   " comments start with a double quote (or #)
  *   nmap S <action>(AceAction)          NORMAL key -> IDE action
+ *   nmap n meow-mark-word               NORMAL key -> a named meow command
  *   nmap Z ,b                           NORMAL key -> meow keys (recursive)
  *   nnoremap Z ,b                       same, but the RHS ignores user maps
+ *   mmap j meow-next                    the same, for MOTION (read-only) mode
  *   map <leader>gd <action>(GotoDeclaration)
  *   map <leader>k ,b
  *   desc <leader>g goto things
@@ -35,8 +37,16 @@ import java.io.File
  *   set nowhich-key                     disable the which-key popup
  *   set timeoutlen=300                  which-key popup delay in ms
  *
- * Keypad keys 0-9, ? and / are reserved; SPC itself cannot be remapped.
- * Unknown `set` options are ignored so .ideavimrc lines can be pasted as-is.
+ * Like meow in Emacs, the engine itself binds NO keys — the whole keymap
+ * (NORMAL/MOTION layout AND the SPC keypad table) is rc lines. The repo's
+ * .ideameowrc ships inside the plugin jar as the DEFAULTS layer ([defaults]);
+ * an optional ~/.ideameowrc ([cfg]) overrides it entry by entry, and
+ * `nnoremap`/`mnoremap` replays resolve through the defaults alone. A RHS
+ * that names a command in Engine.COMMANDS (meow-* plus `repeat` and `ignore`)
+ * binds the command; `ignore` disables the key; any other RHS text is
+ * replayed as keys. Keypad keys 0-9, ? and / are reserved; SPC itself cannot
+ * be remapped. Unknown `set` options are ignored so .ideavimrc lines can be
+ * pasted as-is.
  */
 object Rc {
     const val FILE_NAME = ".ideameowrc"
@@ -44,24 +54,18 @@ object Rc {
     data class Binding(
         val action: String? = null,
         val keys: String? = null,
+        val command: String? = null,
         val recursive: Boolean = true,
     )
 
     class Config {
         val normal = mutableMapOf<Char, Binding>()
-        val keypadUser = linkedMapOf<String, Binding>()
+        val motion = mutableMapOf<Char, Binding>()
+        val keypad = linkedMapOf<String, Binding>()
         val keypadDesc = mutableMapOf<String, String>()
-        var whichKey = true
-        var whichKeyDelayMs = 250
+        var whichKey: Boolean? = null
+        var whichKeyDelayMs: Int? = null
         val errors = mutableListOf<String>()
-
-        /** Builtin keypad table with user entries layered on top. */
-        val keypad: Map<String, Binding> by lazy {
-            LinkedHashMap<String, Binding>().apply {
-                Keypad.BUILTIN.forEach { (seq, actionId) -> put(seq, Binding(action = actionId)) }
-                putAll(keypadUser)
-            }
-        }
     }
 
     @Volatile
@@ -71,9 +75,21 @@ object Rc {
     var config: Config = Config()
         private set
 
+    @Volatile
+    private var defaultsLoaded = false
+
+    @Volatile
+    private var defaultConfig: Config = Config()
+
     fun cfg(): Config {
         if (!loaded) load()
         return config
+    }
+
+    /** The bundled .ideameowrc — the default layer beneath ~/.ideameowrc. */
+    fun defaults(): Config {
+        if (!defaultsLoaded) loadDefaults()
+        return defaultConfig
     }
 
     fun setForTest(c: Config) {
@@ -94,6 +110,33 @@ object Rc {
             )
         }
     }
+
+    private fun loadDefaults() {
+        defaultsLoaded = true
+        val lines = javaClass.getResourceAsStream("/$FILE_NAME")?.bufferedReader()?.readLines()
+        defaultConfig = if (lines != null) parse(lines) else Config()
+        if (lines == null || defaultConfig.errors.isNotEmpty()) {
+            notify(
+                "ideameow: broken bundled $FILE_NAME (plugin bug)\n" +
+                    defaultConfig.errors.joinToString("\n"),
+                NotificationType.ERROR
+            )
+        }
+    }
+
+    // -------------------------------------------------------- effective views
+
+    /** Effective keypad table: bundled defaults with ~/.ideameowrc on top. */
+    fun keypad(): Map<String, Binding> =
+        LinkedHashMap(defaults().keypad).apply { putAll(cfg().keypad) }
+
+    /** Effective which-key labels: bundled defaults with ~/.ideameowrc on top. */
+    fun keypadDescs(): Map<String, String> =
+        HashMap(defaults().keypadDesc).apply { putAll(cfg().keypadDesc) }
+
+    fun whichKeyEnabled(): Boolean = cfg().whichKey ?: defaults().whichKey ?: true
+
+    fun whichKeyDelayMs(): Int = cfg().whichKeyDelayMs ?: defaults().whichKeyDelayMs ?: 250
 
     fun notify(text: String, type: NotificationType) {
         runCatching {
@@ -134,7 +177,7 @@ object Rc {
                 "let" -> {} // mapleader and friends: accepted, nothing to do
                 "set" -> parseSet(c, rest)
                 "desc" -> parseDescBody(c, rest, ::err)
-                "map", "noremap", "nmap", "nnoremap" -> parseMap(c, cmd, rest, ::err)
+                "map", "noremap", "nmap", "nnoremap", "mmap", "mnoremap" -> parseMap(c, cmd, rest, ::err)
                 else -> err("unknown command '$cmd'")
             }
         }
@@ -178,35 +221,47 @@ object Rc {
         }
         val lhs = parts[0]
         val rhs = parts[1].trim()
-        val recursive = cmd == "map" || cmd == "nmap"
+        val recursive = cmd == "map" || cmd == "nmap" || cmd == "mmap"
+        val motion = cmd == "mmap" || cmd == "mnoremap"
 
         val action = ACTION_RE.matchEntire(rhs)?.groupValues?.get(1)
-        val binding = if (action != null) {
-            Binding(action = action, recursive = recursive)
-        } else {
-            val keys = parseKeys(rhs.replace(Regex("\\s+"), ""), err) ?: return
-            if (keys.isEmpty()) {
-                err("empty target in '$cmd $rest'")
+        val binding = when {
+            action != null -> Binding(action = action, recursive = recursive)
+            rhs in Engine.COMMANDS -> Binding(command = rhs, recursive = recursive)
+            rhs.startsWith("meow-") -> {
+                err("unknown meow command '$rhs'")
                 return
             }
-            Binding(keys = keys, recursive = recursive)
+            else -> {
+                val keys = parseKeys(rhs.replace(Regex("\\s+"), ""), err) ?: return
+                if (keys.isEmpty()) {
+                    err("empty target in '$cmd $rest'")
+                    return
+                }
+                Binding(keys = keys, recursive = recursive)
+            }
         }
 
         if (lhs.startsWith("<leader>")) {
+            if (motion) {
+                err("$cmd cannot define keypad entries; use map <leader>...")
+                return
+            }
             val seq = parseKeys(lhs.removePrefix("<leader>"), err) ?: return
             when {
                 seq.isEmpty() -> err("<leader> alone cannot be mapped")
                 seq[0] in "0123456789?/" -> err("keypad ${seq[0]} is reserved (digit argument / cheatsheet / describe)")
-                else -> c.keypadUser[seq] = binding
+                else -> c.keypad[seq] = binding
             }
             return
         }
 
         val keys = parseKeys(lhs, err) ?: return
         when {
-            keys.length != 1 -> err("normal-mode key must be a single printable key: $lhs")
+            keys.length != 1 ->
+                err("${if (motion) "motion" else "normal"}-mode key must be a single printable key: $lhs")
             keys == " " -> err("SPC is the keypad key and cannot be remapped")
-            else -> c.normal[keys[0]] = binding
+            else -> (if (motion) c.motion else c.normal)[keys[0]] = binding
         }
     }
 

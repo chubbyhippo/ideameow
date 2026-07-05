@@ -193,4 +193,14 @@ class EditingSpec : MeowSpec() {
         thenSelection("xa")
         assertEquals("repeat replayed f+a from the new point", 2, ed.selectionModel.selectionStart)
     }
+
+    fun `test given quote after finding a quote char then the find repeats`() {
+        // a quote as a pending argument is part of the repeat unit; only the
+        // repeat *command* is excluded from it
+        given("quotes", "<caret>a'b'c")
+        whenKeys("f'")
+        thenSelection("a'")
+        whenKeys("'")
+        thenSelection("b'")
+    }
 }

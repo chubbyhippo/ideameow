@@ -41,8 +41,11 @@ import java.awt.datatransfer.DataFlavor
 import kotlin.math.abs
 
 /**
- * The meow QWERTY command set. Selection-first: commands act on the active
- * selection or fall back per meow-selection-command-fallback.
+ * The meow command set. Selection-first: commands act on the active selection
+ * or fall back per meow-selection-command-fallback. Like meow in Emacs, this
+ * engine binds no keys of its own: every command is registered by its meow
+ * name in [COMMANDS], and keys resolve through rc bindings only —
+ * ~/.ideameowrc over the bundled default .ideameowrc (see [Rc]).
  */
 object Engine {
 
@@ -51,6 +54,73 @@ object Engine {
     )
 
     private val GRAB_BG = JBColor(Color(0xCD, 0xE8, 0xCD), Color(0x2F, 0x47, 0x2F))
+
+    // ------------------------------------------------------- command registry
+
+    /**
+     * Every command under its meow name (plus Emacs' `repeat` and `ignore`,
+     * exactly as meow's suggested layout spells them) — the targets a
+     * ~/.ideameowrc line can bind a key to.
+     */
+    val COMMANDS: Map<String, (Editor, MeowState, DataContext?) -> Unit> = buildMap {
+        for (n in 0..9) put("meow-expand-$n") { ed, st, _ -> expandOrCount(ed, st, n) }
+        put("meow-negative-argument") { _, st, _ -> st.negative = true }
+        put("meow-reverse") { ed, _, _ -> reverse(ed) }
+        put("meow-inner-of-thing") { ed, st, _ -> st.pending = Pending.INNER; WhichKey.scheduleThings(ed) }
+        put("meow-bounds-of-thing") { ed, st, _ -> st.pending = Pending.BOUNDS; WhichKey.scheduleThings(ed) }
+        put("meow-beginning-of-thing") { ed, st, _ -> st.pending = Pending.BEGIN; WhichKey.scheduleThings(ed) }
+        put("meow-end-of-thing") { ed, st, _ -> st.pending = Pending.END; WhichKey.scheduleThings(ed) }
+        put("meow-append") { ed, st, _ -> append(ed, st) }
+        put("meow-open-below") { ed, st, ctx -> openBelow(ed, st, ctx) }
+        put("meow-back-word") { ed, st, _ -> backWord(ed, st, symbol = false) }
+        put("meow-back-symbol") { ed, st, _ -> backWord(ed, st, symbol = true) }
+        put("meow-change") { ed, st, _ -> change(ed, st) }
+        put("meow-delete") { ed, st, _ -> delete(ed, st) }
+        put("meow-backward-delete") { ed, st, _ -> backwardDelete(ed, st) }
+        put("meow-next-word") { ed, st, _ -> nextWord(ed, st, symbol = false) }
+        put("meow-next-symbol") { ed, st, _ -> nextWord(ed, st, symbol = true) }
+        put("meow-find") { _, st, _ -> st.pending = Pending.FIND }
+        put("meow-till") { _, st, _ -> st.pending = Pending.TILL }
+        put("meow-cancel-selection") { ed, st, _ -> cancelAll(ed, st) }
+        put("meow-grab") { ed, st, _ -> grab(ed, st) }
+        put("meow-left") { ed, st, _ -> moveChar(ed, st, -st.takeCount(1)) }
+        put("meow-left-expand") { ed, st, _ -> moveExpand(ed, st, -st.takeCount(1), 0) }
+        put("meow-insert") { ed, st, _ -> insert(ed, st) }
+        put("meow-open-above") { ed, st, ctx -> openAbove(ed, st, ctx) }
+        put("meow-next") { ed, st, _ -> moveLine(ed, st, st.takeCount(1)) }
+        put("meow-next-expand") { ed, st, _ -> moveExpand(ed, st, 0, st.takeCount(1)) }
+        put("meow-prev") { ed, st, _ -> moveLine(ed, st, -st.takeCount(1)) }
+        put("meow-prev-expand") { ed, st, _ -> moveExpand(ed, st, 0, -st.takeCount(1)) }
+        put("meow-right") { ed, st, _ -> moveChar(ed, st, st.takeCount(1)) }
+        put("meow-right-expand") { ed, st, _ -> moveExpand(ed, st, st.takeCount(1), 0) }
+        put("meow-join") { ed, st, _ -> join(ed, st) }
+        put("meow-search") { ed, st, _ -> search(ed, st) }
+        put("meow-block") { ed, st, _ -> block(ed, st) }
+        put("meow-to-block") { ed, st, _ -> toBlock(ed, st) }
+        put("meow-yank") { ed, _, _ -> yank(ed) }
+        put("meow-quit") { ed, _, ctx -> act(ed, ctx, "CloseContent") }
+        put("meow-goto-line") { ed, st, _ -> gotoLine(ed, st) }
+        put("meow-replace") { ed, st, _ -> replace(ed, st) }
+        put("meow-swap-grab") { ed, st, _ -> swapGrab(ed, st) }
+        put("meow-kill") { ed, st, ctx -> kill(ed, st, ctx) }
+        put("meow-undo") { ed, st, ctx -> undo(ed, st, ctx) }
+        put("meow-undo-in-selection") { ed, st, ctx -> undo(ed, st, ctx) } // no IDE analog, see README
+        put("meow-visit") { ed, st, _ -> visit(ed, st) }
+        put("meow-mark-word") { ed, st, _ -> markWord(ed, st, symbol = false) }
+        put("meow-mark-symbol") { ed, st, _ -> markWord(ed, st, symbol = true) }
+        put("meow-line") { ed, st, _ -> line(ed, st) }
+        put("meow-save") { ed, _, ctx -> save(ed, ctx) }
+        put("meow-sync-grab") { ed, st, _ -> syncGrab(ed, st) }
+        put("meow-pop-selection") { ed, st, _ -> popSelection(ed, st) }
+        put("repeat") { ed, st, ctx -> repeatLast(ed, st, ctx) }
+        put("meow-keypad") { ed, st, _ ->
+            Meow.setMode(ed, st, MeowMode.KEYPAD)
+            WhichKey.scheduleKeypad(ed, "")
+        }
+        put("ignore") { _, _, _ -> }
+    }
+
+    private val KEYPAD_BINDING = Rc.Binding(command = "meow-keypad")
 
     // ------------------------------------------------------------------ entry
 
@@ -67,115 +137,43 @@ object Engine {
         WhichKey.hide()
         ExpandHints.clear(st)
 
-        if (!st.replaying && c != '\'') {
-            if (st.pending == null && st.pendingCount == 0 && !st.negative) st.unit.clear()
+        val pend = st.pending
+        val motionish = st.mode == MeowMode.MOTION || editor.isViewer || !editor.document.isWritable
+        val binding = if (pend == null) resolve(st, c, motionish) else null
+        val cmd = binding?.command
+
+        if (!st.replaying && cmd != "repeat") {
+            if (pend == null && st.pendingCount == 0 && !st.negative) st.unit.clear()
             st.unit.add(c)
         }
 
-        val pend = st.pending
-        val motionish = st.mode == MeowMode.MOTION || editor.isViewer || !editor.document.isWritable
-        when {
-            pend != null -> {
-                st.pending = null
-                resolvePending(editor, st, pend, c)
-            }
-            motionish -> motionKey(editor, st, c)
-            else -> normalKey(editor, st, c, ctx)
-        }
+        if (pend != null) {
+            st.pending = null
+            resolvePending(editor, st, pend, c)
+        } else if (binding != null) {
+            runBinding(editor, st, binding, ctx)
+        } // undefined key: swallow, never self-insert
 
         val prefixy = st.pending != null ||
-                (c.isDigit() && st.pendingCount != 0) ||
-                (c == '-' && st.negative) ||
-                c == ' '
-        if (!st.replaying && c != '\'' && !prefixy) st.lastKeys = st.unit.toList()
+                (st.pendingCount != 0 && cmd?.startsWith("meow-expand-") == true) ||
+                (st.negative && cmd == "meow-negative-argument") ||
+                cmd == "meow-keypad"
+        if (!st.replaying && cmd != "repeat" && !prefixy) st.lastKeys = st.unit.toList()
 
         Meow.updateWidgets()
         return true
     }
 
-    private fun motionKey(editor: Editor, st: MeowState, c: Char) {
-        when (c) {
-            'j' -> moveLine(editor, st, st.takeCount(1))
-            'k' -> moveLine(editor, st, -st.takeCount(1))
-            ' ' -> Meow.setMode(editor, st, MeowMode.KEYPAD)
-            else -> {}
-        }
-    }
-
-    private fun normalKey(editor: Editor, st: MeowState, c: Char, ctx: DataContext?) {
-        // ~/.ideameowrc nmap overrides come first; a noremap RHS bypasses them
+    /** SPC = keypad (reserved), then ~/.ideameowrc maps (skipped inside a
+     *  noremap replay), then the bundled default rc; null = undefined key. */
+    private fun resolve(st: MeowState, c: Char, motion: Boolean): Rc.Binding? {
+        if (c == ' ') return KEYPAD_BINDING
         if (st.noremapDepth == 0) {
-            val override = Rc.cfg().normal[c]
-            if (override != null) {
-                runBinding(editor, st, override, ctx)
-                return
-            }
+            val cfg = Rc.cfg()
+            (if (motion) cfg.motion[c] else cfg.normal[c])?.let { return it }
         }
-        when (c) {
-            in '0'..'9' -> {
-                if (editor.selectionModel.hasSelection() && st.selType in EXPANDABLE) {
-                    expand(editor, st, if (c == '0') 10 else c - '0')
-                } else {
-                    // meow-expand falls back to meow-digit-argument
-                    st.pendingCount = st.pendingCount * 10 + (c - '0')
-                }
-            }
-            '-' -> st.negative = true
-            ';' -> reverse(editor)
-            ',' -> { st.pending = Pending.INNER; WhichKey.scheduleThings(editor) }
-            '.' -> { st.pending = Pending.BOUNDS; WhichKey.scheduleThings(editor) }
-            '[', '<' -> { st.pending = Pending.BEGIN; WhichKey.scheduleThings(editor) }
-            ']', '>' -> { st.pending = Pending.END; WhichKey.scheduleThings(editor) }
-            'a' -> append(editor, st)
-            'A' -> openBelow(editor, st, ctx)
-            'b' -> backWord(editor, st, symbol = false)
-            'B' -> backWord(editor, st, symbol = true)
-            'c' -> change(editor, st)
-            'd' -> delete(editor, st)
-            'D' -> backwardDelete(editor, st)
-            'e' -> nextWord(editor, st, symbol = false)
-            'E' -> nextWord(editor, st, symbol = true)
-            'f' -> st.pending = Pending.FIND
-            't' -> st.pending = Pending.TILL
-            'g' -> cancelAll(editor, st)
-            'G' -> grab(editor, st)
-            'h' -> moveChar(editor, st, -st.takeCount(1))
-            'H' -> moveExpand(editor, st, -st.takeCount(1), 0)
-            'i' -> insert(editor, st)
-            'I' -> openAbove(editor, st, ctx)
-            'j' -> moveLine(editor, st, st.takeCount(1))
-            'J' -> moveExpand(editor, st, 0, st.takeCount(1))
-            'k' -> moveLine(editor, st, -st.takeCount(1))
-            'K' -> moveExpand(editor, st, 0, -st.takeCount(1))
-            'l' -> moveChar(editor, st, st.takeCount(1))
-            'L' -> moveExpand(editor, st, st.takeCount(1), 0)
-            'm' -> join(editor, st)
-            'n' -> search(editor, st)
-            'o' -> block(editor, st)
-            'O' -> toBlock(editor, st)
-            'p' -> yank(editor)
-            'q' -> act(editor, ctx, "CloseContent")
-            'Q' -> gotoLine(editor, st)
-            'r' -> replace(editor, st)
-            'R' -> swapGrab(editor, st)
-            's' -> kill(editor, st, ctx)
-            'u' -> undo(editor, st, ctx)
-            'U' -> undo(editor, st, ctx) // undo-in-selection: no IDE analog, see README
-            'v' -> visit(editor, st)
-            'w' -> markWord(editor, st, symbol = false)
-            'W' -> markWord(editor, st, symbol = true)
-            'x' -> line(editor, st)
-            'X' -> gotoLine(editor, st)
-            'y' -> save(editor, ctx)
-            'Y' -> syncGrab(editor, st)
-            'z' -> popSelection(editor, st)
-            '\'' -> repeatLast(editor, st, ctx)
-            ' ' -> {
-                Meow.setMode(editor, st, MeowMode.KEYPAD)
-                WhichKey.scheduleKeypad(editor, "")
-            }
-            else -> {} // undefined in NORMAL: swallow, never self-insert
-        }
+        val d = Rc.defaults()
+        return if (motion) d.motion[c] else d.normal[c]
     }
 
     private fun resolvePending(editor: Editor, st: MeowState, p: Pending, c: Char) {
@@ -402,6 +400,16 @@ object Engine {
     }
 
     // ---------------------------------------------------------------- expand
+
+    /** meow-expand-N (0 = 10); without an expandable selection it falls back
+     *  to meow-digit-argument (meow-selection-command-fallback). */
+    private fun expandOrCount(editor: Editor, st: MeowState, n: Int) {
+        if (editor.selectionModel.hasSelection() && st.selType in EXPANDABLE) {
+            expand(editor, st, if (n == 0) 10 else n)
+        } else {
+            st.pendingCount = st.pendingCount * 10 + n
+        }
+    }
 
     private fun expand(editor: Editor, st: MeowState, n: Int) {
         val text = editor.document.charsSequence
@@ -923,9 +931,16 @@ object Engine {
         }
     }
 
-    /** Run an ~/.ideameowrc binding: an IDE action, or meow keys replayed
-     *  through the engine (noremap bindings skip user nmaps while replaying). */
+    /** Run a binding: a named meow command, an IDE action, or meow keys
+     *  replayed through the engine (noremap bindings skip user maps while
+     *  replaying). */
     fun runBinding(editor: Editor, st: MeowState, b: Rc.Binding, ctx: DataContext?) {
+        val command = b.command
+        if (command != null) {
+            COMMANDS[command]?.invoke(editor, st, ctx)
+                ?: hint(editor, "Unknown meow command: $command")
+            return
+        }
         val actionId = b.action
         if (actionId != null) {
             act(editor, ctx, actionId)

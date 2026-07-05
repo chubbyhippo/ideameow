@@ -1,26 +1,208 @@
 " ============================================================================
-" ~/.ideameowrc — default config for the ideameow plugin
+" .ideameowrc — THE default keymap of the ideameow plugin
 " ----------------------------------------------------------------------------
-" Copy this file to your home directory (Linux/macOS: ~/.ideameowrc,
-" Windows: C:\Users\<you>\.ideameowrc) or open it in the IDE with SPC c v.
-" Reload after editing with SPC c V (or the "Reload .ideameowrc" action).
+" Like meow in Emacs, the plugin binds no keys in code: this file defines
+" every default — the NORMAL/MOTION layout and the whole SPC keypad table —
+" and ships bundled inside the plugin jar. A ~/.ideameowrc in your home
+" directory (Linux/macOS: ~/.ideameowrc, Windows: C:\Users\<you>\.ideameowrc)
+" overrides it entry by entry, so a home file only needs the lines you want
+" changed — or copy this whole file there and edit anything. Open it in the
+" IDE with SPC c v; reload after editing with SPC c V ("Reload .ideameowrc").
 "
 " Syntax (see the README for the full guide):
 "   nmap <key> <action>(ActionId)     NORMAL-mode key -> IDE action
+"   nmap <key> <meow-command>         NORMAL-mode key -> named meow command
 "   nmap <key> <meow keys>            NORMAL-mode key -> replayed meow keys
-"   nnoremap ...                      like nmap, but the RHS skips user maps
-"   map <leader><seq> <target>        keypad (SPC) entry, layered over builtins
+"   nnoremap ...                      like nmap, but the RHS resolves through
+"                                     these bundled defaults, skipping user maps
+"   mmap / mnoremap <key> <target>    the same, for MOTION (read-only) mode
+"   map <leader><seq> <target>        keypad (SPC) entry
 "   desc <leader><seq> <text>         which-key label for an entry or a group
 "   set timeoutlen=300                which-key popup delay in ms
 "   set nowhich-key                   turn the which-key popup off
 "
 " Ported from intellij-community-settings/ideavim/.ideavimrc. Not portable
-" (and why) is listed at the bottom. The meow layout itself (w e b x s d c...)
-" needs NO porting — the plugin implements it natively.
+" (and why) is listed at the bottom. The meow layout itself needs NO porting —
+" the plugin implements it natively; the layout section right below IS the
+" keymap (like meow-normal-define-key in Emacs), so any key can be rebound.
+" Within this file, a later line for the same key wins.
 " ============================================================================
 
 set which-key
 set timeoutlen=300
+
+" ============================================================================
+" The meow layout — QWERTY by default, every key rebindable
+" ----------------------------------------------------------------------------
+" These lines ARE the default layout (there is no key table in the plugin's
+" code). Rebind any key to another meow command, to an <action>(...), or to
+" replayed keys; bind a key to `ignore` to disable it. In a home ~/.ideameowrc
+" only overrides are needed — a key without a home line keeps its binding
+" from this bundled file. mmap does the same for MOTION mode (read-only
+" editors). SPC is the keypad key and cannot be remapped; ESC and modifier
+" chords never reach the modal engine (put those on the IDE keymap).
+" ============================================================================
+
+" expand / counts
+nmap 0 meow-expand-0
+nmap 1 meow-expand-1
+nmap 2 meow-expand-2
+nmap 3 meow-expand-3
+nmap 4 meow-expand-4
+nmap 5 meow-expand-5
+nmap 6 meow-expand-6
+nmap 7 meow-expand-7
+nmap 8 meow-expand-8
+nmap 9 meow-expand-9
+nmap - meow-negative-argument
+
+" selections / things
+nmap ; meow-reverse
+nmap , meow-inner-of-thing
+nmap . meow-bounds-of-thing
+nmap [ meow-beginning-of-thing
+nmap ] meow-end-of-thing
+nmap < meow-beginning-of-thing
+nmap > meow-end-of-thing
+
+" the letter keys
+nmap a meow-append
+nmap A meow-open-below
+nmap b meow-back-word
+nmap B meow-back-symbol
+nmap c meow-change
+nmap d meow-delete
+nmap D meow-backward-delete
+nmap e meow-next-word
+nmap E meow-next-symbol
+nmap f meow-find
+nmap g meow-cancel-selection
+nmap G meow-grab
+nmap h meow-left
+nmap H meow-left-expand
+nmap i meow-insert
+nmap I meow-open-above
+nmap j meow-next
+nmap J meow-next-expand
+nmap k meow-prev
+nmap K meow-prev-expand
+nmap l meow-right
+nmap L meow-right-expand
+nmap m meow-join
+nmap n meow-search
+nmap o meow-block
+nmap O meow-to-block
+nmap p meow-yank
+nmap q meow-quit
+nmap Q meow-goto-line
+nmap r meow-replace
+nmap R meow-swap-grab
+nmap s meow-kill
+nmap t meow-till
+nmap u meow-undo
+nmap U meow-undo-in-selection
+nmap v meow-visit
+nmap w meow-mark-word
+nmap W meow-mark-symbol
+nmap x meow-line
+nmap X meow-goto-line
+nmap y meow-save
+nmap Y meow-sync-grab
+nmap z meow-pop-selection
+nmap ' repeat
+
+" MOTION mode (read-only editors)
+mmap j meow-next
+mmap k meow-prev
+
+" ============================================================================
+" The keypad (SPC) table — every entry an rc line, like the layout above
+" ----------------------------------------------------------------------------
+" In Emacs, SPC x / c / m reach the C-x / C-c / M- keymaps; here the same
+" sequences dispatch IDE actions, mirroring the companion .ideavimrc leader
+" scheme. SPC 1-9 (digit argument), SPC ? (cheatsheet) and SPC / (describe
+" key) are reserved by the keypad itself and cannot be remapped.
+" ============================================================================
+
+map <leader>b <action>(RecentFiles)
+map <leader><Space> <action>(Switcher)
+
+" SPC x = C-x: files / buffers / windows
+map <leader>xf <action>(GotoFile)
+map <leader>xs <action>(SaveAll)
+map <leader>xb <action>(RecentFiles)
+map <leader>xk <action>(CloseContent)
+map <leader>xd <action>(ActivateProjectToolWindow)
+map <leader>xg <action>(ActivateVersionControlToolWindow)
+map <leader>xo <action>(NextSplitter)
+map <leader>xu <action>(LocalHistory.ShowHistory)
+map <leader>xv <action>(Vcs.Operations.Popup)
+map <leader>xc <action>(CloseProject)
+map <leader>x0 <action>(Unsplit)
+map <leader>x1 <action>(UnsplitAll)
+map <leader>x2 <action>(SplitHorizontally)
+map <leader>x3 <action>(SplitVertically)
+
+" SPC x p = C-x p: project.el
+map <leader>xpf <action>(GotoFile)
+map <leader>xpb <action>(RecentFiles)
+map <leader>xpg <action>(FindInPath)
+map <leader>xpr <action>(ReplaceInPath)
+map <leader>xpc <action>(CompileProject)
+
+" SPC c = C-c: personal commands
+map <leader>cf <action>(GotoFile)
+map <leader>cs <action>(SaveAll)
+map <leader>ck <action>(CloseContent)
+map <leader>cb <action>(RecentFiles)
+map <leader>cr <action>(FindInPath)
+map <leader>ce <action>(EditorSelectWord)
+map <leader>ca <action>(ActivateTODOToolWindow)
+map <leader>cc <action>(NewScratchFile)
+map <leader>cl <action>(CopyReference)
+map <leader>cg <action>(Vcs.Operations.Popup)
+
+" SPC c v / V: edit / reload ~/.ideameowrc (mirrors the .ideavimrc keys)
+map <leader>cv <action>(Ideameow.EditRc)
+map <leader>cV <action>(Ideameow.ReloadRc)
+
+" SPC c j: avy jumps — AceJump actions when the plugin is installed
+map <leader>cjw <action>(AceAction)
+map <leader>cjc <action>(AceAction)
+map <leader>cjl <action>(AceLineAction)
+
+" SPC m = M-: meta
+map <leader>mx <action>(GotoAction)
+map <leader>mo <action>(AceAction)
+map <leader>mr <action>(EditorSelectWord)
+map <leader>mR <action>(EditorUnSelectWord)
+map <leader>my <action>(PasteMultiple)
+map <leader>m. <action>(GotoDeclaration)
+map <leader>mg <action>(GotoLine)
+map <leader>msr <action>(FindInPath)
+map <leader>msl <action>(Find)
+map <leader>mss <action>(Find)
+map <leader>msL <action>(FindInPath)
+map <leader>mso <action>(FileStructurePopup)
+
+" SPC w: the window map (Emacs C-c w)
+map <leader>wv <action>(SplitVertically)
+map <leader>ws <action>(SplitHorizontally)
+map <leader>wd <action>(Unsplit)
+map <leader>wD <action>(UnsplitAll)
+map <leader>wm <action>(UnsplitAll)
+map <leader>ww <action>(NextSplitter)
+map <leader>wW <action>(MoveEditorToOppositeTabGroup)
+map <leader>wh <action>(PrevSplitter)
+map <leader>wj <action>(NextSplitter)
+map <leader>wk <action>(PrevSplitter)
+map <leader>wl <action>(NextSplitter)
+map <leader>wi <action>(EditorIncreaseFontSize)
+map <leader>w= <action>(EditorIncreaseFontSize)
+map <leader>wo <action>(EditorDecreaseFontSize)
+map <leader>w- <action>(EditorDecreaseFontSize)
+map <leader>wu <action>(EditorResetFontSize)
+map <leader>w0 <action>(EditorResetFontSize)
 
 " --- avy jumps, mirroring init.el (needs the AceJump plugin) ----------------
 " init.el: S = avy-goto-char-timer, Q = avy-goto-line. X still goes-to-line,
@@ -36,7 +218,7 @@ nmap = <action>(StretchSplitToTop)
 nmap _ <action>(StretchSplitToLeft)
 nmap + <action>(StretchSplitToRight)
 
-" --- which-key labels for the builtin keypad groups -------------------------
+" --- which-key labels for the keypad groups above ----------------------------
 desc <leader>b buffers (RecentFiles)
 desc <leader>x C-x · file / buffer / window
 desc <leader>xp C-x p · project
@@ -48,7 +230,8 @@ desc <leader>w window map (Emacs C-c w)
 
 " ============================================================================
 " IntelliJ feature groups, ported 1:1 from the .ideavimrc leader
-" (b / c / m / w / x and digits stay builtin — identical entries are omitted)
+" (b / c / m / w / x live in the keypad table above; digits and ? / are
+" reserved by the keypad)
 " ============================================================================
 
 " --- SPC . — settings / UI ---------------------------------------------------
@@ -306,6 +489,7 @@ map <leader>[e <action>(GotoPreviousError)
 " ----------------------------------------------------------------------------
 " * the whole meow-emulation section (w e b x s d c y r H-L, digits, , . < >,
 "   G/R/Y, m, z, ') — the plugin implements real meow; nothing to emulate.
+"   The layout block at the top of this file is the native keymap itself.
 " * set clipboard/ideajoin/number/relativenumber/sethandler — IdeaVim/vim
 "   options; the IDE and the plugin handle these themselves. Any such lines
 "   are ignored if pasted, so copying your .ideavimrc wholesale is safe.

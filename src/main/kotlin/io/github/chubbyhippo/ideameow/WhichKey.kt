@@ -47,15 +47,15 @@ object WhichKey {
 
     /** One row per next key continuing [buffer]: terminal label or group desc. */
     fun keypadRows(buffer: String): List<Pair<String, String>> {
-        val cfg = Rc.cfg()
+        val descs = Rc.keypadDescs()
         val rows = sortedMapOf<String, String>()
-        for ((seq, b) in cfg.keypad) {
+        for ((seq, b) in Rc.keypad()) {
             if (!seq.startsWith(buffer) || seq == buffer) continue
             val child = buffer + seq[buffer.length]
             val label =
-                if (seq == child) cfg.keypadDesc[seq] ?: b.action ?: b.keys.orEmpty()
-                else cfg.keypadDesc[child] ?: "+more"
-            if (child !in rows || cfg.keypadDesc.containsKey(child)) rows[child] = label
+                if (seq == child) descs[seq] ?: b.action ?: b.command ?: b.keys.orEmpty()
+                else descs[child] ?: "+more"
+            if (child !in rows || descs.containsKey(child)) rows[child] = label
         }
         return rows.map { (child, label) ->
             val key = child.last()
@@ -65,9 +65,8 @@ object WhichKey {
 
     private fun schedule(editor: Editor, rowsProvider: () -> List<Pair<String, String>>) {
         hide()
-        val cfg = Rc.cfg()
-        if (!cfg.whichKey) return
-        timer = Timer(cfg.whichKeyDelayMs.coerceAtLeast(0)) {
+        if (!Rc.whichKeyEnabled()) return
+        timer = Timer(Rc.whichKeyDelayMs().coerceAtLeast(0)) {
             timer = null
             show(editor, rowsProvider())
         }.apply {

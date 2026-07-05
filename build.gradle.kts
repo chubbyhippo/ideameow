@@ -41,6 +41,12 @@ intellijPlatform {
     }
 }
 
+tasks.processResources {
+    // the repo .ideameowrc is the plugin's whole default keymap (layout +
+    // keypad table); Rc.defaults() parses it from the jar at runtime
+    from(layout.projectDirectory.file(".ideameowrc"))
+}
+
 kotlin {
     // JDK 21 toolchain: every current IDE (through 2026.1) runs on JBR 21,
     // so 21 is the highest classfile version a plugin may ship. Bump only

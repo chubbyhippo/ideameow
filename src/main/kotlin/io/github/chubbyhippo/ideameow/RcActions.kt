@@ -31,7 +31,8 @@ class ReloadRcAction : AnAction(), DumbAware {
         val c = Rc.config
         Rc.notify(
             "Reloaded ~/${Rc.FILE_NAME}: ${c.normal.size} normal map(s), " +
-                "${c.keypadUser.size} keypad map(s), ${c.keypadDesc.size} description(s)" +
+                "${c.motion.size} motion map(s), " +
+                "${c.keypad.size} keypad map(s), ${c.keypadDesc.size} description(s)" +
                 if (c.errors.isEmpty()) "" else ", ${c.errors.size} problem(s)",
             NotificationType.INFORMATION
         )
@@ -46,7 +47,10 @@ class EditRcAction : AnAction(), DumbAware {
         if (!f.exists()) {
             f.writeText(
                 "\" ~/${Rc.FILE_NAME} — ideameow configuration\n" +
+                    "\" the bundled defaults (full meow layout + keypad table) stay\n" +
+                    "\" underneath — lines here override them entry by entry, e.g.:\n" +
                     "\" nmap S <action>(AceAction)\n" +
+                    "\" nmap n meow-mark-word\n" +
                     "\" map <leader>gd <action>(GotoDeclaration)\n" +
                     "\" desc <leader>g goto\n"
             )

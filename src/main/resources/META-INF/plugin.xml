@@ -9,10 +9,12 @@
         find/till, visit/search), the char-thing table (, . [ ] + r s c g e w b
         p l v d .), digit expand with on-screen hints, grab / swap-grab /
         sync-grab, and a beacon approximation built on native multiple carets.
-        Configurable via ~/.ideameowrc (.ideavimrc-style nmap / map &lt;leader&gt; /
-        desc lines) with a which-key popup for pending prefixes.
-        Works in main editors and in multi-line dialog fields such as the
-        commit message box.
+        Like meow in Emacs, the plugin binds no keys in code: the whole keymap
+        (layout and SPC keypad table) lives in a bundled .ideameowrc, QWERTY
+        by default, and ~/.ideameowrc overrides it entry by entry
+        (.ideavimrc-style nmap / mmap / map &lt;leader&gt; / desc lines; bare
+        meow command names rebind the layout itself) with a which-key popup
+        for pending prefixes.
         Disable IdeaVim while using this plugin — both intercept typing.
     ]]></description>
     <depends>com.intellij.modules.platform</depends>
