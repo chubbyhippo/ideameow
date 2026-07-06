@@ -25,15 +25,16 @@ import com.intellij.openapi.editor.event.EditorFactoryEvent
 import com.intellij.openapi.editor.event.EditorFactoryListener
 
 /**
- * Attaches meow state to every main file editor and every diff editor
- * (read-only ones — including a diff's revision side, which the diff
- * framework creates as a viewer — start in MOTION), and to dialog /
- * tool-window fields (EditorKind.UNTYPED — the commit message box, ...) when
- * they are multi-line and writable, mirroring IdeaVim's default
- * `ideavimsupport=dialog`. EditorTextField switches on one-line mode only
- * after the editor is created, so the UNTYPED decision is deferred until the
- * current EDT event finishes; ModalityState.any() keeps it working for
- * editors born inside modal dialogs.
+ * Attaches meow state to every main file editor and every diff editor —
+ * always in NORMAL, like Emacs: a read-only buffer (a file viewer, a diff's
+ * revision side) keeps the full meow layout for motions, selections, search
+ * and avy, and the modify commands gate themselves (meow--allow-modify-p,
+ * see Edits). Dialog / tool-window fields (EditorKind.UNTYPED — the commit
+ * message box, ...) attach when they are multi-line and writable, mirroring
+ * IdeaVim's default `ideavimsupport=dialog`. EditorTextField switches on
+ * one-line mode only after the editor is created, so the UNTYPED decision is
+ * deferred until the current EDT event finishes; ModalityState.any() keeps it
+ * working for editors born inside modal dialogs.
  */
 class MeowEditorFactoryListener : EditorFactoryListener {
 
@@ -62,7 +63,6 @@ class MeowEditorFactoryListener : EditorFactoryListener {
     private fun attach(editor: Editor) {
         val st = MeowState()
         st.savedBlockCursor = editor.settings.isBlockCursor
-        st.mode = if (editor.isViewer || !editor.document.isWritable) MeowMode.MOTION else MeowMode.NORMAL
         editor.putUserData(Meow.KEY, st)
         editor.settings.isBlockCursor = true
         Meow.updateWidgets()

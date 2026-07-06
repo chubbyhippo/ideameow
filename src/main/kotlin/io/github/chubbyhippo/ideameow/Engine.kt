@@ -86,7 +86,10 @@ object Engine {
         ExpandHints.clear(st)
 
         val pend = st.pending
-        val motionish = st.mode == MeowMode.MOTION || editor.isViewer || !editor.document.isWritable
+        // like Emacs: read-only buffers stay in NORMAL with every motion
+        // working (the modify commands gate themselves via allow-modify);
+        // the motion map applies only to the MOTION state proper
+        val motionish = st.mode == MeowMode.MOTION
         val binding = if (pend == null) resolve(st, c, motionish) else null
         val cmd = binding?.command
 

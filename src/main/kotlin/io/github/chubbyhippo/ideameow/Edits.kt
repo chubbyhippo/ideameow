@@ -54,6 +54,23 @@ internal object Edits {
         }
     }
 
+    /**
+     * meow--allow-modify-p (meow-util.el): read-only buffers keep the full
+     * NORMAL layout, but the text-changing commands are inert. meow gates
+     * kill/change/backspace/replace into SILENT no-ops; delete/yank/open
+     * (and swap-grab) instead fail with Emacs' "Buffer is read-only" error —
+     * surfaced here as an editor hint.
+     */
+    internal fun allowModify(editor: Editor): Boolean =
+        editor.document.isWritable && !editor.isViewer
+
+    /** @return true when the edit must be blocked — telling the user why. */
+    internal fun blockedReadOnly(editor: Editor): Boolean {
+        if (allowModify(editor)) return false
+        Ide.hint(editor, "Buffer is read-only")
+        return true
+    }
+
     private fun insert(editor: Editor, st: MeowState) {
         for (caret in editor.caretModel.allCarets) {
             if (caret.hasSelection()) caret.moveToOffset(caret.selectionStart)
@@ -75,18 +92,21 @@ internal object Edits {
     }
 
     private fun openBelow(editor: Editor, st: MeowState, ctx: DataContext?) {
+        if (blockedReadOnly(editor)) return
         Selections.collapse(editor, st) // meow-open-below never cancels; RET just deactivates
         Ide.act(editor, ctx, "EditorStartNewLine")
         Meow.setMode(editor, st, MeowMode.INSERT)
     }
 
     private fun openAbove(editor: Editor, st: MeowState, ctx: DataContext?) {
+        if (blockedReadOnly(editor)) return
         Selections.collapse(editor, st) // as in openBelow: no history clearing
         Ide.act(editor, ctx, "EditorStartNewLineBefore")
         Meow.setMode(editor, st, MeowMode.INSERT)
     }
 
     private fun change(editor: Editor, st: MeowState) {
+        if (!allowModify(editor)) return // meow gates change silently
         // fallback meow-change-char at point-max: nothing happens, not even INSERT
         val primary = editor.caretModel.primaryCaret
         if (!primary.hasSelection() && primary.offset >= editor.document.textLength) return
@@ -108,6 +128,7 @@ internal object Edits {
     }
 
     private fun delete(editor: Editor, st: MeowState) {
+        if (blockedReadOnly(editor)) return
         editCarets(editor, "Meow Delete") { caret ->
             if (caret.hasSelection()) {
                 editor.document.deleteString(caret.selectionStart, caret.selectionEnd)
@@ -121,6 +142,7 @@ internal object Edits {
     }
 
     private fun backwardDelete(editor: Editor, st: MeowState) {
+        if (!allowModify(editor)) return // meow gates backspace silently
         editCarets(editor, "Meow Backward Delete") { caret ->
             if (caret.hasSelection()) {
                 editor.document.deleteString(caret.selectionStart, caret.selectionEnd)
@@ -154,6 +176,7 @@ internal object Edits {
     }
 
     private fun kill(editor: Editor, st: MeowState, ctx: DataContext?) {
+        if (!allowModify(editor)) return // meow gates kill silently
         val sm = editor.selectionModel
         if (st.selType == SelType.JOIN && sm.hasSelection()) { joinKill(editor, st); return }
         if (sm.hasSelection()) {
@@ -207,6 +230,7 @@ internal object Edits {
 
     /** meow-yank: insert the clipboard at every caret, caret lands after it. */
     private fun yank(editor: Editor) {
+        if (blockedReadOnly(editor)) return
         val clip = Ide.clipboard() ?: return
         editCarets(editor, "Meow Yank") { caret ->
             val off = caret.offset
@@ -217,6 +241,7 @@ internal object Edits {
 
     /** meow-replace: selection := clipboard; the clipboard stays intact. */
     private fun replace(editor: Editor, st: MeowState) {
+        if (!allowModify(editor)) return // meow gates replace silently
         if (!editor.selectionModel.hasSelection()) return
         val clip = (Ide.clipboard() ?: return).trimEnd('\n')
         editCarets(editor, "Meow Replace") { caret ->

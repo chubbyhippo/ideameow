@@ -62,15 +62,25 @@ class ModesKeypadSpec : MeowSpec() {
         thenCaretAt(1)
     }
 
-    fun `test given a read-only document then keys behave like MOTION`() {
+    fun `test given a read-only document then all motions work and the modify commands are inert`() {
+        // like Emacs: a read-only buffer stays in NORMAL — motions, selections
+        // and save all work; only text changes gate (meow--allow-modify-p)
         given("two lines", "<caret>one\ntwo")
         doc.setReadOnly(true)
         try {
             whenKeys("j")
             assertEquals(1, doc.getLineNumber(ed.caretModel.offset))
-            whenKeys("w") // selection commands are swallowed in MOTION
-            thenNoSelection()
+            whenKeys("kw")
+            thenSelection("one")
+            whenKeys("s") // meow-kill: gated silently — nothing at all happens
             thenText("one\ntwo")
+            thenSelection("one")
+            whenKeys("y") // meow-save is a copy, not a modification: it works
+            thenClipboard("one")
+            whenKeys("d") // meow-delete: Emacs' "Buffer is read-only" — inert
+            whenKeys("p") // meow-yank: same
+            thenText("one\ntwo")
+            thenMode(MeowMode.NORMAL)
         } finally {
             doc.setReadOnly(false)
         }

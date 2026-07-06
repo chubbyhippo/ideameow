@@ -26,10 +26,11 @@ import com.intellij.testFramework.fixtures.BasePlatformTestCase
 import com.intellij.util.ui.UIUtil
 
 /**
- * Which editors get meow state: main file editors and diff editors always
- * (the read-only ones in MOTION); dialog and tool-window fields
- * (EditorKind.UNTYPED, e.g. the commit message box) only when multi-line and
- * writable — mirroring IdeaVim's `ideavimsupport=dialog`.
+ * Which editors get meow state: main file editors and diff editors always —
+ * in NORMAL even when read-only, like Emacs read-only buffers (the modify
+ * commands gate themselves; see ModesKeypadSpec); dialog and tool-window
+ * fields (EditorKind.UNTYPED, e.g. the commit message box) only when
+ * multi-line and writable — mirroring IdeaVim's `ideavimsupport=dialog`.
  *
  * EditorTextField switches on one-line mode only AFTER the editor is created,
  * so the specs set it post-creation exactly like production does, and the
@@ -123,10 +124,11 @@ class AttachSpec : BasePlatformTestCase() {
         thenMeowIsAttached(editor, MeowMode.NORMAL)
     }
 
-    fun `test given a diff revision side (a read-only viewer) then meow attaches in MOTION`() {
+    fun `test given a diff revision side (a read-only viewer) then meow attaches in NORMAL`() {
+        // like an Emacs read-only buffer: full layout, gated modifications
         val editor = givenEditor(EditorKind.DIFF, viewer = true, writable = false)
         whenTheFactoryListenerRuns(editor)
-        thenMeowIsAttached(editor, MeowMode.MOTION)
+        thenMeowIsAttached(editor, MeowMode.NORMAL)
     }
 
     fun `test given a main file editor then meow attaches in NORMAL`() {
@@ -135,9 +137,9 @@ class AttachSpec : BasePlatformTestCase() {
         thenMeowIsAttached(editor, MeowMode.NORMAL)
     }
 
-    fun `test given a read-only main file editor then meow attaches in MOTION`() {
+    fun `test given a read-only main file editor then meow attaches in NORMAL like Emacs read-only buffers`() {
         val editor = givenEditor(EditorKind.MAIN_EDITOR, writable = false)
         whenTheFactoryListenerRuns(editor)
-        thenMeowIsAttached(editor, MeowMode.MOTION)
+        thenMeowIsAttached(editor, MeowMode.NORMAL)
     }
 }

@@ -14,7 +14,11 @@ The states you know from meow:
 
 - **NORMAL** — keys are commands, block cursor. You start here.
 - **INSERT** — keys type text. `i a c I A` get you in, `ESC` gets you out.
-- **MOTION** — read-only editors. `j`/`k` move, `SPC` still opens the keypad.
+- **MOTION** — meow's reduced state for special contexts (`j`/`k`/`SPC` by
+  default, rebindable with `mmap`). Read-only editors do *not* use it: like
+  read-only buffers in Emacs they stay in NORMAL — every motion, selection,
+  search and avy jump works, and the modify commands are simply inert
+  (meow's `meow--allow-modify-p`). Nothing enters MOTION by default.
 - **KEYPAD** — `SPC` as the leader, dispatching IDE actions Emacs-style
   (`SPC x f` = open file, `SPC w v` = split…). A which-key popup lists your
   options whenever you pause on a prefix.
@@ -25,11 +29,12 @@ The states you know from meow:
 The status bar always tells you which state you're in.
 
 Meow runs in main file editors, in diff views (the editable side gets full
-NORMAL editing, the read-only revision side MOTION navigation), and in
-multi-line writable dialog fields such as the VCS commit message box (like
-IdeaVim's `ideavimsupport=dialog`). One-line fields and consoles keep native
-editing, and `ESC` in a diff still closes it when there is nothing
-meow-related to cancel.
+NORMAL editing; the read-only revision side gets the same full layout with
+edits blocked — navigate, select, search, avy-jump), and in multi-line
+writable dialog fields such as the VCS commit message box (like IdeaVim's
+`ideavimsupport=dialog`). One-line fields and consoles keep native editing,
+and `ESC` in a diff still closes it when there is nothing meow-related to
+cancel.
 
 And one idea borrowed straight from meow itself: **the plugin binds no keys in
 code.** The entire keymap — the NORMAL/MOTION layout *and* the whole `SPC`
@@ -118,7 +123,7 @@ ideameow reads an `.ideavimrc`-style file from your home directory:
 | `nmap <key> <action>(ActionId)` | NORMAL key runs an IDE action |
 | `nmap <key> <keys>` | NORMAL key replays a meow key sequence, e.g. `nmap Z ,b` |
 | `nnoremap` / `noremap` | like `nmap`/`map`, but the replayed keys resolve through the bundled defaults, ignoring your other mappings |
-| `mmap` / `mnoremap` | the same three target forms, for MOTION mode (read-only editors) |
+| `mmap` / `mnoremap` | the same three target forms, for MOTION mode (unused by default — read-only editors stay in NORMAL) |
 | `map <leader><seq> <action>(Id)` | keypad entry: `SPC` + sequence runs the action (yours override the bundled defaults) |
 | `map <leader><seq> <keys>` | keypad entry replaying meow keys after the keypad closes |
 | `desc <leader><seq> <text>` | which-key label for an entry (exact seq) or a group (prefix) |
@@ -191,9 +196,13 @@ All deliberate, none accidental:
   a PSI heuristic for defun — close to, but not literally, Emacs' syntax-ppss.
 - The kill-ring is the system clipboard (`meow-use-clipboard` behavior);
   `kill-line` does not append consecutive kills.
-- MOTION covers read-only file editors and the read-only side of diff views;
-  IDE tool windows keep their own keys (the commit message box is the
-  exception — it gets full meow editing).
+- Read-only editors (file viewers, the diff revision side) stay in NORMAL
+  with modifications gated like meow's `meow--allow-modify-p`: kill / change /
+  backspace / replace are silently inert, delete / yank / open / swap-grab
+  answer "Buffer is read-only". `i`/`a` still switch to INSERT (as in Emacs)
+  but typing is refused by the platform. MOTION exists for `mmap` setups but
+  nothing attaches to it by default; IDE tool windows keep their own keys
+  (the commit message box is the exception — it gets full meow editing).
 
 ## Hacking on it
 

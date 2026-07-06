@@ -80,6 +80,7 @@ internal object Grab {
     /** meow-swap-grab: exchange region and secondary text; the secondary stays
      *  at its location holding the swapped-in text. */
     private fun swap(editor: Editor, st: MeowState) {
+        if (Edits.blockedReadOnly(editor)) return // swap-grab edits both regions
         val g = st.grab
         val sm = editor.selectionModel
         if (g == null || !g.isValid) { Ide.hint(editor, "No grab"); return }

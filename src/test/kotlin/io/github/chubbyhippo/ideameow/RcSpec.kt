@@ -212,18 +212,16 @@ class RcSpec : MeowSpec() {
         thenText("abc")
     }
 
-    fun `test given a motion rebinding then read-only editors use it`() {
+    fun `test given a motion rebinding then MOTION-state editors use it`() {
+        // read-only editors stay in NORMAL these days (like Emacs read-only
+        // buffers); the mmap table applies to the MOTION state proper
         given("three lines", "<caret>one\ntwo\nthree")
         givenRc("mmap n meow-next")
-        doc.setReadOnly(true)
-        try {
-            whenKeys("n")
-            assertEquals(1, doc.getLineNumber(ed.caretModel.offset))
-            whenKeys("j") // the default motion keys stay underneath
-            assertEquals(2, doc.getLineNumber(ed.caretModel.offset))
-        } finally {
-            doc.setReadOnly(false)
-        }
+        st.mode = MeowMode.MOTION
+        whenKeys("n")
+        assertEquals(1, doc.getLineNumber(ed.caretModel.offset))
+        whenKeys("j") // the default motion keys stay underneath
+        assertEquals(2, doc.getLineNumber(ed.caretModel.offset))
     }
 
     fun `test given repeat on another key then it repeats the last command`() {
