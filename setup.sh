@@ -206,4 +206,4 @@ if [ "$installed" -gt 0 ]; then
     echo "  * restart the IDE(s) to load the plugin"
 fi
 echo "  * disable IdeaVim if it is enabled — both intercept typing"
-echo "  * in the IDE: SPC ? shows the cheatsheet, SPC c v edits ~/.ideameowrc"
+echo "  * in the IDE: SPC ? shows the cheatsheet, SPC c m edits ~/.ideameowrc"

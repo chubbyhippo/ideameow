@@ -123,4 +123,23 @@ class ModesKeypadSpec : MeowSpec() {
         ed.putUserData(Meow.KEY, null)
         assertFalse(Engine.handleChar(ed, 'w', null))
     }
+
+    // these two pin the Ide.act dispatch path with an observable platform
+    // action — a broken update/perform sequence (like the hand-rolled gate
+    // that silently killed SPC c M in a real IDE) fails here, not in the wild
+
+    fun `test given an rc key bound to an IDE action then the action performs`() {
+        given("word", "ab<caret>cd")
+        givenRc("nmap Z <action>(EditorLeft)")
+        whenKeys("Z")
+        thenCaretAt(1)
+    }
+
+    fun `test given a keypad entry bound to an IDE action then it performs and KEYPAD exits`() {
+        given("word", "ab<caret>cd")
+        givenRc("map <leader>zz <action>(EditorLeft)")
+        whenKeys(" zz")
+        thenMode(MeowMode.NORMAL)
+        thenCaretAt(1)
+    }
 }

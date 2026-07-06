@@ -90,7 +90,7 @@ swap-grab exchanges the selection and grab texts; `Y` sync-grab re-stashes.
 **Keypad.** `SPC b/x/c/m/w …` mirror the Emacs/meow keypad of the companion
 `.ideavimrc`/`init.el` (GotoFile, SaveAll, splits, font size…). `SPC 1-9` is a
 digit argument, `SPC ?` opens the cheatsheet, `SPC /` describes a key, and
-`SPC c v` / `SPC c V` edit / reload your config.
+`SPC c m` / `SPC c M` edit / reload your config.
 
 ## ~/.ideameowrc — configuring everything
 
@@ -99,11 +99,11 @@ ideameow reads an `.ideavimrc`-style file from your home directory:
 
 **Getting started is two steps:**
 
-1. Press `SPC c v` in the IDE — it creates and opens the file for you. (The
+1. Press `SPC c m` in the IDE — it creates and opens the file for you. (The
    bundled defaults stay underneath, so an empty file changes nothing and a
    one-line file changes exactly one thing. Or copy the repo's `.ideameowrc`
    over it and edit anything.)
-2. Edit, then reload with `SPC c V`. A balloon tells you how many mappings
+2. Edit, then reload with `SPC c M`. A balloon tells you how many mappings
    loaded — and lists any parse problems with their line numbers.
 
 **Syntax reference**

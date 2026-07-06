@@ -18,12 +18,9 @@
 package io.github.chubbyhippo.ideameow
 
 import com.intellij.codeInsight.hint.HintManager
-import com.intellij.ide.DataManager
 import com.intellij.openapi.actionSystem.ActionManager
-import com.intellij.openapi.actionSystem.ActionUiKind
-import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.DataContext
-import com.intellij.openapi.actionSystem.ex.ActionUtil
+import com.intellij.openapi.actionSystem.ex.ActionManagerEx
 import com.intellij.openapi.command.WriteCommandAction
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.ide.CopyPasteManager
@@ -36,17 +33,17 @@ import java.awt.datatransfer.DataFlavor
  */
 internal object Ide {
 
-    fun act(editor: Editor, ctx: DataContext?, id: String) {
+    fun act(editor: Editor, @Suppress("UNUSED_PARAMETER") ctx: DataContext?, id: String) {
         val action = ActionManager.getInstance().getAction(id)
             ?: run { hint(editor, "Unknown action: $id"); return }
-        val dc = ctx ?: DataManager.getInstance().getDataContext(editor.contentComponent)
-        val event = AnActionEvent.createEvent(action, dc, null, "MeowPlugin", ActionUiKind.NONE, null)
-        // run the action's update first, exactly like the keymap path does:
-        // performing a disabled action trips platform assertions (e.g. undo
-        // with an exhausted stack fails UndoManagerImpl's isUndoAvailable)
-        ActionUtil.updateAction(action, event)
-        if (!event.presentation.isEnabled) return
-        ActionUtil.performAction(action, event)
+        // the platform's own programmatic-invocation path: update (properly
+        // threaded), the enabled gate, then perform — identical to a keymap
+        // press. Hand-rolling update+perform here broke in-IDE dispatch while
+        // passing headless (and skipping update trips assertions, e.g. undo
+        // past an exhausted stack fails UndoManagerImpl's isUndoAvailable).
+        ActionManagerEx.getInstanceEx().tryToExecute(
+            action, null, editor.contentComponent, "MeowPlugin", true,
+        )
     }
 
     fun hint(editor: Editor, text: String) {

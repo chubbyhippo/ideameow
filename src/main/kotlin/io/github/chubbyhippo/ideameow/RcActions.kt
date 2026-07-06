@@ -24,7 +24,7 @@ import com.intellij.openapi.fileEditor.OpenFileDescriptor
 import com.intellij.openapi.project.DumbAware
 import com.intellij.openapi.vfs.LocalFileSystem
 
-/** Reload ~/.ideameowrc (keypad: SPC c V). */
+/** Reload ~/.ideameowrc (keypad: SPC c M). */
 class ReloadRcAction : AnAction(), DumbAware {
     override fun actionPerformed(e: AnActionEvent) {
         Rc.load()
@@ -39,7 +39,7 @@ class ReloadRcAction : AnAction(), DumbAware {
     }
 }
 
-/** Open (creating if needed) ~/.ideameowrc in the editor (keypad: SPC c v). */
+/** Open (creating if needed) ~/.ideameowrc in the editor (keypad: SPC c m). */
 class EditRcAction : AnAction(), DumbAware {
     override fun actionPerformed(e: AnActionEvent) {
         val project = e.project ?: return

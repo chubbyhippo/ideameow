@@ -130,7 +130,7 @@ object Keypad {
         KEYPAD (SPC)
           SPC b buffers   SPC x file/buffer/window   SPC c commands   SPC m meta
           SPC w windows   SPC 1-9 count   SPC ? this sheet   SPC / describe key
-          SPC c v edit ~/.ideameowrc   SPC c V reload it
+          SPC c m edit ~/.ideameowrc   SPC c M reload it
 
         ~/.ideameowrc: nmap <key> <action>(Id) | nmap <key> meow-command | nmap <key> <meow keys>
           mmap ... (MOTION mode) | map <leader><seq> ... | desc <leader><seq> text | set nowhich-key

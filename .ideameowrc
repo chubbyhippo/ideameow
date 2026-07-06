@@ -7,7 +7,7 @@
 " directory (Linux/macOS: ~/.ideameowrc, Windows: C:\Users\<you>\.ideameowrc)
 " overrides it entry by entry, so a home file only needs the lines you want
 " changed — or copy this whole file there and edit anything. Open it in the
-" IDE with SPC c v; reload after editing with SPC c V ("Reload .ideameowrc").
+" IDE with SPC c m; reload after editing with SPC c M ("Reload .ideameowrc").
 "
 " Syntax (see the README for the full guide):
 "   nmap <key> <action>(ActionId)     NORMAL-mode key -> IDE action
@@ -162,9 +162,9 @@ map <leader>cc <action>(NewScratchFile)
 map <leader>cl <action>(CopyReference)
 map <leader>cg <action>(Vcs.Operations.Popup)
 
-" SPC c v / V: edit / reload ~/.ideameowrc (mirrors the .ideavimrc keys)
-map <leader>cv <action>(Ideameow.EditRc)
-map <leader>cV <action>(Ideameow.ReloadRc)
+" SPC c m / M: edit / reload ~/.ideameowrc
+map <leader>cm <action>(Ideameow.EditRc)
+map <leader>cM <action>(Ideameow.ReloadRc)
 
 " SPC c j: avy jumps — implemented natively by the plugin, no AceJump needed
 map <leader>cjw avy-goto-char-timer

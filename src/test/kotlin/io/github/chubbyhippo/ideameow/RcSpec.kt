@@ -134,8 +134,8 @@ class RcSpec : MeowSpec() {
         // the keypad table lives in the file too — nothing is bound in code
         assertEquals("RecentFiles", d.keypad["b"]?.action)
         assertEquals("Switcher", d.keypad[" "]?.action)
-        assertEquals("Ideameow.EditRc", d.keypad["cv"]?.action)
-        assertEquals("Ideameow.ReloadRc", d.keypad["cV"]?.action)
+        assertEquals("Ideameow.EditRc", d.keypad["cm"]?.action)
+        assertEquals("Ideameow.ReloadRc", d.keypad["cM"]?.action)
         assertTrue("keypad table + ported leader groups", d.keypad.size > 150)
     }
 
