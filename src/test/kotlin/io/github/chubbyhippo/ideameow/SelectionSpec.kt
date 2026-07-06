@@ -192,7 +192,7 @@ class SelectionSpec : MeowSpec() {
     }
 
     fun `test given Q then goto-line as well (QWERTY binds both Q and X)`() {
-        // the bundled defaults override Q to the avy jump (AceLineAction); a
+        // the bundled defaults override Q to the native avy line jump; a
         // home-rc line brings meow's own Q binding back — pin that layering
         given("three lines", "<caret>one\ntwo\nthree")
         givenRc("nmap Q meow-goto-line")

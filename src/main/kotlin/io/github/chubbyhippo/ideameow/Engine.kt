@@ -51,6 +51,7 @@ object Engine {
         putAll(Structures.commands)
         putAll(Grab.commands)
         putAll(Edits.commands)
+        putAll(Avy.commands) // native avy-goto-char-timer / avy-goto-line
         // dispatcher-level commands: counts, the keypad, repeat, quit, no-op
         put("meow-negative-argument", MeowCommand { _, st, _ -> st.negative = true })
         put("meow-quit", MeowCommand { ed, _, ctx -> Ide.act(ed, ctx, "CloseContent") })
@@ -71,6 +72,12 @@ object Engine {
         if (st.mode == MeowMode.KEYPAD) {
             Keypad.key(editor, st, c, ctx)
             st.lastCommand = "keypad"
+            Meow.updateWidgets()
+            return true
+        }
+        if (st.avy != null) {
+            Avy.key(editor, st, c)
+            st.lastCommand = "avy"
             Meow.updateWidgets()
             return true
         }

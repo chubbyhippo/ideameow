@@ -49,7 +49,7 @@ class EditRcAction : AnAction(), DumbAware {
                 "\" ~/${Rc.FILE_NAME} — ideameow configuration\n" +
                     "\" the bundled defaults (full meow layout + keypad table) stay\n" +
                     "\" underneath — lines here override them entry by entry, e.g.:\n" +
-                    "\" nmap S <action>(AceAction)\n" +
+                    "\" nmap Q meow-goto-line\n" +
                     "\" nmap n meow-mark-word\n" +
                     "\" map <leader>gd <action>(GotoDeclaration)\n" +
                     "\" desc <leader>g goto\n"

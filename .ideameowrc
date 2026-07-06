@@ -166,14 +166,14 @@ map <leader>cg <action>(Vcs.Operations.Popup)
 map <leader>cv <action>(Ideameow.EditRc)
 map <leader>cV <action>(Ideameow.ReloadRc)
 
-" SPC c j: avy jumps — AceJump actions when the plugin is installed
-map <leader>cjw <action>(AceAction)
-map <leader>cjc <action>(AceAction)
-map <leader>cjl <action>(AceLineAction)
+" SPC c j: avy jumps — implemented natively by the plugin, no AceJump needed
+map <leader>cjw avy-goto-char-timer
+map <leader>cjc avy-goto-char-timer
+map <leader>cjl avy-goto-line
 
 " SPC m = M-: meta
 map <leader>mx <action>(GotoAction)
-map <leader>mo <action>(AceAction)
+map <leader>mo avy-goto-char-timer
 map <leader>mr <action>(EditorSelectWord)
 map <leader>mR <action>(EditorUnSelectWord)
 map <leader>my <action>(PasteMultiple)
@@ -204,11 +204,13 @@ map <leader>w- <action>(EditorDecreaseFontSize)
 map <leader>wu <action>(EditorResetFontSize)
 map <leader>w0 <action>(EditorResetFontSize)
 
-" --- avy jumps, mirroring init.el (needs the AceJump plugin) ----------------
+" --- avy jumps, mirroring init.el (native port of avy 0.5.0 — no plugin) ----
 " init.el: S = avy-goto-char-timer, Q = avy-goto-line. X still goes-to-line,
-" so overriding Q costs nothing.
-nmap S <action>(AceAction)
-nmap Q <action>(AceLineAction)
+" so overriding Q costs nothing. Type chars (0.25 s pause labels the
+" matches), then hit a label key; Q labels visible lines, digits switch to
+" a line-number prompt.
+nmap S avy-goto-char-timer
+nmap Q avy-goto-line
 
 " --- split resizing (ideavimrc: - = _ +) ------------------------------------
 " '-' stays meow's negative-argument (the reason ideavimrc used '-' here was

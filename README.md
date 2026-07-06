@@ -161,7 +161,9 @@ in the same chain refresh the panel instantly. Terminal entries show their
 complete keypad table, and a 1:1 port of the companion `.ideavimrc` leader
 scheme: the IntelliJ groups (`SPC .` settings, `SPC a` tool windows,
 `SPC d/e/f/g/h/i/j/k/l/n/o/p/q/r/s/t/u/v` …) with which-key labels, `S`/`Q`
-as the avy jumps from `init.el` (needs the AceJump plugin), split resizing on
+as the avy jumps from `init.el` (a native port of avy — no plugin needed:
+type chars, pause, hit a label; `Q` labels visible lines and digits switch to
+a line-number prompt), split resizing on
 `=` `_` `+`, and `SPC ]`/`SPC [` for next/prev change, diff, and error. The
 file's footer lists what deliberately *isn't* ported, with reasons. Two
 divergences to know about: `-` keeps meow's negative-argument (this engine has
@@ -176,8 +178,12 @@ All deliberate, none accidental:
 
 - `U` (meow-undo-in-selection) falls back to plain undo — IntelliJ's undo
   stack cannot be scoped to a region.
-- Beacon uses native multiple carets instead of kmacro recording; the
-  `SPC c j` avy jumps need the AceJump plugin (you get a hint otherwise).
+- Beacon uses native multiple carets instead of kmacro recording.
+- The avy jumps (`S`/`Q`, `SPC c j`) are a native port of avy 0.5.0's
+  goto-char-timer and goto-line: same keys (`a s d f g h j k l`), same
+  label tree, same timeout flow — scoped to the current editor's visible
+  area instead of all windows, with no DEL/RET editing during input (the
+  0.25 s pause ends it).
 - Block/string/defun "things" use a text scan (same-line strings skipped) plus
   a PSI heuristic for defun — close to, but not literally, Emacs' syntax-ppss.
 - The kill-ring is the system clipboard (`meow-use-clipboard` behavior);

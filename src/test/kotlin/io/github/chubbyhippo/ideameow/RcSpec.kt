@@ -127,7 +127,8 @@ class RcSpec : MeowSpec() {
             if (key == 'Q') continue
             assertEquals("bundled layout line for '$key'", cmd, d.normal[key]?.command)
         }
-        assertEquals("AceLineAction", d.normal['Q']?.action)
+        assertEquals("avy-goto-line", d.normal['Q']?.command)
+        assertEquals("avy-goto-char-timer", d.normal['S']?.command)
         assertEquals("meow-next", d.motion['j']?.command)
         assertEquals("meow-prev", d.motion['k']?.command)
         // the keypad table lives in the file too — nothing is bound in code

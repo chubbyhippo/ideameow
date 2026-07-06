@@ -36,6 +36,11 @@ class MeowEscapeHandler(private val original: EditorActionHandler) : EditorActio
             original.execute(editor, caret, dataContext)
             return
         }
+        if (st.avy != null) {
+            Avy.cancel(editor, st)
+            Meow.updateWidgets()
+            return
+        }
         st.pending = null
         WhichKey.hide()
         ExpandHints.clear(st)

@@ -88,6 +88,9 @@ class MeowState {
     var hintOverlay: JComponent? = null
     var hintTimer: Timer? = null
 
+    /** An active avy jump (S / Q), consuming keys until it lands or cancels. */
+    var avy: Avy.Session? = null
+
     fun takeCount(default: Int = 1): Int {
         val n = if (pendingCount == 0) default else pendingCount
         val r = if (negative) -n else n
