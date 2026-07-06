@@ -42,6 +42,14 @@ class GrabBeaconSpec : MeowSpec() {
             doc.text.substring(st.grab!!.startOffset, st.grab!!.endOffset))
     }
 
+    fun `test given no selection when G then an existing grab is cancelled (meow 1-5-0 body)`() {
+        given("word", "<caret>hello world")
+        whenKeys("wG")
+        assertNotNull(st.grab)
+        whenKeys("G") // no selection now: meow-grab cancels the secondary
+        assertNull(st.grab)
+    }
+
     fun `test given no grab when R then nothing changes`() {
         given("word", "<caret>hello")
         whenKeys("wR")

@@ -70,6 +70,7 @@ object Engine {
         if (st.mode == MeowMode.INSERT) return false
         if (st.mode == MeowMode.KEYPAD) {
             Keypad.key(editor, st, c, ctx)
+            st.lastCommand = "keypad"
             Meow.updateWidgets()
             return true
         }
@@ -92,8 +93,15 @@ object Engine {
         if (pend != null) {
             st.pending = null
             resolvePending(editor, st, pend, c)
+            st.lastCommand = "pending"
         } else if (binding != null) {
             runBinding(editor, st, binding, ctx)
+            // the this-command/last-command handoff: vertical-motion chains
+            // keep their goal column only while uninterrupted (see Motions);
+            // a keys-replay binding keeps the innermost replayed command
+            st.lastCommand = binding.command ?: binding.action ?: st.lastCommand
+        } else {
+            st.lastCommand = null
         } // undefined key: swallow, never self-insert
 
         val prefixy = st.pending != null ||

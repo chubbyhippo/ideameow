@@ -55,6 +55,16 @@ internal object Selections {
         return if (backwardP(editor)) sm.selectionEnd else sm.selectionStart
     }
 
+    /** meow--select's history bookkeeping: push the previous meow--selection —
+     *  or a null placeholder at [posBefore] when there was none — then
+     *  remember the new one. */
+    fun recordSelect(st: MeowState, type: SelType, expand: Boolean, anchor: Int, active: Int, posBefore: Int) {
+        val prev = st.lastSelection ?: SavedSelection(null, false, posBefore, posBefore)
+        if (st.selectionHistory.lastOrNull() != prev) st.selectionHistory.addLast(prev)
+        while (st.selectionHistory.size > 200) st.selectionHistory.removeFirst()
+        st.lastSelection = SavedSelection(type, expand, anchor, active)
+    }
+
     fun select(
         editor: Editor, st: MeowState, type: SelType,
         mark: Int, point: Int, expand: Boolean, push: Boolean = true,
@@ -63,10 +73,8 @@ internal object Selections {
         val m = mark.coerceIn(0, len)
         val p = point.coerceIn(0, len)
         val sm = editor.selectionModel
-        if (push && sm.hasSelection()) {
-            st.selectionHistory.addLast(sm.selectionStart to sm.selectionEnd)
-            while (st.selectionHistory.size > 200) st.selectionHistory.removeFirst()
-        }
+        if (push) recordSelect(st, type, expand, m, p, editor.caretModel.offset)
+        else st.lastSelection = SavedSelection(type, expand, m, p)
         st.selType = type
         st.selExpand = expand
         editor.caretModel.moveToOffset(p)
@@ -76,10 +84,25 @@ internal object Selections {
         ExpandHints.show(editor, st)
     }
 
-    fun cancel(editor: Editor, st: MeowState) {
+    /** Forget the selection chain — the history-clearing half of
+     *  meow--cancel-selection. */
+    fun resetSelectionMemory(st: MeowState) {
+        st.selectionHistory.clear()
+        st.lastSelection = null
+    }
+
+    /** Collapse the selection WITHOUT touching the history — for edits that
+     *  kill the region as a side effect (meow never cancels there). */
+    fun collapse(editor: Editor, st: MeowState) {
         editor.selectionModel.removeSelection()
         st.selType = SelType.NONE
         st.selExpand = false
+    }
+
+    /** meow--cancel-selection: collapse AND clear the selection history. */
+    fun cancel(editor: Editor, st: MeowState) {
+        collapse(editor, st)
+        resetSelectionMemory(st)
     }
 
     fun cancelAll(editor: Editor, st: MeowState) {
@@ -98,10 +121,19 @@ internal object Selections {
         editor.scrollingModel.scrollToCaret(ScrollType.RELATIVE)
     }
 
+    /** meow-pop-selection: with an active region, pop the history (a typed
+     *  entry restores type AND direction; the null placeholder returns the
+     *  caret to where the chain started and cancels); else pop the grab. */
     private fun pop(editor: Editor, st: MeowState) {
-        if (st.selectionHistory.isNotEmpty()) {
-            val (s, e) = st.selectionHistory.removeLast()
-            select(editor, st, SelType.TRANSIENT, s, e, expand = false, push = false)
+        if (editor.selectionModel.hasSelection()) {
+            val entry = st.selectionHistory.removeLastOrNull() ?: return // meow is silent here
+            if (entry.type == null) {
+                editor.caretModel.moveToOffset(entry.active)
+                cancel(editor, st)
+                Ide.hint(editor, "No previous selection")
+            } else {
+                select(editor, st, entry.type, entry.anchor, entry.active, entry.expand, push = false)
+            }
         } else if (!Grab.pop(editor, st)) {
             Ide.hint(editor, "No previous selection")
         }
@@ -141,6 +173,9 @@ internal object Selections {
             }
             else -> return
         }
-        select(editor, st, st.selType, mark(editor), target, expand = st.selExpand)
+        // meow-expand-selection-type defaults to 'select: the expanded
+        // selection is demoted, so follow-up word motions re-mark and `x`
+        // re-selects its line instead of extending
+        select(editor, st, st.selType, mark(editor), target, expand = false)
     }
 }

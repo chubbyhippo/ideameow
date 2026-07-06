@@ -55,29 +55,111 @@ internal object Motions {
 
     private fun wordType(symbol: Boolean) = if (symbol) SelType.SYMBOL else SelType.WORD
 
-    private fun moveChar(editor: Editor, st: MeowState, dx: Int) {
-        if (st.selType == SelType.CHAR && editor.selectionModel.hasSelection()) {
-            editor.caretModel.moveCaretRelatively(dx, 0, true, false, true)
-        } else {
-            Selections.cancel(editor, st)
-            editor.caretModel.moveCaretRelatively(dx, 0, false, false, true)
+    /** The commands whose chains keep Emacs' temporary-goal-column alive. */
+    private val VERTICAL = setOf("meow-next", "meow-prev", "meow-next-expand", "meow-prev-expand")
+
+    private fun charSelActive(editor: Editor, st: MeowState) =
+        st.selType == SelType.CHAR && editor.selectionModel.hasSelection()
+
+    /** Set (or keep) the goal column, Emacs temporary-goal-column style: it
+     *  only survives while the previous command was a vertical move too. */
+    private fun goalColumn(editor: Editor, st: MeowState): Int {
+        if (st.goalColumn == null || st.lastCommand !in VERTICAL) {
+            val doc = editor.document
+            val off = editor.caretModel.offset
+            st.goalColumn = off - doc.getLineStartOffset(doc.getLineNumber(off))
         }
+        return st.goalColumn!!
+    }
+
+    /** next-line/previous-line target: goal/own column on the target line;
+     *  past the first/last line the point goes to the buffer edge. */
+    private fun movedLineOffset(editor: Editor, offset: Int, dy: Int, col: Int): Int {
+        val doc = editor.document
+        val ln = doc.getLineNumber(offset)
+        val target = ln + dy
+        return when {
+            target < 0 -> 0
+            target > doc.lineCount - 1 -> doc.textLength
+            else -> {
+                val bol = doc.getLineStartOffset(target)
+                bol + minOf(col, doc.getLineEndOffset(target) - bol)
+            }
+        }
+    }
+
+    /** meow-left/right run backward-char/forward-char: plain offsets, which
+     *  cross newlines — h at bol lands on the previous line's end. */
+    private fun moveChar(editor: Editor, st: MeowState, dx: Int) {
+        val extend = charSelActive(editor, st)
+        // meow-left/right cancel (clearing the history) only with a region
+        if (!extend && editor.selectionModel.hasSelection()) Selections.cancel(editor, st)
+        val len = editor.document.textLength
+        for (caret in editor.caretModel.allCarets) {
+            val target = (caret.offset + dx).coerceIn(0, len)
+            if (extend) {
+                val lead = caret.leadSelectionOffset
+                caret.moveToOffset(target)
+                caret.setSelection(lead, target)
+            } else {
+                caret.moveToOffset(target)
+                caret.removeSelection()
+            }
+        }
+        editor.scrollingModel.scrollToCaret(ScrollType.RELATIVE)
     }
 
     private fun moveLine(editor: Editor, st: MeowState, dy: Int) {
-        if (st.selType == SelType.CHAR && editor.selectionModel.hasSelection()) {
-            editor.caretModel.moveCaretRelatively(0, dy, true, false, true)
-        } else {
-            Selections.cancel(editor, st)
-            editor.caretModel.moveCaretRelatively(0, dy, false, false, true)
+        val extend = charSelActive(editor, st)
+        // meow-next/prev run meow--cancel-selection unconditionally otherwise
+        if (!extend) Selections.cancel(editor, st)
+        val goal = goalColumn(editor, st)
+        val doc = editor.document
+        val primary = editor.caretModel.primaryCaret
+        for (caret in editor.caretModel.allCarets) {
+            val col = if (caret == primary) goal
+            else caret.offset - doc.getLineStartOffset(doc.getLineNumber(caret.offset))
+            val target = movedLineOffset(editor, caret.offset, dy, col)
+            if (extend) {
+                val lead = caret.leadSelectionOffset
+                caret.moveToOffset(target)
+                caret.setSelection(lead, target)
+            } else {
+                caret.moveToOffset(target)
+                caret.removeSelection()
+            }
         }
+        editor.scrollingModel.scrollToCaret(ScrollType.RELATIVE)
     }
 
+    /** meow-left/right/next/prev-expand: (expand . char) selection through
+     *  meow--select — so the history is recorded — then the char/line motion. */
     private fun moveExpand(editor: Editor, st: MeowState, dx: Int, dy: Int) {
-        editor.caretModel.moveCaretRelatively(dx, dy, true, false, true)
+        val posBefore = editor.caretModel.offset
+        val goal = if (dy != 0) goalColumn(editor, st) else 0
+        val doc = editor.document
+        val len = doc.textLength
+        val primary = editor.caretModel.primaryCaret
+        for (caret in editor.caretModel.allCarets) {
+            val target = if (dy == 0) {
+                (caret.offset + dx).coerceIn(0, len)
+            } else {
+                val col = if (caret == primary) goal
+                else caret.offset - doc.getLineStartOffset(doc.getLineNumber(caret.offset))
+                movedLineOffset(editor, caret.offset, dy, col)
+            }
+            val lead = caret.leadSelectionOffset
+            caret.moveToOffset(target)
+            caret.setSelection(lead, target)
+        }
+        Selections.recordSelect(
+            st, SelType.CHAR, true,
+            primary.leadSelectionOffset, primary.offset, posBefore,
+        )
         st.selType = SelType.CHAR
         st.selExpand = true
         Grab.beacon(editor, st)
+        editor.scrollingModel.scrollToCaret(ScrollType.RELATIVE)
     }
 
     /**
@@ -133,7 +215,9 @@ internal object Motions {
         val n = st.takeCount(1)
         val sm = editor.selectionModel
         val lastLine = doc.lineCount - 1
-        if (st.selType == SelType.LINE && sm.hasSelection()) {
+        // extension needs exactly (expand . line) — a digit-expanded
+        // (select . line) selection re-selects the current line instead
+        if (st.selType == SelType.LINE && st.selExpand && sm.hasSelection()) {
             val caretLn = doc.getLineNumber(editor.caretModel.offset)
             if (Selections.backwardP(editor)) {
                 val ln = (caretLn - abs(n)).coerceAtLeast(0)

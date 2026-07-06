@@ -59,13 +59,12 @@ internal object Grab {
         }
     }
 
-    /** meow-grab: region -> secondary selection (a marker at point with none). */
+    /** meow-grab: region -> secondary selection; with NO region the grab is
+     *  cancelled instead (meow 1.5.0 body, despite its docstring). */
     private fun grab(editor: Editor, st: MeowState) {
         clear(editor, st)
         val sm = editor.selectionModel
-        val s = if (sm.hasSelection()) sm.selectionStart else editor.caretModel.offset
-        val e = if (sm.hasSelection()) sm.selectionEnd else editor.caretModel.offset
-        set(editor, st, s, e)
+        if (sm.hasSelection()) set(editor, st, sm.selectionStart, sm.selectionEnd)
         Selections.cancel(editor, st)
     }
 

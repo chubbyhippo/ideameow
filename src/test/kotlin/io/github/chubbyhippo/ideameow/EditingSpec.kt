@@ -84,6 +84,26 @@ class EditingSpec : MeowSpec() {
         thenMode(MeowMode.INSERT)
     }
 
+    fun `test given the caret on a newline when c then the lines join (change-char takes any char)`() {
+        given("two lines", "ab<caret>\ncd")
+        whenKeys("c")
+        thenText("abcd")
+        thenMode(MeowMode.INSERT)
+    }
+
+    fun `test given the caret at end of buffer when c then nothing happens, not even INSERT`() {
+        given("word", "ab<caret>")
+        whenKeys("c")
+        thenText("ab")
+        thenMode(MeowMode.NORMAL)
+    }
+
+    fun `test given U without a selection then nothing happens (undo-in-selection is region-gated)`() {
+        given("chars", "<caret>abc")
+        whenKeys("dU")
+        thenText("bc") // U undid nothing
+    }
+
     fun `test given a selection when d then it is deleted without touching the clipboard`() {
         given("word", "<caret>hello world")
         givenClipboard("KEEP")
@@ -139,12 +159,58 @@ class EditingSpec : MeowSpec() {
         thenText("f(x)")
     }
 
-    fun `test given y then the selection is copied and stays active (meow-save)`() {
+    // Every kill/save behavior below was probed against meow 1.5.0 itself
+    // (batch Emacs, 2026-07-06): kill-ring-save deactivates the mark, and
+    // meow--prepare-region-for-kill extends FORWARD line selections by the
+    // trailing newline before both kill and save.
+
+    fun `test given y then the selection is copied and cancelled (kill-ring-save deactivates the mark)`() {
         given("word", "<caret>hello world")
         whenKeys("wy")
         thenText("hello world")
         thenClipboard("hello")
-        thenSelection("hello")
+        thenNoSelection()
+        thenCaretAt(5)
+    }
+
+    fun `test given a line selection when y then the newline is copied and the caret lands past it`() {
+        given("two lines", "o<caret>ne\ntwo")
+        whenKeys("xy")
+        thenText("one\ntwo")
+        thenClipboard("one\n")
+        thenNoSelection()
+        thenCaretAt(4)
+    }
+
+    fun `test given x x then y then both lines are copied with the trailing newline`() {
+        given("three lines", "o<caret>ne\ntwo\nthree")
+        whenKeys("xxy")
+        thenText("one\ntwo\nthree")
+        thenClipboard("one\ntwo\n")
+        thenNoSelection()
+        thenCaretAt(8)
+    }
+
+    fun `test given a line selection when s then the whole line goes including its newline`() {
+        given("three lines", "o<caret>ne\ntwo\nthree")
+        whenKeys("xs")
+        thenText("two\nthree")
+        thenClipboard("one\n")
+        thenCaretAt(0)
+    }
+
+    fun `test given a reversed line selection when s then the newline stays (backward selections kill as-is)`() {
+        given("three lines", "one\nt<caret>wo\nthree")
+        whenKeys("x;s")
+        thenText("one\n\nthree")
+        thenClipboard("two")
+    }
+
+    fun `test given the last line when s then there is no newline to take`() {
+        given("two lines", "one\nt<caret>wo")
+        whenKeys("xs")
+        thenText("one\n")
+        thenClipboard("two")
     }
 
     fun `test given p then the clipboard is inserted at point with the caret after it (meow-yank)`() {

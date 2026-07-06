@@ -95,4 +95,42 @@ class MovementSpec : MeowSpec() {
         whenKeys("#%")
         thenText("hello")
     }
+
+    // The behaviors below were probed against meow 1.5.0 itself (batch
+    // Emacs, 2026-07-06): h/l are backward-char/forward-char (they cross
+    // newlines), j/k are next-line/previous-line (temporary-goal-column,
+    // buffer-edge overflow).
+
+    fun `test given the caret at bol when h then it crosses to the previous line end`() {
+        given("two lines", "abc\n<caret>def")
+        whenKeys("h")
+        thenCaretAt(3)
+        thenNoSelection()
+    }
+
+    fun `test given the caret at eol when l then it crosses to the next line start`() {
+        given("two lines", "abc<caret>\ndef")
+        whenKeys("l")
+        thenCaretAt(4)
+    }
+
+    fun `test given j j through a short line then the goal column is kept`() {
+        given("short middle line", "abcd<caret>ef\nxy\nlmnopq")
+        whenKeys("j")
+        thenCaretAt(9) // clamped to the short line's end
+        whenKeys("j")
+        thenCaretAt(14) // back out to column 4
+    }
+
+    fun `test given j on the last line then the caret moves to the end of buffer`() {
+        given("two lines", "ab\nc<caret>def")
+        whenKeys("j")
+        thenCaretAt(7)
+    }
+
+    fun `test given k on the first line then the caret moves to the beginning of buffer`() {
+        given("two lines", "a<caret>bc\ndef")
+        whenKeys("k")
+        thenCaretAt(0)
+    }
 }

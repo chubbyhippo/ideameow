@@ -40,12 +40,11 @@ internal object Edits {
         put("meow-delete", MeowCommand { ed, st, _ -> delete(ed, st) })
         put("meow-backward-delete", MeowCommand { ed, st, _ -> backwardDelete(ed, st) })
         put("meow-kill", MeowCommand { ed, st, ctx -> kill(ed, st, ctx) })
-        put("meow-save", MeowCommand { ed, _, ctx -> save(ed, ctx) })
+        put("meow-save", MeowCommand { ed, st, ctx -> save(ed, st, ctx) })
         put("meow-yank", MeowCommand { ed, _, _ -> yank(ed) })
         put("meow-replace", MeowCommand { ed, st, _ -> replace(ed, st) })
         put("meow-undo", MeowCommand { ed, st, ctx -> undo(ed, st, ctx) })
-        // undo-in-selection: IDE undo cannot scope to a region — plain undo, see README
-        put("meow-undo-in-selection", MeowCommand { ed, st, ctx -> undo(ed, st, ctx) })
+        put("meow-undo-in-selection", MeowCommand { ed, st, ctx -> undoInSelection(ed, st, ctx) })
     }
 
     /** One write command over every caret, highest offset first. */
@@ -61,6 +60,7 @@ internal object Edits {
             caret.removeSelection()
         }
         st.selType = SelType.NONE
+        Selections.resetSelectionMemory(st) // meow-insert runs meow--cancel-selection
         Meow.setMode(editor, st, MeowMode.INSERT)
     }
 
@@ -70,30 +70,35 @@ internal object Edits {
             caret.removeSelection()
         }
         st.selType = SelType.NONE
+        Selections.resetSelectionMemory(st) // meow-append runs meow--cancel-selection
         Meow.setMode(editor, st, MeowMode.INSERT)
     }
 
     private fun openBelow(editor: Editor, st: MeowState, ctx: DataContext?) {
-        Selections.cancel(editor, st)
+        Selections.collapse(editor, st) // meow-open-below never cancels; RET just deactivates
         Ide.act(editor, ctx, "EditorStartNewLine")
         Meow.setMode(editor, st, MeowMode.INSERT)
     }
 
     private fun openAbove(editor: Editor, st: MeowState, ctx: DataContext?) {
-        Selections.cancel(editor, st)
+        Selections.collapse(editor, st) // as in openBelow: no history clearing
         Ide.act(editor, ctx, "EditorStartNewLineBefore")
         Meow.setMode(editor, st, MeowMode.INSERT)
     }
 
     private fun change(editor: Editor, st: MeowState) {
+        // fallback meow-change-char at point-max: nothing happens, not even INSERT
+        val primary = editor.caretModel.primaryCaret
+        if (!primary.hasSelection() && primary.offset >= editor.document.textLength) return
         editCarets(editor, "Meow Change") { caret ->
             if (caret.hasSelection()) {
                 editor.document.deleteString(caret.selectionStart, caret.selectionEnd)
                 caret.removeSelection()
             } else {
-                // fallback meow-change-char
+                // fallback meow-change-char: delete-char takes ANY char,
+                // newlines included (probed against meow 1.5.0)
                 val o = caret.offset
-                if (o < editor.document.textLength && editor.document.charsSequence[o] != '\n') {
+                if (o < editor.document.textLength) {
                     editor.document.deleteString(o, o + 1)
                 }
             }
@@ -128,10 +133,31 @@ internal object Edits {
         st.selType = SelType.NONE
     }
 
+    /**
+     * meow--prepare-region-for-kill (meow-util.el): a FORWARD line-type
+     * selection takes its trailing newline with it before a kill or save —
+     * and meow's point (the caret) moves past that newline too. Backward
+     * selections and the last line are killed as-is.
+     */
+    private fun prepareLineSelectionsForKill(editor: Editor, st: MeowState) {
+        if (st.selType != SelType.LINE) return
+        val len = editor.document.textLength
+        for (caret in editor.caretModel.allCarets.sortedByDescending { it.selectionEnd }) {
+            if (!caret.hasSelection()) continue
+            val end = caret.selectionEnd
+            if (caret.offset >= end && end < len) {
+                val start = caret.selectionStart
+                caret.moveToOffset(end + 1)
+                caret.setSelection(start, end + 1)
+            }
+        }
+    }
+
     private fun kill(editor: Editor, st: MeowState, ctx: DataContext?) {
         val sm = editor.selectionModel
         if (st.selType == SelType.JOIN && sm.hasSelection()) { joinKill(editor, st); return }
         if (sm.hasSelection()) {
+            prepareLineSelectionsForKill(editor, st)
             Ide.act(editor, ctx, IdeActions.ACTION_EDITOR_CUT)
             st.selType = SelType.NONE
             return
@@ -164,12 +190,19 @@ internal object Edits {
             ) editor.document.insertString(s, " ")
             editor.caretModel.moveToOffset(s)
         }
-        Selections.cancel(editor, st)
+        Selections.collapse(editor, st) // an edit, not a cancel: history survives
     }
 
-    /** meow-save: copy, selection stays active. */
-    private fun save(editor: Editor, ctx: DataContext?) {
-        if (editor.selectionModel.hasSelection()) Ide.act(editor, ctx, IdeActions.ACTION_EDITOR_COPY)
+    /** meow-save: copy — with kill-ring-save's mark deactivation: the
+     *  selection is cancelled afterwards and the caret stays at point
+     *  (past the newline for a forward line selection). */
+    private fun save(editor: Editor, st: MeowState, ctx: DataContext?) {
+        if (!editor.selectionModel.hasSelection()) return
+        prepareLineSelectionsForKill(editor, st)
+        Ide.act(editor, ctx, IdeActions.ACTION_EDITOR_COPY)
+        for (caret in editor.caretModel.allCarets) caret.removeSelection()
+        st.selType = SelType.NONE
+        st.selExpand = false
     }
 
     /** meow-yank: insert the clipboard at every caret, caret lands after it. */
@@ -197,9 +230,16 @@ internal object Edits {
         st.selType = SelType.NONE
     }
 
-    /** meow-undo cancels the selection BEFORE undoing (meow does the same). */
+    /** meow-undo cancels the selection (with its history) BEFORE undoing —
+     *  but only when a region is active. */
     private fun undo(editor: Editor, st: MeowState, ctx: DataContext?) {
-        Selections.cancel(editor, st)
+        if (editor.selectionModel.hasSelection()) Selections.cancel(editor, st)
         Ide.act(editor, ctx, IdeActions.ACTION_UNDO)
+    }
+
+    /** meow-undo-in-selection only acts with an active region; region-scoped
+     *  undo has no IDE analog, so it is a plain undo (see README). */
+    private fun undoInSelection(editor: Editor, st: MeowState, ctx: DataContext?) {
+        if (editor.selectionModel.hasSelection()) Ide.act(editor, ctx, IdeActions.ACTION_UNDO)
     }
 }

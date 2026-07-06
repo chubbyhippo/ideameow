@@ -50,7 +50,10 @@ internal object Structures {
             else -> Things.inner(editor, ch, off)
         } ?: run { Ide.hint(editor, "No thing '$ch' here"); return }
         when (kind) {
-            Pending.INNER, Pending.BOUNDS -> Selections.select(editor, st, SelType.TRANSIENT, b.start, b.end, expand = false)
+            Pending.INNER -> Selections.select(editor, st, SelType.TRANSIENT, b.start, b.end, expand = false)
+            // meow-thing-selection-directions: bounds select BACKWARD (caret
+            // at the opening delimiter), inner forward — verified by probe
+            Pending.BOUNDS -> Selections.select(editor, st, SelType.TRANSIENT, b.end, b.start, expand = false)
             Pending.BEGIN -> Selections.select(editor, st, SelType.TRANSIENT, off, b.start, expand = false)
             Pending.END -> Selections.select(editor, st, SelType.TRANSIENT, off, b.end, expand = false)
             else -> {}
@@ -102,23 +105,29 @@ internal object Structures {
     }
 
     /** meow-block: innermost pair INCLUDING delimiters; with an active block
-     *  selection it expands to the parent. */
+     *  selection it expands to the parent. Backward (caret at the opening
+     *  delimiter) when the region is reversed XOR a negative argument. */
     private fun block(editor: Editor, st: MeowState) {
         val sm = editor.selectionModel
         val text = editor.document.charsSequence
+        val back = Selections.backwardP(editor) != (st.takeCount(1) < 0) // xor, like meow-block
         val (s, e) =
             if (st.selType == SelType.BLOCK && sm.hasSelection()) sm.selectionStart to sm.selectionEnd
             else editor.caretModel.offset to editor.caretModel.offset
         val p = enclosingPair(text, s, e) ?: run { Ide.hint(editor, "No enclosing block"); return }
-        Selections.select(editor, st, SelType.BLOCK, p.open, p.close + 1, expand = true)
+        if (back) Selections.select(editor, st, SelType.BLOCK, p.close + 1, p.open, expand = true)
+        else Selections.select(editor, st, SelType.BLOCK, p.open, p.close + 1, expand = true)
     }
 
-    /** meow-to-block: from point to the closing delimiter of the enclosing block. */
+    /** meow-to-block: from point to the closing delimiter of the enclosing
+     *  block (to the opening one when the block selection is reversed or the
+     *  argument is negative). */
     private fun toBlock(editor: Editor, st: MeowState) {
         val text = editor.document.charsSequence
+        val back = (st.selType == SelType.BLOCK && Selections.backwardP(editor)) || st.takeCount(1) < 0
         val caret = editor.caretModel.offset
         val p = enclosingPair(text, caret, caret) ?: run { Ide.hint(editor, "No enclosing block"); return }
-        Selections.select(editor, st, SelType.BLOCK, caret, p.close + 1, expand = true)
+        Selections.select(editor, st, SelType.BLOCK, caret, if (back) p.open else p.close + 1, expand = true)
     }
 
     // ------------------------------------------------------------------ join

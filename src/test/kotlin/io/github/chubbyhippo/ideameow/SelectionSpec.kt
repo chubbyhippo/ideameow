@@ -186,12 +186,51 @@ class SelectionSpec : MeowSpec() {
         thenSelection("three")
     }
 
-    fun `test given a selection history when z then the previous selection is restored`() {
+    // The pop-selection behaviors below were probed against meow 1.5.0
+    // itself (batch Emacs, 2026-07-06): every select pushes the previous
+    // selection (or a null placeholder recording the chain's start), pop
+    // restores type AND direction, and meow--cancel-selection clears it all.
+
+    fun `test given a selection history when z then the previous selection is restored with its type`() {
         given("two words", "<caret>hello world")
         whenKeys("w") // selection 1: hello
         whenKeys("x") // selection 2: whole line, pushes selection 1
         whenKeys("z")
         thenSelection("hello")
+        thenSelType(SelType.WORD)
+        thenCaretAtSelectionEnd()
+    }
+
+    fun `test given w then z then the caret returns to where the chain started (null placeholder)`() {
+        given("two words", "he<caret>llo world")
+        whenKeys("w")
+        thenSelection("hello")
+        whenKeys("z")
+        thenNoSelection()
+        thenCaretAt(2)
+    }
+
+    fun `test given g then the selection history is cleared (meow--cancel-selection)`() {
+        given("two words", "<caret>hello world")
+        whenKeys("wxg")
+        whenKeys("z") // no region, no grab, cleared history: nothing to pop
+        thenNoSelection()
+    }
+
+    fun `test given a digit expand then the selection is demoted to select type`() {
+        given("five words", "<caret>one two three four five")
+        whenKeys("w2")
+        thenSelection("one two three")
+        whenKeys("e") // (select . word) does not match (expand . word): fresh selection
+        thenSelection(" four")
+    }
+
+    fun `test given x 2 then x re-selects the current line instead of extending`() {
+        given("four lines", "<caret>one\ntwo\nthree\nfour")
+        whenKeys("x2")
+        thenSelection("one\ntwo\nthree")
+        whenKeys("x")
+        thenSelection("three")
     }
 
     fun `test given no history but a grab when z then the grab becomes the selection (meow-pop-grab fallback)`() {

@@ -24,17 +24,20 @@ package io.github.chubbyhippo.ideameow
  */
 class ThingsSpec : MeowSpec() {
 
-    fun `test given caret inside parens when comma r then inner round is selected`() {
+    fun `test given caret inside parens when comma r then inner round is selected forward`() {
         given("round pair", "foo (b<caret>ar baz) qux")
         whenKeys(",r")
         thenSelection("bar baz")
         thenSelType(SelType.TRANSIENT)
+        thenCaretAtSelectionEnd()
     }
 
-    fun `test given caret inside parens when dot r then bounds include the parens`() {
+    fun `test given caret inside parens when dot r then bounds include the parens and select backward`() {
         given("round pair", "foo (b<caret>ar baz) qux")
         whenKeys(".r")
         thenSelection("(bar baz)")
+        // meow-thing-selection-directions: bounds -> backward (probed on 1.5.0)
+        thenCaretAtSelectionStart()
     }
 
     fun `test given nested pairs when comma r then the innermost pair wins`() {
@@ -145,6 +148,13 @@ class ThingsSpec : MeowSpec() {
         thenSelection("(x)")
         whenKeys("o")
         thenSelection("((x))")
+    }
+
+    fun `test given a negative argument when o then the block selection is backward`() {
+        given("round pair", "foo (b<caret>ar baz) qux")
+        whenKeys("-o")
+        thenSelection("(bar baz)")
+        thenCaretAtSelectionStart()
     }
 
     fun `test given O then selects from point to the end of the current block`() {

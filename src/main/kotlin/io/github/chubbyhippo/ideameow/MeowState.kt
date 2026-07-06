@@ -34,6 +34,13 @@ enum class SelType { NONE, CHAR, WORD, SYMBOL, LINE, BLOCK, FIND, TILL, VISIT, J
 /** Commands that read one more key before acting. */
 enum class Pending { FIND, TILL, INNER, BOUNDS, BEGIN, END }
 
+/**
+ * A recorded selection, meow--selection style: a null [type] is the
+ * placeholder meow pushes when a selection is created from nothing —
+ * popping it returns the caret to where the selection chain started.
+ */
+data class SavedSelection(val type: SelType?, val expand: Boolean, val anchor: Int, val active: Int)
+
 /** Everything meow remembers about one editor, stored in its user data. */
 class MeowState {
     var mode = MeowMode.NORMAL
@@ -50,7 +57,18 @@ class MeowState {
 
     /** last() is the active pattern, meow's regexp-search-ring. */
     val searchHistory = ArrayDeque<Regex>()
-    val selectionHistory = ArrayDeque<Pair<Int, Int>>()
+
+    /** meow--selection-history; cleared by meow--cancel-selection. */
+    val selectionHistory = ArrayDeque<SavedSelection>()
+
+    /** meow--selection: survives region-killing edits (stale on purpose). */
+    var lastSelection: SavedSelection? = null
+
+    /** temporary-goal-column for consecutive vertical moves (j/k chains). */
+    var goalColumn: Int? = null
+
+    /** last dispatched command name — the this-command/last-command handoff. */
+    var lastCommand: String? = null
 
     var grab: RangeMarker? = null
     var grabHighlighter: RangeHighlighter? = null
