@@ -149,10 +149,13 @@ mention keeps its bundled binding.
   `.ideavimrc` won't error; only the lines ideameow understands take effect.
 
 **which-key.** Pause on any pending prefix — a keypad `SPC` sequence, or the
-`,` `.` `[` `]` thing table — and a popup lists the continuations after
-`timeoutlen` ms. It never steals focus; just keep typing. Terminal entries
-show their `desc` (falling back to the action id), groups show the group's
-`desc` (falling back to `+more`).
+`,` `.` `[` `]` thing table — and after `timeoutlen` ms a panel appears along
+the bottom of the editor listing the continuations in columns, exactly like
+Emacs' which-key. It never takes focus and never interrupts: just keep typing
+the sequence; `ESC` cancels through the editor as usual, and deeper prefixes
+in the same chain refresh the panel instantly. Terminal entries show their
+`desc` (falling back to the action id), groups show the group's `desc`
+(falling back to `+more`).
 
 **What the bundled default gives you.** The full meow QWERTY layout, the
 complete keypad table, and a 1:1 port of the companion `.ideavimrc` leader

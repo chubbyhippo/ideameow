@@ -20,20 +20,34 @@ package io.github.chubbyhippo.ideameow
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.ui.popup.JBPopup
 import com.intellij.openapi.ui.popup.JBPopupFactory
+import com.intellij.ui.awt.RelativePoint
 import com.intellij.ui.components.JBLabel
+import com.intellij.util.ui.JBFont
 import com.intellij.util.ui.JBUI
+import java.awt.Point
 import javax.swing.Timer
 
 /**
- * which-key: after a short delay on a pending prefix (keypad SPC sequences,
- * or the , . [ ] thing table), a non-focusable popup lists the available
- * continuations. Descriptions come from `desc` / `let g:WhichKeyDesc_*`
- * entries in ~/.ideameowrc; delay and on/off from `set timeoutlen` /
- * `set nowhich-key`.
+ * which-key, the Emacs way: after `timeoutlen` ms on a pending prefix — a
+ * keypad SPC sequence, or the , . [ ] thing table — a NON-focusable panel
+ * appears along the bottom of the editor listing the continuations in
+ * columns (column-major, like which-key's grid). It never takes focus and
+ * never interrupts: just keep typing the sequence in the editor; ESC cancels
+ * through the editor as usual. Deeper prefixes in the same chain refresh the
+ * panel without the delay. Descriptions come from `desc` /
+ * `let g:WhichKeyDesc_*` entries in ~/.ideameowrc; delay and on/off from
+ * `set timeoutlen` / `set nowhich-key`.
  */
 object WhichKey {
     private var popup: JBPopup? = null
     private var timer: Timer? = null
+
+    /** True when hide() closed a visible panel: the chain's next panel
+     *  appears with no delay, like which-key refreshing between prefixes. */
+    private var chainVisible = false
+
+    /** which-key-separator. */
+    private const val SEPARATOR = " → "
 
     private val THINGS = listOf(
         "r" to "round ( )", "s" to "square [ ]", "c" to "curly { }", "g" to "string",
@@ -65,8 +79,13 @@ object WhichKey {
 
     private fun schedule(editor: Editor, rowsProvider: () -> List<Pair<String, String>>) {
         hide()
-        if (!Rc.whichKeyEnabled()) return
-        timer = Timer(Rc.whichKeyDelayMs().coerceAtLeast(0)) {
+        if (!Rc.whichKeyEnabled()) {
+            chainVisible = false
+            return
+        }
+        val delay = if (chainVisible) 0 else Rc.whichKeyDelayMs().coerceAtLeast(0)
+        chainVisible = false
+        timer = Timer(delay) {
             timer = null
             show(editor, rowsProvider())
         }.apply {
@@ -78,29 +97,60 @@ object WhichKey {
     private fun show(editor: Editor, rows: List<Pair<String, String>>) {
         runCatching {
             if (rows.isEmpty() || editor.isDisposed) return
-            val html = buildString {
-                append("<html><table cellpadding='1'>")
-                for ((k, d) in rows) {
-                    append("<tr><td align='right'><b>").append(esc(k))
-                    append("</b></td><td>&nbsp;").append(esc(d)).append("</td></tr>")
-                }
-                append("</table></html>")
+            val label = JBLabel(gridHtml(editor, rows)).apply {
+                border = JBUI.Borders.empty(6, 10)
             }
-            val label = JBLabel(html).apply { border = JBUI.Borders.empty(6, 10) }
-            popup = JBPopupFactory.getInstance()
+            val p = JBPopupFactory.getInstance()
                 .createComponentPopupBuilder(label, null)
                 .setRequestFocus(false)
                 .setFocusable(false)
+                .setCancelKeyEnabled(false) // ESC belongs to the editor
                 .setCancelOnClickOutside(true)
                 .createPopup()
-                .also { it.showInBestPositionFor(editor) }
+            popup = p
+            // Emacs shows which-key in a bottom side window spanning the
+            // frame — the closest here: bottom-left of the editor component
+            val host = editor.component
+            val pref = label.preferredSize
+            val y = (host.height - pref.height - JBUI.scale(8)).coerceAtLeast(0)
+            p.show(RelativePoint(host, Point(JBUI.scale(4), y)))
+        }
+    }
+
+    /** which-key's grid: entries run DOWN each column, then across, with as
+     *  many columns as the editor width fits. */
+    private fun gridHtml(editor: Editor, rows: List<Pair<String, String>>): String {
+        val metrics = editor.component.getFontMetrics(JBFont.label())
+        val entryWidth = rows.maxOf { (k, d) -> metrics.stringWidth(k + SEPARATOR + d) } + JBUI.scale(28)
+        val available = (editor.component.width - JBUI.scale(28)).coerceAtLeast(entryWidth)
+        val cols = (available / entryWidth).coerceIn(1, rows.size)
+        val perColumn = (rows.size + cols - 1) / cols
+        return buildString {
+            append("<html><table cellpadding='1' cellspacing='0'>")
+            for (r in 0 until perColumn) {
+                append("<tr>")
+                for (c in 0 until cols) {
+                    val i = c * perColumn + r
+                    if (i < rows.size) {
+                        val (k, d) = rows[i]
+                        append("<td align='right'><b>").append(esc(k)).append("</b></td>")
+                        append("<td>").append(SEPARATOR).append(esc(d)).append("</td>")
+                        append("<td width='").append(JBUI.scale(18)).append("'></td>")
+                    }
+                }
+                append("</tr>")
+            }
+            append("</table></html>")
         }
     }
 
     fun hide() {
         timer?.stop()
         timer = null
-        popup?.let { runCatching { it.cancel() } }
+        popup?.let {
+            chainVisible = it.isVisible
+            runCatching { it.cancel() }
+        }
         popup = null
     }
 
