@@ -18,22 +18,24 @@
 package io.github.chubbyhippo.ideameow
 
 import com.intellij.openapi.editor.Editor
-import com.intellij.openapi.editor.EditorCustomElementRenderer
-import com.intellij.openapi.editor.Inlay
 import com.intellij.openapi.editor.colors.EditorFontType
-import com.intellij.openapi.editor.markup.TextAttributes
-import com.intellij.openapi.util.Disposer
 import com.intellij.ui.JBColor
 import java.awt.Color
 import java.awt.Graphics
+import java.awt.Graphics2D
 import java.awt.Rectangle
+import java.awt.RenderingHints
+import javax.swing.JComponent
 import javax.swing.Timer
 
 /**
  * meow's expand hints: after an expandable selection (word/symbol/line/
- * find/till), small digit labels mark where 1-9 and 0 (=10) would take the
- * selection. Removed on the next key or after meow-expand-hint-remove-delay
- * (1 second), whichever comes first.
+ * find/till), digit labels mark where 1-9 and 0 (=10) would take the
+ * selection. Like meow's overlays (meow-visual.el: an overlay over ONE char
+ * whose 'display property replaces it with the digit), the labels are
+ * PAINTED OVER the text on a transparent canvas — AceJump style — so the
+ * text never shifts. Removed on the next key or after
+ * meow-expand-hint-remove-delay (1 second), whichever comes first.
  */
 object ExpandHints {
     private val HINT_COLOR = JBColor(Color(0xD0, 0x5C, 0x0A), Color(0xFF, 0xB0, 0x50))
@@ -42,21 +44,28 @@ object ExpandHints {
         clear(st)
         if (!editor.selectionModel.hasSelection()) return
         val positions = positions(editor, st, 10)
-        for ((i, off) in positions.withIndex()) {
-            val label = ((i + 1) % 10).toString()
-            val inlay = editor.inlayModel.addInlineElement(off, true, DigitRenderer(label, editor)) ?: continue
-            st.hints.add(inlay)
-        }
-        if (st.hints.isNotEmpty()) {
-            st.hintTimer = Timer(1000) { clear(st) }.apply { isRepeats = false; start() }
-        }
+        if (positions.isEmpty()) return
+        val labels = positions.mapIndexed { i, off -> off to ((i + 1) % 10).toString() }
+        val host = editor.contentComponent
+        val canvas = HintsCanvas(editor, labels)
+        canvas.isOpaque = false
+        canvas.bounds = Rectangle(0, 0, host.width, host.height)
+        host.add(canvas)
+        host.repaint()
+        st.hintOverlay = canvas
+        st.hintTimer = Timer(1000) { clear(st) }.apply { isRepeats = false; start() }
     }
 
     fun clear(st: MeowState) {
         st.hintTimer?.stop()
         st.hintTimer = null
-        for (h in st.hints) if (h.isValid) Disposer.dispose(h)
-        st.hints.clear()
+        st.hintOverlay?.let { canvas ->
+            canvas.parent?.let { parent ->
+                parent.remove(canvas)
+                parent.repaint()
+            }
+        }
+        st.hintOverlay = null
     }
 
     private fun positions(editor: Editor, st: MeowState, count: Int): List<Int> {
@@ -98,17 +107,46 @@ object ExpandHints {
         return out.distinct()
     }
 
-    private class DigitRenderer(val label: String, val editor: Editor) : EditorCustomElementRenderer {
-        private fun font() = editor.colorsScheme.getFont(EditorFontType.BOLD)
+    /**
+     * A transparent child of the editor's content component: children paint
+     * above the editor's own painting and live in content coordinates, so the
+     * labels track scrolling for free and never affect layout. Each label
+     * covers its character's exact cell (editor background underneath), the
+     * paint-over equivalent of meow's 'display replacement — tabs and wide
+     * chars keep their width because the cell is measured, not assumed.
+     */
+    private class HintsCanvas(
+        private val editor: Editor,
+        private val hints: List<Pair<Int, String>>,
+    ) : JComponent() {
 
-        override fun calcWidthInPixels(inlay: Inlay<*>): Int =
-            editor.contentComponent.getFontMetrics(font()).stringWidth(label)
-
-        override fun paint(inlay: Inlay<*>, g: Graphics, target: Rectangle, textAttributes: TextAttributes) {
-            g.font = font()
-            g.color = HINT_COLOR
-            val fm = g.fontMetrics
-            g.drawString(label, target.x, target.y + fm.ascent)
+        override fun paintComponent(g: Graphics) {
+            if (editor.isDisposed) return
+            val g2 = g as Graphics2D
+            g2.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON)
+            val font = editor.colorsScheme.getFont(EditorFontType.BOLD)
+            val metrics = editor.contentComponent.getFontMetrics(font)
+            val text = editor.document.charsSequence
+            val lineHeight = editor.lineHeight
+            g2.font = font
+            for ((offset, label) in hints) {
+                val p = editor.offsetToXY(offset, true, false)
+                // the covered char's real cell width (handles tabs and
+                // full-width chars); past eol/eof there is nothing to cover
+                val next = if (offset < text.length && text[offset] != '\n') {
+                    editor.offsetToXY(offset + 1, true, false)
+                } else null
+                val cell = if (next != null && next.y == p.y && next.x > p.x) next.x - p.x
+                else metrics.stringWidth(label) + 2
+                g2.color = editor.colorsScheme.defaultBackground
+                g2.fillRect(p.x, p.y, cell, lineHeight)
+                g2.color = HINT_COLOR
+                g2.drawString(
+                    label,
+                    p.x + ((cell - metrics.stringWidth(label)) / 2).coerceAtLeast(0),
+                    p.y + editor.ascent,
+                )
+            }
         }
     }
 }

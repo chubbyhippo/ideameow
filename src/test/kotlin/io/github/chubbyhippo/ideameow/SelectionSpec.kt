@@ -133,6 +133,21 @@ class SelectionSpec : MeowSpec() {
         thenCaretAtSelectionStart()
     }
 
+    fun `test given a selection then expand hints overlay the text without inserting inlays`() {
+        // meow paints the digits over the chars (overlay 'display) — the text
+        // must never shift, so no inline inlays are allowed (regression)
+        given("three words", "<caret>hello world again")
+        whenKeys("w")
+        assertTrue(
+            "no inline inlays may shift the text",
+            ed.inlayModel.getInlineElementsInRange(0, doc.textLength).isEmpty(),
+        )
+        assertNotNull("hint canvas is painted above the editor", st.hintOverlay)
+        assertSame(ed.contentComponent, st.hintOverlay!!.parent)
+        whenKeys("g") // next key removes the hints
+        assertNull(st.hintOverlay)
+    }
+
     fun `test given digits after w then the selection expands by that many words`() {
         given("five words", "<caret>one two three four five")
         whenKeys("w2")

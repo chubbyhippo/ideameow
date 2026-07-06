@@ -17,9 +17,9 @@
 
 package io.github.chubbyhippo.ideameow
 
-import com.intellij.openapi.editor.Inlay
 import com.intellij.openapi.editor.RangeMarker
 import com.intellij.openapi.editor.markup.RangeHighlighter
+import javax.swing.JComponent
 import javax.swing.Timer
 
 enum class MeowMode { NORMAL, INSERT, MOTION, KEYPAD }
@@ -83,7 +83,9 @@ class MeowState {
     var noremapDepth = 0
 
     var savedBlockCursor: Boolean? = null
-    val hints = mutableListOf<Inlay<*>>()
+
+    /** The expand-hint paint-over canvas (see ExpandHints) and its 1 s timer. */
+    var hintOverlay: JComponent? = null
     var hintTimer: Timer? = null
 
     fun takeCount(default: Int = 1): Int {
