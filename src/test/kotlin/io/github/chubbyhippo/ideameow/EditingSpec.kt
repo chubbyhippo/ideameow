@@ -243,6 +243,16 @@ class EditingSpec : MeowSpec() {
         thenNoSelection()
     }
 
+    fun `test given x x then repeated u past the undo stack then nothing blows up`() {
+        // regression: Ide.act must update-check actions like the keymap does —
+        // performing a disabled UndoAction fails UndoManagerImpl's
+        // isUndoAvailable assertion once the stack is exhausted
+        given("three lines", "<caret>one\ntwo\nthree")
+        whenKeys("xx")
+        whenKeys("uuuuuu")
+        thenMode(MeowMode.NORMAL)
+    }
+
     fun `test given quote then the last command repeats`() {
         given("chars", "<caret>abcdef")
         whenKeys("d")

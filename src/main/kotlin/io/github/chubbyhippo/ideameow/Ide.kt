@@ -41,6 +41,11 @@ internal object Ide {
             ?: run { hint(editor, "Unknown action: $id"); return }
         val dc = ctx ?: DataManager.getInstance().getDataContext(editor.contentComponent)
         val event = AnActionEvent.createEvent(action, dc, null, "MeowPlugin", ActionUiKind.NONE, null)
+        // run the action's update first, exactly like the keymap path does:
+        // performing a disabled action trips platform assertions (e.g. undo
+        // with an exhausted stack fails UndoManagerImpl's isUndoAvailable)
+        ActionUtil.updateAction(action, event)
+        if (!event.presentation.isEnabled) return
         ActionUtil.performAction(action, event)
     }
 
