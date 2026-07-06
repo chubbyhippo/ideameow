@@ -24,9 +24,12 @@ The states you know from meow:
 
 The status bar always tells you which state you're in.
 
-Meow runs in main file editors and in multi-line writable dialog fields such
-as the VCS commit message box (like IdeaVim's `ideavimsupport=dialog`).
-One-line fields, consoles, and diff viewers keep native editing.
+Meow runs in main file editors, in diff views (the editable side gets full
+NORMAL editing, the read-only revision side MOTION navigation), and in
+multi-line writable dialog fields such as the VCS commit message box (like
+IdeaVim's `ideavimsupport=dialog`). One-line fields and consoles keep native
+editing, and `ESC` in a diff still closes it when there is nothing
+meow-related to cancel.
 
 And one idea borrowed straight from meow itself: **the plugin binds no keys in
 code.** The entire keymap — the NORMAL/MOTION layout *and* the whole `SPC`
@@ -188,8 +191,9 @@ All deliberate, none accidental:
   a PSI heuristic for defun — close to, but not literally, Emacs' syntax-ppss.
 - The kill-ring is the system clipboard (`meow-use-clipboard` behavior);
   `kill-line` does not append consecutive kills.
-- MOTION covers read-only file editors; IDE tool windows keep their own keys
-  (the commit message box is the exception — it gets full meow editing).
+- MOTION covers read-only file editors and the read-only side of diff views;
+  IDE tool windows keep their own keys (the commit message box is the
+  exception — it gets full meow editing).
 
 ## Hacking on it
 

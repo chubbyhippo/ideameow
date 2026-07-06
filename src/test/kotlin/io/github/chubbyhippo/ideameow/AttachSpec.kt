@@ -26,9 +26,10 @@ import com.intellij.testFramework.fixtures.BasePlatformTestCase
 import com.intellij.util.ui.UIUtil
 
 /**
- * Which editors get meow state: main file editors always; dialog and
- * tool-window fields (EditorKind.UNTYPED, e.g. the commit message box) only
- * when multi-line and writable — mirroring IdeaVim's `ideavimsupport=dialog`.
+ * Which editors get meow state: main file editors and diff editors always
+ * (the read-only ones in MOTION); dialog and tool-window fields
+ * (EditorKind.UNTYPED, e.g. the commit message box) only when multi-line and
+ * writable — mirroring IdeaVim's `ideavimsupport=dialog`.
  *
  * EditorTextField switches on one-line mode only AFTER the editor is created,
  * so the specs set it post-creation exactly like production does, and the
@@ -116,10 +117,16 @@ class AttachSpec : BasePlatformTestCase() {
         thenMeowStaysAway(editor)
     }
 
-    fun `test given a diff editor then meow stays away`() {
+    fun `test given a writable diff editor then meow attaches in NORMAL`() {
         val editor = givenEditor(EditorKind.DIFF)
         whenTheFactoryListenerRuns(editor)
-        thenMeowStaysAway(editor)
+        thenMeowIsAttached(editor, MeowMode.NORMAL)
+    }
+
+    fun `test given a diff revision side (a read-only viewer) then meow attaches in MOTION`() {
+        val editor = givenEditor(EditorKind.DIFF, viewer = true, writable = false)
+        whenTheFactoryListenerRuns(editor)
+        thenMeowIsAttached(editor, MeowMode.MOTION)
     }
 
     fun `test given a main file editor then meow attaches in NORMAL`() {

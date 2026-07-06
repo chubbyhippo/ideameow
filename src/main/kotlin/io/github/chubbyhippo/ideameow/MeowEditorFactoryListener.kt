@@ -25,20 +25,22 @@ import com.intellij.openapi.editor.event.EditorFactoryEvent
 import com.intellij.openapi.editor.event.EditorFactoryListener
 
 /**
- * Attaches meow state to every main file editor (read-only ones start in
- * MOTION), and to dialog / tool-window fields (EditorKind.UNTYPED — the
- * commit message box, ...) when they are multi-line and writable, mirroring
- * IdeaVim's default `ideavimsupport=dialog`. EditorTextField switches on
- * one-line mode only after the editor is created, so the UNTYPED decision is
- * deferred until the current EDT event finishes; ModalityState.any() keeps it
- * working for editors born inside modal dialogs.
+ * Attaches meow state to every main file editor and every diff editor
+ * (read-only ones — including a diff's revision side, which the diff
+ * framework creates as a viewer — start in MOTION), and to dialog /
+ * tool-window fields (EditorKind.UNTYPED — the commit message box, ...) when
+ * they are multi-line and writable, mirroring IdeaVim's default
+ * `ideavimsupport=dialog`. EditorTextField switches on one-line mode only
+ * after the editor is created, so the UNTYPED decision is deferred until the
+ * current EDT event finishes; ModalityState.any() keeps it working for
+ * editors born inside modal dialogs.
  */
 class MeowEditorFactoryListener : EditorFactoryListener {
 
     override fun editorCreated(event: EditorFactoryEvent) {
         val editor = event.editor
         when (editor.editorKind) {
-            EditorKind.MAIN_EDITOR -> attach(editor)
+            EditorKind.MAIN_EDITOR, EditorKind.DIFF -> attach(editor)
             EditorKind.UNTYPED -> ApplicationManager.getApplication().invokeLater(
                 { if (shouldAttachUntyped(editor)) attach(editor) },
                 ModalityState.any(),
