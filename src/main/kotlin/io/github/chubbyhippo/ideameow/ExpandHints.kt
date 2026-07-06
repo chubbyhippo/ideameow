@@ -22,6 +22,7 @@ import com.intellij.openapi.editor.EditorCustomElementRenderer
 import com.intellij.openapi.editor.Inlay
 import com.intellij.openapi.editor.colors.EditorFontType
 import com.intellij.openapi.editor.markup.TextAttributes
+import com.intellij.openapi.util.Disposer
 import com.intellij.ui.JBColor
 import java.awt.Color
 import java.awt.Graphics
@@ -54,7 +55,7 @@ object ExpandHints {
     fun clear(st: MeowState) {
         st.hintTimer?.stop()
         st.hintTimer = null
-        for (h in st.hints) if (h.isValid) com.intellij.openapi.util.Disposer.dispose(h)
+        for (h in st.hints) if (h.isValid) Disposer.dispose(h)
         st.hints.clear()
     }
 
@@ -66,7 +67,7 @@ object ExpandHints {
         val out = mutableListOf<Int>()
         when (st.selType) {
             SelType.WORD, SelType.SYMBOL -> {
-                val pred = if (st.selType == SelType.SYMBOL) Things::isSymbolChar else Things::isWordChar
+                val pred = charPred(st.selType == SelType.SYMBOL)
                 var i = caret
                 repeat(count) {
                     i = if (backward) Words.prevStart(text, i, 1, pred) else Words.nextEnd(text, i, 1, pred)
@@ -109,59 +110,5 @@ object ExpandHints {
             val fm = g.fontMetrics
             g.drawString(label, target.x, target.y + fm.ascent)
         }
-    }
-}
-
-internal fun CharSequence.indexOfChar(c: Char, from: Int): Int {
-    var i = from.coerceAtLeast(0)
-    while (i < length) { if (this[i] == c) return i; i++ }
-    return -1
-}
-
-internal fun CharSequence.lastIndexOfChar(c: Char, from: Int): Int {
-    var i = from.coerceAtMost(length - 1)
-    while (i >= 0) { if (this[i] == c) return i; i-- }
-    return -1
-}
-
-/** Word/symbol scanning shared by commands and hints. */
-object Words {
-    fun nextEnd(text: CharSequence, from: Int, n: Int, pred: (Char) -> Boolean): Int {
-        var i = from.coerceIn(0, text.length)
-        repeat(n) {
-            while (i < text.length && !pred(text[i])) i++
-            while (i < text.length && pred(text[i])) i++
-        }
-        return i
-    }
-
-    fun prevStart(text: CharSequence, from: Int, n: Int, pred: (Char) -> Boolean): Int {
-        var i = from.coerceIn(0, text.length)
-        repeat(n) {
-            while (i > 0 && !pred(text[i - 1])) i--
-            while (i > 0 && pred(text[i - 1])) i--
-        }
-        return i
-    }
-
-    fun boundsAt(text: CharSequence, offset: Int, pred: (Char) -> Boolean): Pair<Int, Int>? {
-        var o = offset
-        if (o >= text.length || !pred(text[o])) {
-            when {
-                o > 0 && pred(text[o - 1]) -> o--
-                else -> {
-                    // between words: take the next word, like forward-thing
-                    var f = o
-                    while (f < text.length && !pred(text[f])) f++
-                    if (f >= text.length) return null
-                    o = f
-                }
-            }
-        }
-        var s = o
-        var e = o
-        while (s > 0 && pred(text[s - 1])) s--
-        while (e < text.length && pred(text[e])) e++
-        return s to e
     }
 }

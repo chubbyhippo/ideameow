@@ -71,7 +71,7 @@ object Keypad {
         }
         if (keypad.keys.none { it.startsWith(cur) }) {
             exit(editor, st)
-            Engine.hint(editor, "SPC ${cur.toCharArray().joinToString(" ")} is undefined")
+            Ide.hint(editor, "SPC ${cur.toCharArray().joinToString(" ")} is undefined")
         } else {
             WhichKey.scheduleKeypad(editor, cur)
         }

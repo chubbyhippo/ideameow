@@ -17,29 +17,24 @@
 
 package io.github.chubbyhippo.ideameow
 
-import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.editor.Inlay
 import com.intellij.openapi.editor.RangeMarker
 import com.intellij.openapi.editor.markup.RangeHighlighter
-import com.intellij.openapi.fileEditor.FileEditorManager
-import com.intellij.openapi.project.Project
-import com.intellij.openapi.project.ProjectManager
-import com.intellij.openapi.util.Key
-import com.intellij.openapi.wm.WindowManager
 import javax.swing.Timer
 
 enum class MeowMode { NORMAL, INSERT, MOTION, KEYPAD }
 
 /**
- * Selection types mirror meow's (expand/select . type) pairs: [expand] is the
- * cdr flag that makes follow-up commands of the same family extend the
+ * Selection types mirror meow's (expand/select . type) pairs: [MeowState.selExpand]
+ * is the cdr flag that makes follow-up commands of the same family extend the
  * selection instead of re-creating it (meow-mark-word -> meow-next-word).
  */
 enum class SelType { NONE, CHAR, WORD, SYMBOL, LINE, BLOCK, FIND, TILL, VISIT, JOIN, TRANSIENT }
 
 /** Commands that read one more key before acting. */
-enum class Pending { FIND, TILL, FIND_EXPAND, INNER, BOUNDS, BEGIN, END, DESCRIBE }
+enum class Pending { FIND, TILL, INNER, BOUNDS, BEGIN, END }
 
+/** Everything meow remembers about one editor, stored in its user data. */
 class MeowState {
     var mode = MeowMode.NORMAL
     var selType = SelType.NONE
@@ -52,7 +47,6 @@ class MeowState {
     var negative = false
 
     var lastFind: Char? = null
-    var lastIsTill = false
 
     /** last() is the active pattern, meow's regexp-search-ring. */
     val searchHistory = ArrayDeque<Regex>()
@@ -80,37 +74,5 @@ class MeowState {
         pendingCount = 0
         negative = false
         return r
-    }
-}
-
-object Meow {
-    val KEY: Key<MeowState> = Key.create("meow.state")
-
-    fun state(editor: Editor): MeowState? = editor.getUserData(KEY)
-
-    fun setMode(editor: Editor, st: MeowState, mode: MeowMode) {
-        st.mode = mode
-        if (mode != MeowMode.KEYPAD) st.keypad.setLength(0)
-        editor.settings.isBlockCursor = mode != MeowMode.INSERT
-        updateWidgets()
-    }
-
-    fun updateWidgets() {
-        for (p in ProjectManager.getInstance().openProjects) {
-            WindowManager.getInstance().getStatusBar(p)?.updateWidget(MeowWidgetFactory.ID)
-        }
-    }
-
-    /** Status text for the widget, derived from the focused editor. */
-    fun statusText(project: Project): String {
-        val editor = FileEditorManager.getInstance(project).selectedTextEditor ?: return ""
-        val st = state(editor) ?: return ""
-        val beacon = editor.caretModel.caretCount > 1
-        return when {
-            st.mode == MeowMode.KEYPAD -> "MEOW KEYPAD  SPC ${st.keypad.toString().toCharArray().joinToString(" ")}"
-            beacon && st.mode == MeowMode.INSERT -> "MEOW BEACON-INSERT"
-            beacon -> "MEOW BEACON"
-            else -> "MEOW ${st.mode}"
-        }
     }
 }

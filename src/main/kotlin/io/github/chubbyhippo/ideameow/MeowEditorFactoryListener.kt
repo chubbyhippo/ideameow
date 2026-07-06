@@ -52,7 +52,7 @@ class MeowEditorFactoryListener : EditorFactoryListener {
         val st = Meow.state(editor) ?: return
         WhichKey.hide()
         ExpandHints.clear(st)
-        Engine.clearGrab(editor, st)
+        Grab.clear(editor, st)
         st.savedBlockCursor?.let { editor.settings.isBlockCursor = it }
         editor.putUserData(Meow.KEY, null)
     }
