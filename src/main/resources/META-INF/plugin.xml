@@ -1,10 +1,10 @@
 <idea-plugin>
     <id>io.github.chubbyhippo.ideameow</id>
-    <name>Meow QWERTY</name>
+    <name>ideameow</name>
     <vendor>Chubby Hippo</vendor>
     <description><![CDATA[
-        Meow-style modal editing for IntelliJ, mirroring meow-edit/meow's
-        suggested QWERTY layout: NORMAL / INSERT / MOTION / KEYPAD states,
+        Meow-style modal editing for IntelliJ, implementing meow-edit/meow
+        natively: NORMAL / INSERT / MOTION / KEYPAD states,
         selection-first commands (mark/next/back word &amp; symbol, line, block,
         find/till, visit/search), the char-thing table (, . [ ] + r s c g e w b
         p l v d .), digit expand with on-screen hints, grab / swap-grab /

@@ -51,7 +51,7 @@ object Keypad {
                 }
                 '?' -> {
                     exit(editor, st)
-                    Messages.showInfoMessage(editor.project, CHEATSHEET, "Meow QWERTY Cheatsheet")
+                    Messages.showInfoMessage(editor.project, CHEATSHEET, "Meow Cheatsheet")
                     return
                 }
                 '/' -> {
@@ -100,6 +100,9 @@ object Keypad {
     }
 
     private val CHEATSHEET = """
+        The bundled default layout (meow's suggested QWERTY) — every key
+        below can be rebound from ~/.ideameowrc.
+
         NORMAL — selection first, then act
           h j k l  move (cancel selection)       H J K L  extend char selection
           w / W    mark word / symbol            e / E    next word / symbol end
