@@ -26,6 +26,9 @@ import com.intellij.openapi.actionSystem.DataContext
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.editor.EditorFactory
 import com.intellij.openapi.editor.ex.EditorEx
+import com.intellij.openapi.fileEditor.ex.FileEditorManagerEx
+import com.intellij.openapi.fileEditor.impl.EditorWindow
+import com.intellij.openapi.fileEditor.impl.FileEditorOpenOptions
 import com.intellij.openapi.project.DumbAwareAction
 import com.intellij.openapi.wm.IdeFocusManager
 import java.awt.Dimension
@@ -175,6 +178,52 @@ internal object Windmove {
         IdeFocusManager.getInstance(editor.project).requestFocus(target.contentComponent, true)
     }
 
+    /** windmove-swap-states-left/down/up/right (windmove.el, Emacs 30.2 —
+     *  source-read AND batch-probed): the current window's buffer and the
+     *  FOCUS both travel to the window in [dir]; the displaced buffer lands
+     *  in the origin window (window-swap-states carries the selected flag
+     *  with the state). The swappable windows here are the editor splits —
+     *  the only surface whose content can be exchanged; diff panes and
+     *  consoles are fixed in place. The pick and the no-window user-error
+     *  are exactly [move]'s (windmove-swap-states-in-direction reuses both). */
+    fun swap(editor: Editor, dir: Dir) {
+        val project = editor.project ?: return
+        val frame = SwingUtilities.getWindowAncestor(editor.component) ?: return
+        val fem = FileEditorManagerEx.getInstanceEx(project)
+        val current = fem.currentWindow ?: return
+        val currentRect = rectIn(frame, current) ?: return
+        val candidates = fem.windows.filter { it !== current }
+            .mapNotNull { w -> rectIn(frame, w)?.let { w to it } }
+        val posn = reference(dir, currentRect, caretPoint(editor, frame))
+        val target = pick(dir, currentRect, posn, frame.size, candidates)
+        val mine = current.selectedComposite?.file
+        val theirs = target?.selectedComposite?.file
+        if (target == null || mine == null || theirs == null) {
+            Ide.hint(editor, noWindowMessage(dir))
+            return
+        }
+        if (mine != theirs) {
+            // add each file to its new window BEFORE closing it in the old
+            // one — a single-tab window would otherwise collapse mid-swap
+            val options = FileEditorOpenOptions(requestFocus = false)
+            fem.openFile(mine, target, options)
+            fem.openFile(theirs, current, options)
+            current.closeFile(mine)
+            target.closeFile(theirs)
+        }
+        target.setAsCurrentWindow(true)
+    }
+
+    /** An editor split as a windmove window: the tab container's rect in
+     *  frame coordinates (IdeaVim's getSplitRectangle uses the same
+     *  component), skipping empty windows. */
+    private fun rectIn(frame: java.awt.Window, window: EditorWindow): Rectangle? {
+        if (window.selectedComposite == null) return null
+        val c = window.tabbedPane.component
+        if (!c.isShowing || c.width <= 0 || c.height <= 0) return null
+        return SwingUtilities.convertRectangle(c.parent, c.bounds, frame)
+    }
+
     /** Every other visible text editor in the same frame — splits, diff
      *  sides, consoles, the commit box. One-liners (rename fields, search
      *  bars) are not windows, and neither editor may nest inside the other
@@ -233,6 +282,27 @@ internal class WindmoveLeftAction : WindmoveAction(Windmove.Dir.LEFT)
 internal class WindmoveRightAction : WindmoveAction(Windmove.Dir.RIGHT)
 internal class WindmoveUpAction : WindmoveAction(Windmove.Dir.UP)
 internal class WindmoveDownAction : WindmoveAction(Windmove.Dir.DOWN)
+
+/** The four windmove-swap-states commands — SPC w H/J/K/L only, like
+ *  init.el's C-c w map (windmove-swap-states-default-keybindings is never
+ *  called there, so no chords here either). */
+internal sealed class WindmoveSwapAction(private val dir: Windmove.Dir) : DumbAwareAction() {
+    override fun getActionUpdateThread() = ActionUpdateThread.BGT
+
+    override fun update(e: AnActionEvent) {
+        e.presentation.isEnabled = e.getData(CommonDataKeys.EDITOR) != null
+    }
+
+    override fun actionPerformed(e: AnActionEvent) {
+        val editor = e.getData(CommonDataKeys.EDITOR) ?: return
+        Windmove.swap(editor, dir)
+    }
+}
+
+internal class WindmoveSwapLeftAction : WindmoveSwapAction(Windmove.Dir.LEFT)
+internal class WindmoveSwapRightAction : WindmoveSwapAction(Windmove.Dir.RIGHT)
+internal class WindmoveSwapUpAction : WindmoveSwapAction(Windmove.Dir.UP)
+internal class WindmoveSwapDownAction : WindmoveSwapAction(Windmove.Dir.DOWN)
 
 /** Shift+arrows already mean "extend selection" in editors
  *  (EditorLeftWithSelection and friends): promoting windmove first is what

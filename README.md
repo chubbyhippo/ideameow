@@ -56,7 +56,10 @@ editor, so the same keys move between the two sides of a diff (which
 splitter cycling never reaches), into consoles, and into the commit message
 box. No wrap-around, and where Emacs would complain, ideameow does too:
 "No window left from selected window". The same four actions live on
-`SPC w h/j/k/l`, mirroring init.el's `C-c w` window map. The Shift+arrow
+`SPC w h/j/k/l`, mirroring init.el's `C-c w` window map — and the capitals
+mirror them as the swaps: `SPC w H/J/K/L` (windmove-swap-states) push your
+file and the focus into the neighbouring split and bring its file back
+(editor splits only; a diff pane can't be swapped). The Shift+arrow
 chords sit on the IDE keymap (modifier chords never reach the modal
 engine) — rebind them under *Settings → Keymap → Windmove* — and they
 shadow shift-selection in editors, the exact tradeoff the Emacs binding

@@ -222,6 +222,13 @@ map <leader>wh <action>(Ideameow.WindmoveLeft)
 map <leader>wj <action>(Ideameow.WindmoveDown)
 map <leader>wk <action>(Ideameow.WindmoveUp)
 map <leader>wl <action>(Ideameow.WindmoveRight)
+" H/J/K/L: windmove-swap-states — the capitals mirror the h/j/k/l moves:
+" your file and the focus travel to the neighbouring split, its file comes
+" back to yours (editor splits only; a diff pane can't be swapped)
+map <leader>wH <action>(Ideameow.WindmoveSwapLeft)
+map <leader>wJ <action>(Ideameow.WindmoveSwapDown)
+map <leader>wK <action>(Ideameow.WindmoveSwapUp)
+map <leader>wL <action>(Ideameow.WindmoveSwapRight)
 map <leader>wi <action>(EditorIncreaseFontSize)
 map <leader>w= <action>(EditorIncreaseFontSize)
 map <leader>wo <action>(EditorDecreaseFontSize)

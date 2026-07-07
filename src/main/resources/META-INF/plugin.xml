@@ -61,5 +61,20 @@
                 text="Windmove Down" description="Select the editor window below (Emacs windmove-down)">
             <keyboard-shortcut keymap="$default" first-keystroke="shift DOWN"/>
         </action>
+        <!-- windmove-swap-states: the current split's file and the focus move
+             to the neighbour, its file comes back. SPC w H/J/K/L via the rc,
+             like init.el's C-c w map — no default chords. -->
+        <action id="Ideameow.WindmoveSwapLeft" class="io.github.chubbyhippo.ideameow.WindmoveSwapLeftAction"
+                text="Windmove Swap Left"
+                description="Swap the current editor window with the one to the left (Emacs windmove-swap-states-left)"/>
+        <action id="Ideameow.WindmoveSwapRight" class="io.github.chubbyhippo.ideameow.WindmoveSwapRightAction"
+                text="Windmove Swap Right"
+                description="Swap the current editor window with the one to the right (Emacs windmove-swap-states-right)"/>
+        <action id="Ideameow.WindmoveSwapUp" class="io.github.chubbyhippo.ideameow.WindmoveSwapUpAction"
+                text="Windmove Swap Up"
+                description="Swap the current editor window with the one above (Emacs windmove-swap-states-up)"/>
+        <action id="Ideameow.WindmoveSwapDown" class="io.github.chubbyhippo.ideameow.WindmoveSwapDownAction"
+                text="Windmove Swap Down"
+                description="Swap the current editor window with the one below (Emacs windmove-swap-states-down)"/>
     </actions>
 </idea-plugin>

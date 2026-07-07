@@ -182,4 +182,29 @@ class WindmoveSpec : MeowSpec() {
         assertEquals("Ideameow.WindmoveUp", d["wk"]?.action)
         assertEquals("Ideameow.WindmoveRight", d["wl"]?.action)
     }
+
+    fun testSwapActionsAreRegisteredWithoutDefaultChords() {
+        // windmove-swap-states-default-keybindings is never called in
+        // init.el — the swaps live only on the C-c w map, so only on SPC w
+        for (id in listOf(
+            "Ideameow.WindmoveSwapLeft", "Ideameow.WindmoveSwapRight",
+            "Ideameow.WindmoveSwapUp", "Ideameow.WindmoveSwapDown",
+        )) {
+            val action = ActionManager.getInstance().getAction(id)
+            assertTrue("$id must be a windmove swap action", action is WindmoveSwapAction)
+            assertEquals(
+                "$id must not claim a keymap chord",
+                0, KeymapManager.getInstance().activeKeymap.getShortcuts(id).size,
+            )
+        }
+    }
+
+    fun testBundledRcPutsTheSwapsOnSpcWCapitals() {
+        // init.el: the capitals mirror the h/j/k/l moves
+        val d = Rc.defaults().keypad
+        assertEquals("Ideameow.WindmoveSwapLeft", d["wH"]?.action)
+        assertEquals("Ideameow.WindmoveSwapDown", d["wJ"]?.action)
+        assertEquals("Ideameow.WindmoveSwapUp", d["wK"]?.action)
+        assertEquals("Ideameow.WindmoveSwapRight", d["wL"]?.action)
+    }
 }
