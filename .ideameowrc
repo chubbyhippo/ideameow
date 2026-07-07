@@ -213,10 +213,15 @@ map <leader>wD <action>(UnsplitAll)
 map <leader>wm <action>(UnsplitAll)
 map <leader>ww <action>(NextSplitter)
 map <leader>wW <action>(MoveEditorToOppositeTabGroup)
-map <leader>wh <action>(PrevSplitter)
-map <leader>wj <action>(NextSplitter)
-map <leader>wk <action>(PrevSplitter)
-map <leader>wl <action>(NextSplitter)
+" h/j/k/l: windmove, ported from init.el — directional focus over editor
+" splits AND diff panes, from the caret like Emacs. The plugin also binds
+" plain Shift+arrows to these, i.e. (windmove-default-keybindings) — that
+" lives on the IDE keymap (Settings > Keymap > Windmove *), not in this rc,
+" because modifier chords never reach the modal engine.
+map <leader>wh <action>(Ideameow.WindmoveLeft)
+map <leader>wj <action>(Ideameow.WindmoveDown)
+map <leader>wk <action>(Ideameow.WindmoveUp)
+map <leader>wl <action>(Ideameow.WindmoveRight)
 map <leader>wi <action>(EditorIncreaseFontSize)
 map <leader>w= <action>(EditorIncreaseFontSize)
 map <leader>wo <action>(EditorDecreaseFontSize)

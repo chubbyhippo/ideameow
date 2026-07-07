@@ -48,6 +48,21 @@ tree keys with `mmap` lines in `~/.ideameowrc`, e.g.
 `q` type into speed search again). Meow commands other than the four
 motions have no tree meaning and are simply inert there.
 
+**Windows** — `(windmove-default-keybindings)` from `init.el`, ported
+natively: `Shift+←→↑↓` select the editor window in that direction, measured
+from the caret like windmove — with three stacked splits on the left,
+`S-left` enters the one at your caret's row. The "windows" are every visible
+editor, so the same keys move between the two sides of a diff (which
+splitter cycling never reaches), into consoles, and into the commit message
+box. No wrap-around, and where Emacs would complain, ideameow does too:
+"No window left from selected window". The same four actions live on
+`SPC w h/j/k/l`, mirroring init.el's `C-c w` window map. The Shift+arrow
+chords sit on the IDE keymap (modifier chords never reach the modal
+engine) — rebind them under *Settings → Keymap → Windmove* — and they
+shadow shift-selection in editors, the exact tradeoff the Emacs binding
+makes (select with meow instead; trees and dialogs keep native
+shift-selection, since the actions only enable on editors).
+
 And one idea borrowed straight from meow itself: **the plugin binds no keys in
 code.** The entire keymap — the NORMAL/MOTION layout *and* the whole `SPC`
 keypad table — lives in an `.ideameowrc` file bundled inside the plugin, and a
@@ -189,7 +204,8 @@ scheme: the IntelliJ groups (`SPC .` settings, `SPC a` tool windows,
 `SPC d/e/f/g/h/i/j/k/l/n/o/p/q/r/s/t/u/v` …) with which-key labels, `S`/`Q`
 as the avy jumps from `init.el` (a native port of avy — no plugin needed:
 type chars, pause, hit a label; `Q` labels visible lines and digits switch to
-a line-number prompt), split resizing on
+a line-number prompt), windmove on `SPC w h/j/k/l` (and `Shift+arrows` on
+the IDE keymap — see above), split resizing on
 `=` `_` `+`, and `SPC ]`/`SPC [` for next/prev change, diff, and error. The
 file's footer lists what deliberately *isn't* ported, with reasons. Two
 divergences to know about: `-` keeps meow's negative-argument (this engine has

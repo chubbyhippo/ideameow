@@ -26,6 +26,9 @@
         <postStartupActivity implementation="io.github.chubbyhippo.ideameow.TreeMeowStartup"/>
         <statusBarWidgetFactory id="MeowMode" implementation="io.github.chubbyhippo.ideameow.MeowWidgetFactory"/>
         <notificationGroup id="ideameow" displayType="BALLOON"/>
+        <!-- shift+arrows collide with the editor's shift-selection actions;
+             windmove wins the conflict, like windmove-default-keybindings -->
+        <actionPromoter implementation="io.github.chubbyhippo.ideameow.WindmovePromoter"/>
     </extensions>
     <applicationListeners>
         <listener class="io.github.chubbyhippo.ideameow.MeowActionIdListener"
@@ -39,5 +42,24 @@
         <action id="Ideameow.TrackActionIds" class="io.github.chubbyhippo.ideameow.TrackActionIdsAction"
                 text="Track Action IDs"
                 description="Show the id of every performed action, for &lt;action&gt;(...) mappings in ~/.ideameowrc"/>
+        <!-- Emacs (windmove-default-keybindings): Shift+arrows select the
+             window in that direction — editor splits and diff panes alike.
+             Also on SPC w h/j/k/l via the rc, mirroring init.el's C-c w. -->
+        <action id="Ideameow.WindmoveLeft" class="io.github.chubbyhippo.ideameow.WindmoveLeftAction"
+                text="Windmove Left" description="Select the editor window to the left (Emacs windmove-left)">
+            <keyboard-shortcut keymap="$default" first-keystroke="shift LEFT"/>
+        </action>
+        <action id="Ideameow.WindmoveRight" class="io.github.chubbyhippo.ideameow.WindmoveRightAction"
+                text="Windmove Right" description="Select the editor window to the right (Emacs windmove-right)">
+            <keyboard-shortcut keymap="$default" first-keystroke="shift RIGHT"/>
+        </action>
+        <action id="Ideameow.WindmoveUp" class="io.github.chubbyhippo.ideameow.WindmoveUpAction"
+                text="Windmove Up" description="Select the editor window above (Emacs windmove-up)">
+            <keyboard-shortcut keymap="$default" first-keystroke="shift UP"/>
+        </action>
+        <action id="Ideameow.WindmoveDown" class="io.github.chubbyhippo.ideameow.WindmoveDownAction"
+                text="Windmove Down" description="Select the editor window below (Emacs windmove-down)">
+            <keyboard-shortcut keymap="$default" first-keystroke="shift DOWN"/>
+        </action>
     </actions>
 </idea-plugin>
