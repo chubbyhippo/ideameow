@@ -138,6 +138,7 @@ class RcSpec : MeowSpec() {
         assertEquals("Switcher", d.keypad[" "]?.action)
         assertEquals("Ideameow.EditRc", d.keypad["cm"]?.action)
         assertEquals("Ideameow.ReloadRc", d.keypad["cM"]?.action)
+        assertEquals("Ideameow.TrackActionIds", d.keypad["id"]?.action)
         assertTrue("keypad table + ported leader groups", d.keypad.size > 150)
     }
 

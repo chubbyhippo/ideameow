@@ -133,9 +133,13 @@ ideameow reads an `.ideavimrc`-style file from your home directory:
 | `set timeoutlen=300` | which-key popup delay in milliseconds (the bundled default sets 300) |
 | `set which-key` / `set nowhich-key` | popup on/off (default on) |
 
-Key notation: plain printable characters, plus `<Space>` and `<lt>`. Find an
-action's id via *Tools → Internal Actions* or IdeaVim's `:actionlist` —
-they're the same ids `.ideavimrc` uses in `<action>(...)`.
+Key notation: plain printable characters, plus `<Space>` and `<lt>`. To find
+an action's id, press `SPC i d` — it toggles action-id tracking, ideameow's
+port of IdeaVim's *Track Action IDs*: while it is on, every action you
+perform (menus, shortcuts, keypad entries…) pops a balloon with its id and a
+*Copy Action Id* button; press `SPC i d` again (or the balloon's *Stop
+Tracking*) to turn it off. They're the same ids `.ideavimrc` uses in
+`<action>(...)`.
 
 **Relayouting (Dvorak, Colemak, …).** The layout section of the bundled
 `.ideameowrc` IS the default keymap — an `nmap`/`mmap` line per key, exactly

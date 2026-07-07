@@ -152,4 +152,29 @@ class ModesKeypadSpec : MeowSpec() {
         thenMode(MeowMode.NORMAL)
         thenCaretAt(1)
     }
+
+    fun `test given SPC i d then action-id tracking toggles and reports performed action ids`() {
+        // the port of IdeaVim's Track Action IDs: the bundled default binds
+        // SPC i d to the toggle, and while tracking is on the application
+        // AnActionListener reports every performed action's id
+        given("word", "ab<caret>cd")
+        try {
+            assertFalse("tracking starts off", TrackActionIds.enabled)
+            whenKeys(" id")
+            thenMode(MeowMode.NORMAL)
+            assertTrue("first press turns tracking on", TrackActionIds.enabled)
+            givenRc("nmap Z <action>(EditorLeft)")
+            whenKeys("Z") // a real IDE action performs while tracking
+            assertEquals("EditorLeft", TrackActionIds.lastTrackedId)
+            whenKeys(" id")
+            assertFalse("second press turns tracking off", TrackActionIds.enabled)
+            assertNull(TrackActionIds.lastTrackedId)
+            whenKeys(" id")
+            assertTrue("SPC i d keeps toggling: a third press is on again", TrackActionIds.enabled)
+        } finally {
+            TrackActionIds.enabled = false
+            TrackActionIds.lastTrackedId = null
+            TrackActionIds.expire()
+        }
+    }
 }

@@ -26,10 +26,17 @@
         <statusBarWidgetFactory id="MeowMode" implementation="io.github.chubbyhippo.ideameow.MeowWidgetFactory"/>
         <notificationGroup id="ideameow" displayType="BALLOON"/>
     </extensions>
+    <applicationListeners>
+        <listener class="io.github.chubbyhippo.ideameow.MeowActionIdListener"
+                  topic="com.intellij.openapi.actionSystem.ex.AnActionListener"/>
+    </applicationListeners>
     <actions>
         <action id="Ideameow.ReloadRc" class="io.github.chubbyhippo.ideameow.ReloadRcAction"
                 text="Reload .ideameowrc" description="Reload the ~/.ideameowrc configuration"/>
         <action id="Ideameow.EditRc" class="io.github.chubbyhippo.ideameow.EditRcAction"
                 text="Edit .ideameowrc" description="Open ~/.ideameowrc in the editor"/>
+        <action id="Ideameow.TrackActionIds" class="io.github.chubbyhippo.ideameow.TrackActionIdsAction"
+                text="Track Action IDs"
+                description="Show the id of every performed action, for &lt;action&gt;(...) mappings in ~/.ideameowrc"/>
     </actions>
 </idea-plugin>

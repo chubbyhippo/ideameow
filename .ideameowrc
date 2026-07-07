@@ -126,6 +126,9 @@ mmap k meow-prev
 " sequences dispatch IDE actions, mirroring the companion .ideavimrc leader
 " scheme. SPC 1-9 (digit argument), SPC ? (cheatsheet) and SPC / (describe
 " key) are reserved by the keypad itself and cannot be remapped.
+" Finding an action's id for <action>(...): SPC i d toggles action-id
+" tracking (IdeaVim's "Track Action IDs") — while it is on, every action you
+" perform shows a balloon with its id and a Copy Action Id button.
 " ============================================================================
 
 map <leader>b <action>(RecentFiles)
@@ -341,8 +344,11 @@ desc <leader>h hide all tool windows
 map <leader>h <action>(HideAllWindows)
 
 " --- SPC i — introduce / inline / id ---------------------------------------------
-desc <leader>i introduce / inline
+desc <leader>i introduce / inline / ids
 map <leader>ic <action>(IntroduceConstant)
+" SPC i d: toggle action-id tracking — every performed action shows its id
+map <leader>id <action>(Ideameow.TrackActionIds)
+desc <leader>id track action ids
 map <leader>if <action>(IntroduceField)
 map <leader>il <action>(Inline)
 map <leader>im <action>(ImplementMethods)
