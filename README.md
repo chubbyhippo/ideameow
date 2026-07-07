@@ -107,10 +107,12 @@ ideameow reads an `.ideavimrc`-style file from your home directory:
 
 **Getting started is two steps:**
 
-1. Press `SPC c m` in the IDE — it creates and opens the file for you. (The
-   bundled defaults stay underneath, so an empty file changes nothing and a
-   one-line file changes exactly one thing. Or copy the repo's `.ideameowrc`
-   over it and edit anything.)
+1. Press `SPC c m` in the IDE — the first press creates `~/.ideameowrc` as a
+   full copy of the bundled defaults and opens it: the complete layout and
+   keypad table, ready to edit. (The bundled defaults also stay underneath
+   and overrides apply entry by entry, so deleting a line just falls back to
+   the default — bind `ignore` to disable a key — and a pared-down file of
+   only your overrides works exactly the same.)
 2. Edit, then reload with `SPC c M`. A balloon tells you how many mappings
    loaded — and lists any parse problems with their line numbers.
 

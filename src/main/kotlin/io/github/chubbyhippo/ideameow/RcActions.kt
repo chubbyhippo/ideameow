@@ -23,6 +23,7 @@ import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.fileEditor.OpenFileDescriptor
 import com.intellij.openapi.project.DumbAware
 import com.intellij.openapi.vfs.LocalFileSystem
+import java.io.File
 
 /** Reload ~/.ideameowrc (keypad: SPC c M). */
 class ReloadRcAction : AnAction(), DumbAware {
@@ -44,18 +45,28 @@ class EditRcAction : AnAction(), DumbAware {
     override fun actionPerformed(e: AnActionEvent) {
         val project = e.project ?: return
         val f = Rc.rcFile()
-        if (!f.exists()) {
-            f.writeText(
-                "\" ~/${Rc.FILE_NAME} — ideameow configuration\n" +
-                    "\" the bundled defaults (full meow layout + keypad table) stay\n" +
-                    "\" underneath — lines here override them entry by entry, e.g.:\n" +
-                    "\" nmap Q meow-goto-line\n" +
-                    "\" nmap n meow-mark-word\n" +
-                    "\" map <leader>gd <action>(GotoDeclaration)\n" +
-                    "\" desc <leader>g goto\n"
-            )
-        }
+        seedIfMissing(f)
         val vf = LocalFileSystem.getInstance().refreshAndFindFileByIoFile(f) ?: return
         OpenFileDescriptor(project, vf).navigate(true)
+    }
+
+    companion object {
+        /** A first ~/.ideameowrc starts as a full copy of the bundled
+         *  defaults — the complete layout and keypad table, ready to edit —
+         *  never touching an existing file. */
+        fun seedIfMissing(f: File) {
+            if (f.exists()) return
+            f.writeText(
+                Rc.defaultsText()
+                // a missing bundled rc is a plugin bug (Rc reports it);
+                // leave a minimal self-describing file so SPC c m still works
+                    ?: (
+                        "\" ~/${Rc.FILE_NAME} — ideameow configuration\n" +
+                            "\" the bundled defaults (full meow layout + keypad table) stay\n" +
+                            "\" underneath — lines here override them entry by entry, e.g.:\n" +
+                            "\" nmap Q meow-goto-line\n"
+                        )
+            )
+        }
     }
 }

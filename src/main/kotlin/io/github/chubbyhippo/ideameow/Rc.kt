@@ -75,6 +75,11 @@ object Rc {
         return defaultConfig
     }
 
+    /** The bundled .ideameowrc verbatim — what a first ~/.ideameowrc is
+     *  seeded from (SPC c m), so the whole default keymap is there to edit. */
+    fun defaultsText(): String? =
+        javaClass.getResourceAsStream("/$FILE_NAME")?.bufferedReader()?.use { it.readText() }
+
     fun setForTest(c: Config) {
         config = c
         loaded = true

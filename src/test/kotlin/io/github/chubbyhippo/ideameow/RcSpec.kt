@@ -17,6 +17,8 @@
 
 package io.github.chubbyhippo.ideameow
 
+import java.io.File
+
 /** ~/.ideameowrc parsing, nmap/mmap/map dispatch (including relayouting the
  *  meow keys themselves), and which-key rows. */
 class RcSpec : MeowSpec() {
@@ -137,6 +139,25 @@ class RcSpec : MeowSpec() {
         assertEquals("Ideameow.EditRc", d.keypad["cm"]?.action)
         assertEquals("Ideameow.ReloadRc", d.keypad["cM"]?.action)
         assertTrue("keypad table + ported leader groups", d.keypad.size > 150)
+    }
+
+    fun `test given no home rc then the first SPC c m seeds it with the full bundled keymap`() {
+        val f = File.createTempFile("ideameowrc-spec", null)
+        try {
+            f.delete()
+            EditRcAction.seedIfMissing(f)
+            val seeded = Rc.parse(f.readLines())
+            assertTrue("seeded rc must parse clean, got: ${seeded.errors}", seeded.errors.isEmpty())
+            assertEquals("the whole layout is in the copy", "meow-append", seeded.normal['a']?.command)
+            assertEquals("avy-goto-line", seeded.normal['Q']?.command)
+            assertTrue("the whole keypad table is in the copy", seeded.keypad.size > 150)
+            // a later press must never clobber the user's edits
+            f.writeText("nmap Q meow-goto-line\n")
+            EditRcAction.seedIfMissing(f)
+            assertEquals("nmap Q meow-goto-line\n", f.readText())
+        } finally {
+            f.delete()
+        }
     }
 
     fun `test given bad lines then errors are collected with line numbers`() {
