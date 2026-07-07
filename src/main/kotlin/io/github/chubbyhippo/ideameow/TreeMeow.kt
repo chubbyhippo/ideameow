@@ -17,17 +17,21 @@
 
 package io.github.chubbyhippo.ideameow
 
+import com.intellij.openapi.Disposable
 import com.intellij.openapi.actionSystem.ActionUpdateThread
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.CustomShortcutSet
 import com.intellij.openapi.actionSystem.KeyboardShortcut
 import com.intellij.openapi.actionSystem.PlatformDataKeys
+import com.intellij.openapi.application.ApplicationManager
+import com.intellij.openapi.components.Service
 import com.intellij.openapi.project.DumbAwareAction
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.startup.ProjectActivity
 import java.awt.KeyboardFocusManager
 import java.awt.event.ActionEvent
 import java.awt.event.KeyEvent
+import java.beans.PropertyChangeListener
 import java.util.concurrent.atomic.AtomicBoolean
 import javax.swing.JTree
 import javax.swing.KeyStroke
@@ -126,16 +130,28 @@ object TreeMeow {
 
     private val installed = AtomicBoolean()
 
+    private val focusListener = PropertyChangeListener { evt ->
+        (evt.oldValue as? JTree)?.let { dispatcher.unregisterCustomShortcutSet(it) }
+        (evt.newValue as? JTree)?.let { register(it) }
+    }
+
     /** Install the app-wide focus hook once; every JTree gaining focus gets
      *  the current mmap keys as component shortcuts, and loses them again
      *  with focus (registration is per-component, so nothing leaks). */
     fun install() {
         if (!installed.compareAndSet(false, true)) return
         KeyboardFocusManager.getCurrentKeyboardFocusManager()
-            .addPropertyChangeListener("focusOwner") { evt ->
-                (evt.oldValue as? JTree)?.let { dispatcher.unregisterCustomShortcutSet(it) }
-                (evt.newValue as? JTree)?.let { register(it) }
-            }
+            .addPropertyChangeListener("focusOwner", focusListener)
+    }
+
+    /** Undo [install] — the KeyboardFocusManager is JVM-global, so the hook
+     *  must not outlive the plugin (dynamic unload would otherwise leak the
+     *  plugin classloader through the captured dispatcher). */
+    fun uninstall() {
+        if (!installed.compareAndSet(true, false)) return
+        val kfm = KeyboardFocusManager.getCurrentKeyboardFocusManager()
+        kfm.removePropertyChangeListener("focusOwner", focusListener)
+        (kfm.focusOwner as? JTree)?.let { dispatcher.unregisterCustomShortcutSet(it) }
     }
 
     /** Re-read the mmap keys for the currently focused tree — called after
@@ -153,7 +169,21 @@ object TreeMeow {
     }
 }
 
+/** App-level lifetime anchor: created on first project open, disposed on
+ *  dynamic plugin unload — which is what balances the JVM-global focus hook
+ *  (light service, no plugin.xml entry). */
+@Service(Service.Level.APP)
+internal class TreeMeowLifecycle : Disposable {
+    init {
+        TreeMeow.install()
+    }
+
+    override fun dispose() = TreeMeow.uninstall()
+}
+
 /** Installs the tree-surface focus hook once any project opens. */
 internal class TreeMeowStartup : ProjectActivity {
-    override suspend fun execute(project: Project) = TreeMeow.install()
+    override suspend fun execute(project: Project) {
+        ApplicationManager.getApplication().getService(TreeMeowLifecycle::class.java)
+    }
 }

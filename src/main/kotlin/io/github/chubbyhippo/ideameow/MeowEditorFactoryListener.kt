@@ -53,6 +53,7 @@ class MeowEditorFactoryListener : EditorFactoryListener {
     override fun editorReleased(event: EditorFactoryEvent) {
         val editor = event.editor
         val st = Meow.state(editor) ?: return
+        Avy.cancel(editor, st) // else the 250 ms timer fires on a disposed editor
         WhichKey.hide()
         ExpandHints.clear(st)
         Grab.clear(editor, st)
