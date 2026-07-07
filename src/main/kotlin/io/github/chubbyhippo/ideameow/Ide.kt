@@ -25,6 +25,7 @@ import com.intellij.openapi.command.WriteCommandAction
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.ide.CopyPasteManager
 import java.awt.datatransfer.DataFlavor
+import javax.swing.JComponent
 
 /**
  * The command modules' one bridge to the platform: dispatching IDE actions,
@@ -44,6 +45,14 @@ internal object Ide {
         ActionManagerEx.getInstanceEx().tryToExecute(
             action, null, editor.contentComponent, "MeowPlugin", true,
         )
+    }
+
+    /** [act] for editor-less surfaces (tool-window trees): same invocation
+     *  path, the component as context. No hint surface here — an unknown id
+     *  is inert, like every other undefined key on a tree. */
+    fun actOn(component: JComponent, id: String) {
+        val action = ActionManager.getInstance().getAction(id) ?: return
+        ActionManagerEx.getInstanceEx().tryToExecute(action, null, component, "MeowPlugin", true)
     }
 
     fun hint(editor: Editor, text: String) {

@@ -16,8 +16,9 @@
 "   nmap <key> <meow keys>            NORMAL-mode key -> replayed meow keys
 "   nnoremap ...                      like nmap, but the RHS resolves through
 "                                     these bundled defaults, skipping user maps
-"   mmap / mnoremap <key> <target>    the same, for MOTION mode (unused by
-"                                     default: read-only editors stay NORMAL)
+"   mmap / mnoremap <key> <target>    the same, for MOTION mode (the keymap
+"                                     of tool-window trees; read-only
+"                                     editors stay NORMAL)
 "   map <leader><seq> <target>        keypad (SPC) entry
 "   desc <leader><seq> <text>         which-key label for an entry or a group
 "   set timeoutlen=300                which-key popup delay in ms
@@ -113,11 +114,23 @@ nmap Y meow-sync-grab
 nmap z meow-pop-selection
 nmap ' repeat
 
-" MOTION mode — meow's reduced state for special contexts. Unused by
-" default: read-only editors (diff sides, viewers) stay in NORMAL with the
-" modify commands inert, like read-only buffers in Emacs.
+" MOTION mode — meow's reduced state for special contexts, exactly like
+" special buffers in Emacs. Read-only editors do NOT use it (they stay
+" NORMAL, like Emacs read-only buffers, with the modify commands inert);
+" it IS the keymap of tool-window trees — project view, structure, TODO,
+" find results, ... — where j/k/h/l move like the arrow keys (h collapses
+" or goes to the parent, l expands or enters), q hides the tool window,
+" and every unmapped key keeps its native meaning: Enter opens, any other
+" letter still starts speed search. Add your own the same way, e.g.
+"   mmap o <action>(EditSource)            open without leaving the tree
+"   mmap r <action>(SynchronizeCurrentFile) NERDTree-style refresh
+" and `mmap <key> ignore` gives a key back to the tree (native speed
+" search) — on trees ignore means don't intercept, not swallow.
 mmap j meow-next
 mmap k meow-prev
+mmap h meow-left
+mmap l meow-right
+mmap q <action>(HideActiveWindow)
 
 " ============================================================================
 " The keypad (SPC) table — every entry an rc line, like the layout above

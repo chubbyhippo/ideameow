@@ -29,6 +29,7 @@ import java.io.File
 class ReloadRcAction : AnAction(), DumbAware {
     override fun actionPerformed(e: AnActionEvent) {
         Rc.load()
+        TreeMeow.refresh() // a focused tree picks the new mmap keys up now
         val c = Rc.config
         Rc.notify(
             "Reloaded ~/${Rc.FILE_NAME}: ${c.normal.size} normal map(s), " +

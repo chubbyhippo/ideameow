@@ -23,6 +23,7 @@
         <rawEditorTypedHandler implementationClass="io.github.chubbyhippo.ideameow.MeowTypedHandler"/>
         <editorActionHandler action="EditorEscape" implementationClass="io.github.chubbyhippo.ideameow.MeowEscapeHandler"/>
         <editorFactoryListener implementation="io.github.chubbyhippo.ideameow.MeowEditorFactoryListener"/>
+        <postStartupActivity implementation="io.github.chubbyhippo.ideameow.TreeMeowStartup"/>
         <statusBarWidgetFactory id="MeowMode" implementation="io.github.chubbyhippo.ideameow.MeowWidgetFactory"/>
         <notificationGroup id="ideameow" displayType="BALLOON"/>
     </extensions>

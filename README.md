@@ -14,11 +14,12 @@ The states you know from meow:
 
 - **NORMAL** — keys are commands, block cursor. You start here.
 - **INSERT** — keys type text. `i a c I A` get you in, `ESC` gets you out.
-- **MOTION** — meow's reduced state for special contexts (`j`/`k`/`SPC` by
-  default, rebindable with `mmap`). Read-only editors do *not* use it: like
-  read-only buffers in Emacs they stay in NORMAL — every motion, selection,
-  search and avy jump works, and the modify commands are simply inert
-  (meow's `meow--allow-modify-p`). Nothing enters MOTION by default.
+- **MOTION** — meow's reduced state for special contexts, rebindable with
+  `mmap`. Read-only editors do *not* use it: like read-only buffers in Emacs
+  they stay in NORMAL — every motion, selection, search and avy jump works,
+  and the modify commands are simply inert (meow's `meow--allow-modify-p`).
+  What *does* answer to it, like special buffers in Emacs: tool-window
+  trees — see below.
 - **KEYPAD** — `SPC` as the leader, dispatching IDE actions Emacs-style
   (`SPC x f` = open file, `SPC w v` = split…). A which-key popup lists your
   options whenever you pause on a prefix.
@@ -35,6 +36,17 @@ writable dialog fields such as the VCS commit message box (like IdeaVim's
 `ideavimsupport=dialog`). One-line fields and consoles keep native editing,
 and `ESC` in a diff still closes it when there is nothing meow-related to
 cancel.
+
+**Tool-window trees** — the project view, structure, TODO, find results, and
+every other tree — answer to the MOTION map, like special buffers in Emacs:
+`j`/`k` move the selection, `h` collapses or goes to the parent, `l` expands
+or enters, `q` hides the tool window. Everything else stays native: `Enter`
+opens, and any *unmapped* letter still starts speed search. Add your own
+tree keys with `mmap` lines in `~/.ideameowrc`, e.g.
+`mmap o <action>(EditSource)` or `mmap r <action>(SynchronizeCurrentFile)`;
+`mmap <key> ignore` gives a key back to the tree (so `mmap q ignore` makes
+`q` type into speed search again). Meow commands other than the four
+motions have no tree meaning and are simply inert there.
 
 And one idea borrowed straight from meow itself: **the plugin binds no keys in
 code.** The entire keymap — the NORMAL/MOTION layout *and* the whole `SPC`
@@ -125,7 +137,7 @@ ideameow reads an `.ideavimrc`-style file from your home directory:
 | `nmap <key> <action>(ActionId)` | NORMAL key runs an IDE action |
 | `nmap <key> <keys>` | NORMAL key replays a meow key sequence, e.g. `nmap Z ,b` |
 | `nnoremap` / `noremap` | like `nmap`/`map`, but the replayed keys resolve through the bundled defaults, ignoring your other mappings |
-| `mmap` / `mnoremap` | the same three target forms, for MOTION mode (unused by default — read-only editors stay in NORMAL) |
+| `mmap` / `mnoremap` | the same three target forms, for MOTION mode — the keymap of tool-window trees (read-only editors stay in NORMAL) |
 | `map <leader><seq> <action>(Id)` | keypad entry: `SPC` + sequence runs the action (yours override the bundled defaults) |
 | `map <leader><seq> <keys>` | keypad entry replaying meow keys after the keypad closes |
 | `desc <leader><seq> <text>` | which-key label for an entry (exact seq) or a group (prefix) |
@@ -206,9 +218,10 @@ All deliberate, none accidental:
   with modifications gated like meow's `meow--allow-modify-p`: kill / change /
   backspace / replace are silently inert, delete / yank / open / swap-grab
   answer "Buffer is read-only". `i`/`a` still switch to INSERT (as in Emacs)
-  but typing is refused by the platform. MOTION exists for `mmap` setups but
-  nothing attaches to it by default; IDE tool windows keep their own keys
-  (the commit message box is the exception — it gets full meow editing).
+  but typing is refused by the platform. No *editor* attaches to MOTION by
+  default, but tool-window trees answer to the `mmap` map (`j k h l` are the
+  arrow keys, `q` quits — dired-style; unmapped keys, `Enter`, and speed
+  search stay native); the commit message box gets full meow editing.
 
 ## Hacking on it
 
