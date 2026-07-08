@@ -22,7 +22,6 @@ package io.github.chubbyhippo.ideameow
  * meow-expand digits, meow-reverse, meow-pop-selection.
  */
 class SelectionSpec : MeowSpec() {
-
     fun `test given caret on a word when w then the word is marked and caret sits at its end`() {
         given("two words", "<caret>hello world")
         whenKeys("w")

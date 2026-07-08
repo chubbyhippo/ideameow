@@ -1,0 +1,10 @@
+root = true
+
+[*.{kt,kts}]
+ktlint_code_style = ktlint_official
+
+[**/test/**.kt]
+# JUnit3 platform fixtures discover test methods by NAME (they carry no @Test
+# annotation), and the specs use Kotlin's own recommended backtick sentence
+# names — ktlint's function-naming rule cannot recognize them as tests.
+ktlint_standard_function-naming = disabled

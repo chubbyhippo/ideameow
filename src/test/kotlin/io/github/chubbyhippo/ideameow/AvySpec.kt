@@ -31,13 +31,17 @@ import com.intellij.openapi.editor.ex.EditorEx
  * timer in production; specs end the input phase with [Avy.finishInput].
  */
 class AvySpec : MeowSpec() {
-
     private fun timeout() = Avy.finishInput(ed, st)
 
     private fun pressEsc() {
-        val noop = object : EditorActionHandler() {
-            override fun doExecute(editor: Editor, caret: Caret?, dataContext: DataContext?) {}
-        }
+        val noop =
+            object : EditorActionHandler() {
+                override fun doExecute(
+                    editor: Editor,
+                    caret: Caret?,
+                    dataContext: DataContext?,
+                ) {}
+            }
         MeowEscapeHandler(noop).execute(ed, null, (ed as EditorEx).dataContext)
     }
 

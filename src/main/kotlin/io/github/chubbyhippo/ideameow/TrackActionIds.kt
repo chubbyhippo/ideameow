@@ -45,7 +45,6 @@ import java.awt.datatransfer.StringSelection
  * (and the toggle action itself is excluded from tracking).
  */
 object TrackActionIds {
-
     @Volatile
     var enabled = false
 
@@ -65,8 +64,11 @@ object TrackActionIds {
         expire()
         if (!enabled) lastTrackedId = null
         Rc.notify(
-            if (enabled) "Tracking action ids — perform any action to see its id (SPC i d stops)"
-            else "Stopped tracking action ids",
+            if (enabled) {
+                "Tracking action ids — perform any action to see its id (SPC i d stops)"
+            } else {
+                "Stopped tracking action ids"
+            },
             NotificationType.INFORMATION,
         )
     }
@@ -83,12 +85,14 @@ object TrackActionIds {
     private fun showId(id: String?) {
         expire()
         runCatching {
-            val n = NotificationGroupManager.getInstance()
-                .getNotificationGroup("ideameow")
-                .createNotification(
-                    if (id != null) "Action id: <code>$id</code>" else "<i>Cannot detect action id</i>",
-                    NotificationType.INFORMATION,
-                )
+            val n =
+                NotificationGroupManager
+                    .getInstance()
+                    .getNotificationGroup("ideameow")
+                    .createNotification(
+                        if (id != null) "Action id: <code>$id</code>" else "<i>Cannot detect action id</i>",
+                        NotificationType.INFORMATION,
+                    )
             n.addAction(StopTracking(n))
             if (id != null) n.addAction(CopyActionId(id, n))
             notification = n
@@ -101,7 +105,9 @@ object TrackActionIds {
         notification = null
     }
 
-    class StopTracking(private val n: Notification) : AnAction("Stop Tracking") {
+    class StopTracking(
+        private val n: Notification,
+    ) : AnAction("Stop Tracking") {
         override fun actionPerformed(e: AnActionEvent) {
             enabled = false
             lastTrackedId = null
@@ -109,7 +115,10 @@ object TrackActionIds {
         }
     }
 
-    class CopyActionId(private val id: String, private val n: Notification) : AnAction("Copy Action Id") {
+    class CopyActionId(
+        private val id: String,
+        private val n: Notification,
+    ) : AnAction("Copy Action Id") {
         override fun actionPerformed(e: AnActionEvent) {
             CopyPasteManager.getInstance().setContents(StringSelection(id))
             n.expire()
@@ -122,7 +131,10 @@ object TrackActionIds {
 class TrackActionIdsAction : DumbAwareToggleAction() {
     override fun isSelected(e: AnActionEvent): Boolean = TrackActionIds.enabled
 
-    override fun setSelected(e: AnActionEvent, state: Boolean) {
+    override fun setSelected(
+        e: AnActionEvent,
+        state: Boolean,
+    ) {
         if (TrackActionIds.enabled != state) TrackActionIds.toggle()
     }
 
@@ -132,7 +144,10 @@ class TrackActionIdsAction : DumbAwareToggleAction() {
 /** Application-level AnActionListener (plugin.xml applicationListeners):
  *  IdeaVim notifies from beforeActionPerformed, so this does too. */
 class MeowActionIdListener : AnActionListener {
-    override fun beforeActionPerformed(action: AnAction, event: AnActionEvent) {
+    override fun beforeActionPerformed(
+        action: AnAction,
+        event: AnActionEvent,
+    ) {
         TrackActionIds.track(action)
     }
 }

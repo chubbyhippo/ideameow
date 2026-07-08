@@ -33,38 +33,58 @@ import javax.swing.JComponent
  * depend on this narrow surface instead of the action system's details.
  */
 internal object Ide {
-
-    fun act(editor: Editor, @Suppress("UNUSED_PARAMETER") ctx: DataContext?, id: String) {
-        val action = ActionManager.getInstance().getAction(id)
-            ?: run { hint(editor, "Unknown action: $id"); return }
+    fun act(
+        editor: Editor,
+        @Suppress("UNUSED_PARAMETER") ctx: DataContext?,
+        id: String,
+    ) {
+        val action =
+            ActionManager.getInstance().getAction(id)
+                ?: run {
+                    hint(editor, "Unknown action: $id")
+                    return
+                }
         // the platform's own programmatic-invocation path: update (properly
         // threaded), the enabled gate, then perform — identical to a keymap
         // press. Hand-rolling update+perform here broke in-IDE dispatch while
         // passing headless (and skipping update trips assertions, e.g. undo
         // past an exhausted stack fails UndoManagerImpl's isUndoAvailable).
         ActionManagerEx.getInstanceEx().tryToExecute(
-            action, null, editor.contentComponent, "MeowPlugin", true,
+            action,
+            null,
+            editor.contentComponent,
+            "MeowPlugin",
+            true,
         )
     }
 
     /** [act] for editor-less surfaces (tool-window trees): same invocation
      *  path, the component as context. No hint surface here — an unknown id
      *  is inert, like every other undefined key on a tree. */
-    fun actOn(component: JComponent, id: String) {
+    fun actOn(
+        component: JComponent,
+        id: String,
+    ) {
         val action = ActionManager.getInstance().getAction(id) ?: return
         ActionManagerEx.getInstanceEx().tryToExecute(action, null, component, "MeowPlugin", true)
     }
 
-    fun hint(editor: Editor, text: String) {
+    fun hint(
+        editor: Editor,
+        text: String,
+    ) {
         // best-effort: hints cannot render in headless (test) mode
         runCatching { HintManager.getInstance().showInformationHint(editor, text) }
     }
 
-    fun runWrite(editor: Editor, name: String, body: () -> Unit) {
+    fun runWrite(
+        editor: Editor,
+        name: String,
+        body: () -> Unit,
+    ) {
         WriteCommandAction.runWriteCommandAction(editor.project, name, "meow", { body() })
     }
 
     /** The kill-ring is the system clipboard (meow-use-clipboard behavior). */
-    fun clipboard(): String? =
-        CopyPasteManager.getInstance().getContents(DataFlavor.stringFlavor)
+    fun clipboard(): String? = CopyPasteManager.getInstance().getContents(DataFlavor.stringFlavor)
 }

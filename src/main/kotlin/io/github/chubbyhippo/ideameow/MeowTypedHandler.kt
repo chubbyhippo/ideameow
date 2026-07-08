@@ -27,8 +27,14 @@ import com.intellij.openapi.editor.actionSystem.TypedActionHandler
  * as meow commands in NORMAL/MOTION/KEYPAD, and delegates in INSERT or in
  * editors that have no meow state (consoles, injected fragments, ...).
  */
-class MeowTypedHandler(private val original: TypedActionHandler) : TypedActionHandler {
-    override fun execute(editor: Editor, charTyped: Char, dataContext: DataContext) {
+class MeowTypedHandler(
+    private val original: TypedActionHandler,
+) : TypedActionHandler {
+    override fun execute(
+        editor: Editor,
+        charTyped: Char,
+        dataContext: DataContext,
+    ) {
         if (!Engine.handleChar(editor, charTyped, dataContext)) {
             original.execute(editor, charTyped, dataContext)
         }

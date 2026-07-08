@@ -37,7 +37,6 @@ import com.intellij.util.ui.UIUtil
  * listener's deferred decision is flushed with the EDT queue.
  */
 class AttachSpec : BasePlatformTestCase() {
-
     private val factory get() = EditorFactory.getInstance()
     private val created = mutableListOf<Editor>()
 
@@ -61,8 +60,11 @@ class AttachSpec : BasePlatformTestCase() {
         val doc = factory.createDocument("feat: teach meow the commit box\n\nlonger body")
         doc.setReadOnly(!writable)
         val editor =
-            if (viewer) factory.createViewer(doc, project, kind)
-            else factory.createEditor(doc, project, kind)
+            if (viewer) {
+                factory.createViewer(doc, project, kind)
+            } else {
+                factory.createEditor(doc, project, kind)
+            }
         (editor as EditorEx).isOneLineMode = oneLine // EditorTextField does this after creation
         created += editor
         return editor
@@ -74,15 +76,17 @@ class AttachSpec : BasePlatformTestCase() {
         UIUtil.dispatchAllInvocationEvents() // flush the deferred UNTYPED decision
     }
 
-    private fun thenMeowIsAttached(editor: Editor, mode: MeowMode) {
+    private fun thenMeowIsAttached(
+        editor: Editor,
+        mode: MeowMode,
+    ) {
         val st = Meow.state(editor)
         assertNotNull("expected meow state on the editor", st)
         assertEquals("meow mode", mode, st!!.mode)
         assertTrue("block cursor in a modal state", editor.settings.isBlockCursor)
     }
 
-    private fun thenMeowStaysAway(editor: Editor) =
-        assertNull("expected no meow state on the editor", Meow.state(editor))
+    private fun thenMeowStaysAway(editor: Editor) = assertNull("expected no meow state on the editor", Meow.state(editor))
 
     // ---------------------------------------------------------------- specs
 

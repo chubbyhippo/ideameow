@@ -33,7 +33,11 @@ object Meow {
 
     fun state(editor: Editor): MeowState? = editor.getUserData(KEY)
 
-    fun setMode(editor: Editor, st: MeowState, mode: MeowMode) {
+    fun setMode(
+        editor: Editor,
+        st: MeowState,
+        mode: MeowMode,
+    ) {
         st.mode = mode
         if (mode != MeowMode.KEYPAD) st.keypad.setLength(0)
         editor.settings.isBlockCursor = mode != MeowMode.INSERT

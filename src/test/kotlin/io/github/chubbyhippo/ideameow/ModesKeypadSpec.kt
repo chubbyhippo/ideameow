@@ -25,11 +25,15 @@ import com.intellij.openapi.editor.ex.EditorEx
 
 /** State transitions: INSERT/NORMAL/MOTION/KEYPAD, escape, keypad dispatch. */
 class ModesKeypadSpec : MeowSpec() {
-
     private fun pressEsc() {
-        val noop = object : EditorActionHandler() {
-            override fun doExecute(editor: Editor, caret: Caret?, dataContext: DataContext?) {}
-        }
+        val noop =
+            object : EditorActionHandler() {
+                override fun doExecute(
+                    editor: Editor,
+                    caret: Caret?,
+                    dataContext: DataContext?,
+                ) {}
+            }
         MeowEscapeHandler(noop).execute(ed, null, (ed as EditorEx).dataContext)
     }
 

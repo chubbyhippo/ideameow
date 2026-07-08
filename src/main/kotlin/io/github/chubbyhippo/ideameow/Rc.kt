@@ -77,8 +77,7 @@ object Rc {
 
     /** The bundled .ideameowrc verbatim — what a first ~/.ideameowrc is
      *  seeded from (SPC c m), so the whole default keymap is there to edit. */
-    fun defaultsText(): String? =
-        javaClass.getResourceAsStream("/$FILE_NAME")?.bufferedReader()?.use { it.readText() }
+    fun defaultsText(): String? = javaClass.getResourceAsStream("/$FILE_NAME")?.bufferedReader()?.use { it.readText() }
 
     fun setForTest(c: Config) {
         config = c
@@ -96,7 +95,7 @@ object Rc {
         if (config.errors.isNotEmpty()) {
             notify(
                 "ideameow: problem(s) in ~/$FILE_NAME\n" + config.errors.joinToString("\n"),
-                NotificationType.WARNING
+                NotificationType.WARNING,
             )
         }
     }
@@ -109,7 +108,7 @@ object Rc {
             notify(
                 "ideameow: broken bundled $FILE_NAME (plugin bug)\n" +
                     defaultConfig.errors.joinToString("\n"),
-                NotificationType.ERROR
+                NotificationType.ERROR,
             )
         }
     }
@@ -117,20 +116,22 @@ object Rc {
     // -------------------------------------------------------- effective views
 
     /** Effective keypad table: bundled defaults with ~/.ideameowrc on top. */
-    fun keypad(): Map<String, Binding> =
-        LinkedHashMap(defaults().keypad).apply { putAll(cfg().keypad) }
+    fun keypad(): Map<String, Binding> = LinkedHashMap(defaults().keypad).apply { putAll(cfg().keypad) }
 
     /** Effective which-key labels: bundled defaults with ~/.ideameowrc on top. */
-    fun keypadDescs(): Map<String, String> =
-        HashMap(defaults().keypadDesc).apply { putAll(cfg().keypadDesc) }
+    fun keypadDescs(): Map<String, String> = HashMap(defaults().keypadDesc).apply { putAll(cfg().keypadDesc) }
 
     fun whichKeyEnabled(): Boolean = cfg().whichKey ?: defaults().whichKey ?: true
 
     fun whichKeyDelayMs(): Int = cfg().whichKeyDelayMs ?: defaults().whichKeyDelayMs ?: 250
 
-    fun notify(text: String, type: NotificationType) {
+    fun notify(
+        text: String,
+        type: NotificationType,
+    ) {
         runCatching {
-            NotificationGroupManager.getInstance()
+            NotificationGroupManager
+                .getInstance()
                 .getNotificationGroup("ideameow")
                 .createNotification(text, type)
                 .notify(null)

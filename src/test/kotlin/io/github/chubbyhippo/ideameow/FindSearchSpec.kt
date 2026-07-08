@@ -19,7 +19,6 @@ package io.github.chubbyhippo.ideameow
 
 /** meow-find, meow-till (+expand), meow-visit, meow-search. */
 class FindSearchSpec : MeowSpec() {
-
     fun `test given f X then selects from point through the char inclusive`() {
         given("marker text", "<caret>abcXdef")
         whenKeys("fX")
@@ -111,7 +110,7 @@ class FindSearchSpec : MeowSpec() {
         given("repeats", "foo <caret>bar foo bar")
         st.searchHistory.addLast(Regex("zzz"))
         whenKeys(",e") // transient symbol selection "bar" — doesn't match zzz
-        whenKeys("n")  // meow-search adopts the region as the new pattern
+        whenKeys("n") // meow-search adopts the region as the new pattern
         thenSelection("bar")
         assertEquals(12, ed.selectionModel.selectionStart)
     }

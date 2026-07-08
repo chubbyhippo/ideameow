@@ -26,7 +26,6 @@ package io.github.chubbyhippo.ideameow
  * re-arms or breaks the pair.
  */
 class ToolWindowEscapeSpec : MeowSpec() {
-
     override fun setUp() {
         super.setUp()
         ToolWindowEscape.reset()

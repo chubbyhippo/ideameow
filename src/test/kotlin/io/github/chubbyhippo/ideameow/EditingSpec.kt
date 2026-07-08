@@ -22,7 +22,6 @@ package io.github.chubbyhippo.ideameow
  * kill-line and join fallbacks), save, yank, replace, undo, repeat.
  */
 class EditingSpec : MeowSpec() {
-
     fun `test given a selection when i then INSERT starts at the selection beginning`() {
         given("word", "<caret>hello world")
         whenKeys("wi")
@@ -49,8 +48,10 @@ class EditingSpec : MeowSpec() {
     fun `test given INSERT mode then printable keys are not intercepted`() {
         given("word", "<caret>hello")
         whenKeys("i")
-        assertFalse("typed keys must reach the original handler in INSERT",
-            Engine.handleChar(ed, 'z', null))
+        assertFalse(
+            "typed keys must reach the original handler in INSERT",
+            Engine.handleChar(ed, 'z', null),
+        )
     }
 
     fun `test given A then a line opens below and INSERT starts`() {

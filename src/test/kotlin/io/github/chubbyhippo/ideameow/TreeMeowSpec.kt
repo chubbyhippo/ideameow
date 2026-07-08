@@ -35,7 +35,6 @@ import javax.swing.tree.DefaultTreeModel
  * navigates through the same ActionMap names).
  */
 class TreeMeowSpec : MeowSpec() {
-
     /**
      * root
      * ├── a
@@ -56,8 +55,7 @@ class TreeMeowSpec : MeowSpec() {
         }
     }
 
-    private fun JTree.selectedText() =
-        (lastSelectedPathComponent as? DefaultMutableTreeNode)?.userObject as String?
+    private fun JTree.selectedText() = (lastSelectedPathComponent as? DefaultMutableTreeNode)?.userObject as String?
 
     // ------------------------------------------------- the Swing contract
 
@@ -140,7 +138,7 @@ class TreeMeowSpec : MeowSpec() {
             """
             mnoremap g jj
             mmap j ignore
-            """.trimIndent()
+            """.trimIndent(),
         )
         val tree = givenTree()
         TreeMeow.dispatch(tree, 'j')
@@ -152,11 +150,12 @@ class TreeMeowSpec : MeowSpec() {
     fun `test given an action mmap then it dispatches with the tree as context`() {
         val id = "IdeameowTreeMeowSpecProbe"
         var performed = 0
-        val probe = object : AnAction(), DumbAware {
-            override fun actionPerformed(e: AnActionEvent) {
-                performed++
+        val probe =
+            object : AnAction(), DumbAware {
+                override fun actionPerformed(e: AnActionEvent) {
+                    performed++
+                }
             }
-        }
         ActionManager.getInstance().registerAction(id, probe)
         try {
             givenRc("mmap z <action>($id)")

@@ -30,25 +30,29 @@ import com.intellij.openapi.editor.Editor
  * the offsets still to come.
  */
 internal object Edits {
-
-    val commands: Map<String, MeowCommand> = buildMap {
-        put("meow-insert", MeowCommand { ed, st, _ -> insert(ed, st) })
-        put("meow-append", MeowCommand { ed, st, _ -> append(ed, st) })
-        put("meow-open-above", MeowCommand { ed, st, ctx -> openAbove(ed, st, ctx) })
-        put("meow-open-below", MeowCommand { ed, st, ctx -> openBelow(ed, st, ctx) })
-        put("meow-change", MeowCommand { ed, st, _ -> change(ed, st) })
-        put("meow-delete", MeowCommand { ed, st, _ -> delete(ed, st) })
-        put("meow-backward-delete", MeowCommand { ed, st, _ -> backwardDelete(ed, st) })
-        put("meow-kill", MeowCommand { ed, st, ctx -> kill(ed, st, ctx) })
-        put("meow-save", MeowCommand { ed, st, ctx -> save(ed, st, ctx) })
-        put("meow-yank", MeowCommand { ed, _, _ -> yank(ed) })
-        put("meow-replace", MeowCommand { ed, st, _ -> replace(ed, st) })
-        put("meow-undo", MeowCommand { ed, st, ctx -> undo(ed, st, ctx) })
-        put("meow-undo-in-selection", MeowCommand { ed, st, ctx -> undoInSelection(ed, st, ctx) })
-    }
+    val commands: Map<String, MeowCommand> =
+        buildMap {
+            put("meow-insert", MeowCommand { ed, st, _ -> insert(ed, st) })
+            put("meow-append", MeowCommand { ed, st, _ -> append(ed, st) })
+            put("meow-open-above", MeowCommand { ed, st, ctx -> openAbove(ed, st, ctx) })
+            put("meow-open-below", MeowCommand { ed, st, ctx -> openBelow(ed, st, ctx) })
+            put("meow-change", MeowCommand { ed, st, _ -> change(ed, st) })
+            put("meow-delete", MeowCommand { ed, st, _ -> delete(ed, st) })
+            put("meow-backward-delete", MeowCommand { ed, st, _ -> backwardDelete(ed, st) })
+            put("meow-kill", MeowCommand { ed, st, ctx -> kill(ed, st, ctx) })
+            put("meow-save", MeowCommand { ed, st, ctx -> save(ed, st, ctx) })
+            put("meow-yank", MeowCommand { ed, _, _ -> yank(ed) })
+            put("meow-replace", MeowCommand { ed, st, _ -> replace(ed, st) })
+            put("meow-undo", MeowCommand { ed, st, ctx -> undo(ed, st, ctx) })
+            put("meow-undo-in-selection", MeowCommand { ed, st, ctx -> undoInSelection(ed, st, ctx) })
+        }
 
     /** One write command over every caret, highest offset first. */
-    private inline fun editCarets(editor: Editor, commandName: String, crossinline edit: (Caret) -> Unit) {
+    private inline fun editCarets(
+        editor: Editor,
+        commandName: String,
+        crossinline edit: (Caret) -> Unit,
+    ) {
         Ide.runWrite(editor, commandName) {
             for (caret in editor.caretModel.allCarets.sortedByDescending { it.offset }) edit(caret)
         }
@@ -61,8 +65,7 @@ internal object Edits {
      * (and swap-grab) instead fail with Emacs' "Buffer is read-only" error —
      * surfaced here as an editor hint.
      */
-    internal fun allowModify(editor: Editor): Boolean =
-        editor.document.isWritable && !editor.isViewer
+    internal fun allowModify(editor: Editor): Boolean = editor.document.isWritable && !editor.isViewer
 
     /** @return true when the edit must be blocked — telling the user why. */
     internal fun blockedReadOnly(editor: Editor): Boolean {
@@ -71,7 +74,10 @@ internal object Edits {
         return true
     }
 
-    private fun insert(editor: Editor, st: MeowState) {
+    private fun insert(
+        editor: Editor,
+        st: MeowState,
+    ) {
         for (caret in editor.caretModel.allCarets) {
             if (caret.hasSelection()) caret.moveToOffset(caret.selectionStart)
             caret.removeSelection()
@@ -81,7 +87,10 @@ internal object Edits {
         Meow.setMode(editor, st, MeowMode.INSERT)
     }
 
-    private fun append(editor: Editor, st: MeowState) {
+    private fun append(
+        editor: Editor,
+        st: MeowState,
+    ) {
         for (caret in editor.caretModel.allCarets) {
             if (caret.hasSelection()) caret.moveToOffset(caret.selectionEnd)
             caret.removeSelection()
@@ -91,21 +100,32 @@ internal object Edits {
         Meow.setMode(editor, st, MeowMode.INSERT)
     }
 
-    private fun openBelow(editor: Editor, st: MeowState, ctx: DataContext?) {
+    private fun openBelow(
+        editor: Editor,
+        st: MeowState,
+        ctx: DataContext?,
+    ) {
         if (blockedReadOnly(editor)) return
         Selections.collapse(editor, st) // meow-open-below never cancels; RET just deactivates
         Ide.act(editor, ctx, "EditorStartNewLine")
         Meow.setMode(editor, st, MeowMode.INSERT)
     }
 
-    private fun openAbove(editor: Editor, st: MeowState, ctx: DataContext?) {
+    private fun openAbove(
+        editor: Editor,
+        st: MeowState,
+        ctx: DataContext?,
+    ) {
         if (blockedReadOnly(editor)) return
         Selections.collapse(editor, st) // as in openBelow: no history clearing
         Ide.act(editor, ctx, "EditorStartNewLineBefore")
         Meow.setMode(editor, st, MeowMode.INSERT)
     }
 
-    private fun change(editor: Editor, st: MeowState) {
+    private fun change(
+        editor: Editor,
+        st: MeowState,
+    ) {
         if (!allowModify(editor)) return // meow gates change silently
         // fallback meow-change-char at point-max: nothing happens, not even INSERT
         val primary = editor.caretModel.primaryCaret
@@ -127,7 +147,10 @@ internal object Edits {
         Meow.setMode(editor, st, MeowMode.INSERT)
     }
 
-    private fun delete(editor: Editor, st: MeowState) {
+    private fun delete(
+        editor: Editor,
+        st: MeowState,
+    ) {
         if (blockedReadOnly(editor)) return
         editCarets(editor, "Meow Delete") { caret ->
             if (caret.hasSelection()) {
@@ -141,7 +164,10 @@ internal object Edits {
         st.selType = SelType.NONE
     }
 
-    private fun backwardDelete(editor: Editor, st: MeowState) {
+    private fun backwardDelete(
+        editor: Editor,
+        st: MeowState,
+    ) {
         if (!allowModify(editor)) return // meow gates backspace silently
         editCarets(editor, "Meow Backward Delete") { caret ->
             if (caret.hasSelection()) {
@@ -161,7 +187,10 @@ internal object Edits {
      * and meow's point (the caret) moves past that newline too. Backward
      * selections and the last line are killed as-is.
      */
-    private fun prepareLineSelectionsForKill(editor: Editor, st: MeowState) {
+    private fun prepareLineSelectionsForKill(
+        editor: Editor,
+        st: MeowState,
+    ) {
         if (st.selType != SelType.LINE) return
         val len = editor.document.textLength
         for (caret in editor.caretModel.allCarets.sortedByDescending { it.selectionEnd }) {
@@ -175,10 +204,17 @@ internal object Edits {
         }
     }
 
-    private fun kill(editor: Editor, st: MeowState, ctx: DataContext?) {
+    private fun kill(
+        editor: Editor,
+        st: MeowState,
+        ctx: DataContext?,
+    ) {
         if (!allowModify(editor)) return // meow gates kill silently
         val sm = editor.selectionModel
-        if (st.selType == SelType.JOIN && sm.hasSelection()) { joinKill(editor, st); return }
+        if (st.selType == SelType.JOIN && sm.hasSelection()) {
+            joinKill(editor, st)
+            return
+        }
         if (sm.hasSelection()) {
             prepareLineSelectionsForKill(editor, st)
             Ide.act(editor, ctx, IdeActions.ACTION_EDITOR_CUT)
@@ -199,7 +235,10 @@ internal object Edits {
 
     /** Killing a join selection = delete-indentation: single space, none at
      *  line edges or against brackets (Emacs' fixup-whitespace). */
-    private fun joinKill(editor: Editor, st: MeowState) {
+    private fun joinKill(
+        editor: Editor,
+        st: MeowState,
+    ) {
         val sm = editor.selectionModel
         val s = sm.selectionStart
         val e = sm.selectionEnd
@@ -210,7 +249,9 @@ internal object Edits {
             val after = if (s < text.length) text[s] else '\n'
             if (before != '\n' && after != '\n' && !before.isWhitespace() && !after.isWhitespace() &&
                 after !in ")]}.,;:" && before !in "([{"
-            ) editor.document.insertString(s, " ")
+            ) {
+                editor.document.insertString(s, " ")
+            }
             editor.caretModel.moveToOffset(s)
         }
         Selections.collapse(editor, st) // an edit, not a cancel: history survives
@@ -219,7 +260,11 @@ internal object Edits {
     /** meow-save: copy — with kill-ring-save's mark deactivation: the
      *  selection is cancelled afterwards and the caret stays at point
      *  (past the newline for a forward line selection). */
-    private fun save(editor: Editor, st: MeowState, ctx: DataContext?) {
+    private fun save(
+        editor: Editor,
+        st: MeowState,
+        ctx: DataContext?,
+    ) {
         if (!editor.selectionModel.hasSelection()) return
         prepareLineSelectionsForKill(editor, st)
         Ide.act(editor, ctx, IdeActions.ACTION_EDITOR_COPY)
@@ -240,7 +285,10 @@ internal object Edits {
     }
 
     /** meow-replace: selection := clipboard; the clipboard stays intact. */
-    private fun replace(editor: Editor, st: MeowState) {
+    private fun replace(
+        editor: Editor,
+        st: MeowState,
+    ) {
         if (!allowModify(editor)) return // meow gates replace silently
         if (!editor.selectionModel.hasSelection()) return
         val clip = (Ide.clipboard() ?: return).trimEnd('\n')
@@ -257,14 +305,22 @@ internal object Edits {
 
     /** meow-undo cancels the selection (with its history) BEFORE undoing —
      *  but only when a region is active. */
-    private fun undo(editor: Editor, st: MeowState, ctx: DataContext?) {
+    private fun undo(
+        editor: Editor,
+        st: MeowState,
+        ctx: DataContext?,
+    ) {
         if (editor.selectionModel.hasSelection()) Selections.cancel(editor, st)
         Ide.act(editor, ctx, IdeActions.ACTION_UNDO)
     }
 
     /** meow-undo-in-selection only acts with an active region; region-scoped
      *  undo has no IDE analog, so it is a plain undo (see README). */
-    private fun undoInSelection(editor: Editor, st: MeowState, ctx: DataContext?) {
+    private fun undoInSelection(
+        editor: Editor,
+        st: MeowState,
+        ctx: DataContext?,
+    ) {
         if (editor.selectionModel.hasSelection()) Ide.act(editor, ctx, IdeActions.ACTION_UNDO)
     }
 }

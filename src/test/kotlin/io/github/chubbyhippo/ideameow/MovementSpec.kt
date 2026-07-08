@@ -19,7 +19,6 @@ package io.github.chubbyhippo.ideameow
 
 /** meow-left/right/next/prev and the -expand variants, counts, negative arg. */
 class MovementSpec : MeowSpec() {
-
     fun `test given a caret when l then it moves right without selecting`() {
         given("plain text", "<caret>hello")
         whenKeys("l")

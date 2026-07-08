@@ -25,13 +25,16 @@ import com.intellij.openapi.ui.Messages
  * into the same ring (see Motions), which is why `n` works right after `w`.
  */
 internal object Search {
+    val commands: Map<String, MeowCommand> =
+        mapOf(
+            "meow-search" to MeowCommand { ed, st, _ -> search(ed, st) },
+            "meow-visit" to MeowCommand { ed, st, _ -> visit(ed, st) },
+        )
 
-    val commands: Map<String, MeowCommand> = mapOf(
-        "meow-search" to MeowCommand { ed, st, _ -> search(ed, st) },
-        "meow-visit" to MeowCommand { ed, st, _ -> visit(ed, st) },
-    )
-
-    fun push(st: MeowState, re: Regex) {
+    fun push(
+        st: MeowState,
+        re: Regex,
+    ) {
         st.searchHistory.removeAll { it.pattern == re.pattern }
         st.searchHistory.addLast(re)
         while (st.searchHistory.size > 50) st.searchHistory.removeFirst()
@@ -40,49 +43,83 @@ internal object Search {
     /** meow-search: car of the ring; a region that doesn't match the pattern
      *  becomes the new pattern (regexp-quoted); wraps at buffer edges; a
      *  reversed selection searches backward. */
-    private fun search(editor: Editor, st: MeowState) {
+    private fun search(
+        editor: Editor,
+        st: MeowState,
+    ) {
         val sm = editor.selectionModel
         var re = st.searchHistory.lastOrNull()
         if (sm.hasSelection()) {
-            val selText = editor.document.charsSequence
-                .subSequence(sm.selectionStart, sm.selectionEnd).toString()
+            val selText =
+                editor.document.charsSequence
+                    .subSequence(sm.selectionStart, sm.selectionEnd)
+                    .toString()
             if (selText.isNotEmpty() && (re == null || !re.matches(selText))) {
                 re = Regex(Regex.escape(selText))
                 push(st, re)
             }
         }
-        if (re == null) { Ide.hint(editor, "No search pattern"); return }
+        if (re == null) {
+            Ide.hint(editor, "No search pattern")
+            return
+        }
         searchWith(editor, st, re, backward = st.takeCount(1) < 0 || Selections.backwardP(editor))
     }
 
     /** meow-visit: read a regexp, push it to the ring, select the match. */
-    private fun visit(editor: Editor, st: MeowState) {
+    private fun visit(
+        editor: Editor,
+        st: MeowState,
+    ) {
         val backward = st.takeCount(1) < 0
         val input = Messages.showInputDialog(editor.project, "Visit (regexp):", "Meow Visit", null)
         if (input.isNullOrEmpty()) return
-        val re = try { Regex(input) } catch (_: Exception) { Regex(Regex.escape(input)) }
+        val re =
+            try {
+                Regex(input)
+            } catch (_: Exception) {
+                Regex(Regex.escape(input))
+            }
         push(st, re)
         searchWith(editor, st, re, backward)
     }
 
-    private fun searchWith(editor: Editor, st: MeowState, re: Regex, backward: Boolean) {
+    private fun searchWith(
+        editor: Editor,
+        st: MeowState,
+        re: Regex,
+        backward: Boolean,
+    ) {
         val text = editor.document.charsSequence
         val caret = editor.caretModel.offset
-        val m: MatchResult? = if (!backward) {
-            re.find(text, caret) ?: re.find(text, 0)
-        } else {
-            var last: MatchResult? = null
-            var cur = re.find(text, 0)
-            while (cur != null && cur.range.last + 1 <= caret) { last = cur; cur = cur.next() }
-            if (last == null) { // wrap to the end of the buffer
-                var tail: MatchResult? = cur
-                while (true) { val nx = tail?.next() ?: break; tail = nx }
-                last = tail
+        val m: MatchResult? =
+            if (!backward) {
+                re.find(text, caret) ?: re.find(text, 0)
+            } else {
+                var last: MatchResult? = null
+                var cur = re.find(text, 0)
+                while (cur != null && cur.range.last + 1 <= caret) {
+                    last = cur
+                    cur = cur.next()
+                }
+                if (last == null) { // wrap to the end of the buffer
+                    var tail: MatchResult? = cur
+                    while (true) {
+                        val nx = tail?.next() ?: break
+                        tail = nx
+                    }
+                    last = tail
+                }
+                last
             }
-            last
+        if (m == null || m.value.isEmpty()) {
+            Ide.hint(editor, "No match: ${re.pattern}")
+            return
         }
-        if (m == null || m.value.isEmpty()) { Ide.hint(editor, "No match: ${re.pattern}"); return }
-        if (!backward) Selections.select(editor, st, SelType.VISIT, m.range.first, m.range.last + 1, expand = false)
-        else Selections.select(editor, st, SelType.VISIT, m.range.last + 1, m.range.first, expand = false)
+        if (!backward) {
+            Selections.select(editor, st, SelType.VISIT, m.range.first, m.range.last + 1, expand = false)
+        } else {
+            Selections.select(editor, st, SelType.VISIT, m.range.last + 1, m.range.first, expand = false)
+        }
     }
 }

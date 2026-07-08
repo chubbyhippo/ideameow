@@ -38,7 +38,6 @@ package io.github.chubbyhippo.ideameow
  * can be pasted without errors.
  */
 internal object RcParser {
-
     private val ACTION_RE = Regex("""(?i)<action>\(([\w.$]+)\)""")
     private val WHICHKEY_LET_RE = Regex("""^let\s+g:WhichKeyDesc\w*\s*=\s*"(.+)"$""")
 
@@ -46,6 +45,7 @@ internal object RcParser {
         val c = Rc.Config()
         for ((i, raw) in lines.withIndex()) {
             var line = raw.trim()
+
             fun err(msg: String) = c.errors.add("line ${i + 1}: $msg")
 
             if (line.isEmpty() || line.startsWith("\"") || line.startsWith("#")) continue
@@ -66,30 +66,58 @@ internal object RcParser {
             val cmd = split[0]
             val rest = split.getOrNull(1)?.trim() ?: ""
             when (cmd) {
-                "let" -> {} // mapleader and friends: accepted, nothing to do
-                "set" -> parseSet(c, rest)
-                "desc" -> parseDescBody(c, rest, ::err)
-                "map", "noremap", "nmap", "nnoremap", "mmap", "mnoremap" -> parseMap(c, cmd, rest, ::err)
-                else -> err("unknown command '$cmd'")
+                "let" -> {}
+
+                // mapleader and friends: accepted, nothing to do
+                "set" -> {
+                    parseSet(c, rest)
+                }
+
+                "desc" -> {
+                    parseDescBody(c, rest, ::err)
+                }
+
+                "map", "noremap", "nmap", "nnoremap", "mmap", "mnoremap" -> {
+                    parseMap(c, cmd, rest, ::err)
+                }
+
+                else -> {
+                    err("unknown command '$cmd'")
+                }
             }
         }
         return c
     }
 
-    private fun parseSet(c: Rc.Config, rest: String) {
+    private fun parseSet(
+        c: Rc.Config,
+        rest: String,
+    ) {
         when {
-            rest == "which-key" -> c.whichKey = true
-            rest == "nowhich-key" -> c.whichKey = false
+            rest == "which-key" -> {
+                c.whichKey = true
+            }
+
+            rest == "nowhich-key" -> {
+                c.whichKey = false
+            }
+
             rest.startsWith("timeoutlen") -> {
-                val n = rest.substringAfter("=", "").trim().toIntOrNull()
-                    ?: rest.split(Regex("\\s+")).getOrNull(1)?.toIntOrNull()
+                val n =
+                    rest.substringAfter("=", "").trim().toIntOrNull()
+                        ?: rest.split(Regex("\\s+")).getOrNull(1)?.toIntOrNull()
                 if (n != null && n >= 0) c.whichKeyDelayMs = n
             }
+
             else -> {} // ignore unknown options so .ideavimrc content pastes cleanly
         }
     }
 
-    private fun parseDescBody(c: Rc.Config, body: String, err: (String) -> Unit) {
+    private fun parseDescBody(
+        c: Rc.Config,
+        body: String,
+        err: (String) -> Unit,
+    ) {
         if (!body.startsWith("<leader>")) {
             err("descriptions must start with <leader>: $body")
             return
@@ -105,7 +133,12 @@ internal object RcParser {
         c.keypadDesc[seq] = desc
     }
 
-    private fun parseMap(c: Rc.Config, cmd: String, rest: String, err: (String) -> Unit) {
+    private fun parseMap(
+        c: Rc.Config,
+        cmd: String,
+        rest: String,
+        err: (String) -> Unit,
+    ) {
         val parts = rest.split(Regex("\\s+"), limit = 2)
         if (parts.size < 2) {
             err("$cmd needs a key and a target")
@@ -117,22 +150,30 @@ internal object RcParser {
         val motion = cmd == "mmap" || cmd == "mnoremap"
 
         val action = ACTION_RE.matchEntire(rhs)?.groupValues?.get(1)
-        val binding = when {
-            action != null -> Rc.Binding(action = action, recursive = recursive)
-            rhs in Engine.COMMANDS -> Rc.Binding(command = rhs, recursive = recursive)
-            rhs.startsWith("meow-") -> {
-                err("unknown meow command '$rhs'")
-                return
-            }
-            else -> {
-                val keys = parseKeys(rhs.replace(Regex("\\s+"), ""), err) ?: return
-                if (keys.isEmpty()) {
-                    err("empty target in '$cmd $rest'")
+        val binding =
+            when {
+                action != null -> {
+                    Rc.Binding(action = action, recursive = recursive)
+                }
+
+                rhs in Engine.COMMANDS -> {
+                    Rc.Binding(command = rhs, recursive = recursive)
+                }
+
+                rhs.startsWith("meow-") -> {
+                    err("unknown meow command '$rhs'")
                     return
                 }
-                Rc.Binding(keys = keys, recursive = recursive)
+
+                else -> {
+                    val keys = parseKeys(rhs.replace(Regex("\\s+"), ""), err) ?: return
+                    if (keys.isEmpty()) {
+                        err("empty target in '$cmd $rest'")
+                        return
+                    }
+                    Rc.Binding(keys = keys, recursive = recursive)
+                }
             }
-        }
 
         if (lhs.startsWith("<leader>")) {
             if (motion) {
@@ -150,15 +191,25 @@ internal object RcParser {
 
         val keys = parseKeys(lhs, err) ?: return
         when {
-            keys.length != 1 ->
+            keys.length != 1 -> {
                 err("${if (motion) "motion" else "normal"}-mode key must be a single printable key: $lhs")
-            keys == " " -> err("SPC is the keypad key and cannot be remapped")
-            else -> (if (motion) c.motion else c.normal)[keys[0]] = binding
+            }
+
+            keys == " " -> {
+                err("SPC is the keypad key and cannot be remapped")
+            }
+
+            else -> {
+                (if (motion) c.motion else c.normal)[keys[0]] = binding
+            }
         }
     }
 
     /** `<Space>` and `<lt>` tokens plus plain printable chars; null on error. */
-    private fun parseKeys(s: String, err: (String) -> Unit): String? {
+    private fun parseKeys(
+        s: String,
+        err: (String) -> Unit,
+    ): String? {
         val out = StringBuilder()
         var i = 0
         while (i < s.length) {
@@ -166,11 +217,19 @@ internal object RcParser {
             if (ch == '<') {
                 val close = s.indexOf('>', i)
                 if (close < 0) {
-                    out.append(ch); i++; continue
+                    out.append(ch)
+                    i++
+                    continue
                 }
                 when (s.substring(i + 1, close).lowercase()) {
-                    "space" -> out.append(' ')
-                    "lt" -> out.append('<')
+                    "space" -> {
+                        out.append(' ')
+                    }
+
+                    "lt" -> {
+                        out.append('<')
+                    }
+
                     else -> {
                         err("unsupported key token ${s.substring(i, close + 1)} (only printable keys reach the meow engine)")
                         return null

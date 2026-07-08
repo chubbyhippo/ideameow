@@ -66,8 +66,10 @@ import javax.swing.SwingUtilities
  * same actions from the rc, mirroring init.el's C-c w map.
  */
 internal object Windmove {
-
-    enum class Dir(val emacs: String, val horizontal: Boolean) {
+    enum class Dir(
+        val emacs: String,
+        val horizontal: Boolean,
+    ) {
         LEFT("left", true),
         RIGHT("right", true),
         UP("up", false),
@@ -83,7 +85,11 @@ internal object Windmove {
      * edge + 1 when the caret is not visible (the `(or ... 1)` path).
      * [caret] is null or a frame-relative point checked against [current].
      */
-    fun reference(dir: Dir, current: Rectangle, caret: Point?): Int =
+    fun reference(
+        dir: Dir,
+        current: Rectangle,
+        caret: Point?,
+    ): Int =
         if (dir.horizontal) {
             if (caret != null && current.contains(caret)) caret.y else current.y + 1
         } else {
@@ -109,11 +115,12 @@ internal object Windmove {
         val hor = dir.horizontal
         val first = if (hor) current.x else current.y
         val last = first + if (hor) current.width else current.height
-        var bestEdge = when (dir) {
-            Dir.DOWN -> frame.height
-            Dir.RIGHT -> frame.width
-            else -> -1
-        }
+        var bestEdge =
+            when (dir) {
+                Dir.DOWN -> frame.height
+                Dir.RIGHT -> frame.width
+                else -> -1
+            }
         var bestEdge2 = bestEdge
         var bestDiff2 = if (hor) frame.height else frame.width
         var best: T? = null
@@ -125,29 +132,33 @@ internal object Windmove {
             val bandSize = if (hor) r.height else r.width
             if (bandLead <= posn && posn < bandLead + bandSize) {
                 // W is in the direction and covers POSN: nearest edge wins
-                val inDir = when (dir) {
-                    Dir.LEFT, Dir.UP -> lead <= first && lead > bestEdge
-                    Dir.RIGHT -> lead >= last && lead < bestEdge
-                    Dir.DOWN -> lead >= first && lead < bestEdge
-                }
+                val inDir =
+                    when (dir) {
+                        Dir.LEFT, Dir.UP -> lead <= first && lead > bestEdge
+                        Dir.RIGHT -> lead >= last && lead < bestEdge
+                        Dir.DOWN -> lead >= first && lead < bestEdge
+                    }
                 if (inDir) {
                     bestEdge = lead
                     best = w
                 }
             } else {
                 // W is in the direction but does not cover POSN
-                val strictlyInDir = when (dir) {
-                    Dir.LEFT, Dir.UP -> lead + size <= first
-                    Dir.RIGHT, Dir.DOWN -> last <= lead
-                }
+                val strictlyInDir =
+                    when (dir) {
+                        Dir.LEFT, Dir.UP -> lead + size <= first
+                        Dir.RIGHT, Dir.DOWN -> last <= lead
+                    }
                 if (!strictlyInDir) continue
                 val diff2 = // window--in-direction-2: distance from posn to the band
                     if (bandLead > posn) bandLead - posn else posn - bandLead - bandSize
-                val better = diff2 < bestDiff2 || (
-                    diff2 == bestDiff2 && when (dir) {
-                        Dir.LEFT, Dir.UP -> lead > bestEdge2
-                        Dir.RIGHT, Dir.DOWN -> lead < bestEdge2
-                    }
+                val better =
+                    diff2 < bestDiff2 || (
+                        diff2 == bestDiff2 &&
+                            when (dir) {
+                                Dir.LEFT, Dir.UP -> lead > bestEdge2
+                                Dir.RIGHT, Dir.DOWN -> lead < bestEdge2
+                            }
                     )
                 if (better) {
                     bestEdge2 = lead
@@ -163,12 +174,16 @@ internal object Windmove {
 
     /** Select the window in [dir] from [editor]'s caret, Emacs-style; hints
      *  the windmove user-error when there is none. */
-    fun move(editor: Editor, dir: Dir) {
+    fun move(
+        editor: Editor,
+        dir: Dir,
+    ) {
         val frame = SwingUtilities.getWindowAncestor(editor.component) ?: return
         val current = rectIn(frame, editor) ?: return
-        val candidates = visibleEditors(editor, frame).mapNotNull { other ->
-            rectIn(frame, other)?.let { other to it }
-        }
+        val candidates =
+            visibleEditors(editor, frame).mapNotNull { other ->
+                rectIn(frame, other)?.let { other to it }
+            }
         val posn = reference(dir, current, caretPoint(editor, frame))
         val target = pick(dir, current, posn, frame.size, candidates)
         if (target == null) {
@@ -186,14 +201,19 @@ internal object Windmove {
      *  the only surface whose content can be exchanged; diff panes and
      *  consoles are fixed in place. The pick and the no-window user-error
      *  are exactly [move]'s (windmove-swap-states-in-direction reuses both). */
-    fun swap(editor: Editor, dir: Dir) {
+    fun swap(
+        editor: Editor,
+        dir: Dir,
+    ) {
         val project = editor.project ?: return
         val frame = SwingUtilities.getWindowAncestor(editor.component) ?: return
         val fem = FileEditorManagerEx.getInstanceEx(project)
         val current = fem.currentWindow ?: return
         val currentRect = rectIn(frame, current) ?: return
-        val candidates = fem.windows.filter { it !== current }
-            .mapNotNull { w -> rectIn(frame, w)?.let { w to it } }
+        val candidates =
+            fem.windows
+                .filter { it !== current }
+                .mapNotNull { w -> rectIn(frame, w)?.let { w to it } }
         val posn = reference(dir, currentRect, caretPoint(editor, frame))
         val target = pick(dir, currentRect, posn, frame.size, candidates)
         val mine = current.selectedComposite?.file
@@ -217,7 +237,10 @@ internal object Windmove {
     /** An editor split as a windmove window: the tab container's rect in
      *  frame coordinates (IdeaVim's getSplitRectangle uses the same
      *  component), skipping empty windows. */
-    private fun rectIn(frame: java.awt.Window, window: EditorWindow): Rectangle? {
+    private fun rectIn(
+        frame: java.awt.Window,
+        window: EditorWindow,
+    ): Rectangle? {
         if (window.selectedComposite == null) return null
         val c = window.tabbedPane.component
         if (!c.isShowing || c.width <= 0 || c.height <= 0) return null
@@ -229,20 +252,25 @@ internal object Windmove {
      *  bars) are not windows, and neither editor may nest inside the other
      *  (embedded fragment editors in rendered docs; Emacs windows can't
      *  nest, so windmove must never enter one). */
-    private fun visibleEditors(editor: Editor, frame: java.awt.Window) =
-        EditorFactory.getInstance().allEditors.filter { other ->
-            other !== editor &&
-                (other as? EditorEx)?.isOneLineMode != true &&
-                other.component.isShowing &&
-                SwingUtilities.getWindowAncestor(other.component) === frame &&
-                !SwingUtilities.isDescendingFrom(other.component, editor.component) &&
-                !SwingUtilities.isDescendingFrom(editor.component, other.component)
-        }
+    private fun visibleEditors(
+        editor: Editor,
+        frame: java.awt.Window,
+    ) = EditorFactory.getInstance().allEditors.filter { other ->
+        other !== editor &&
+            (other as? EditorEx)?.isOneLineMode != true &&
+            other.component.isShowing &&
+            SwingUtilities.getWindowAncestor(other.component) === frame &&
+            !SwingUtilities.isDescendingFrom(other.component, editor.component) &&
+            !SwingUtilities.isDescendingFrom(editor.component, other.component)
+    }
 
     /** The editor's outer component (gutter included, like an Emacs window
      *  with its fringes) in frame coordinates. NOT contentComponent — that
      *  is the unbounded canvas inside the scroll pane. */
-    private fun rectIn(frame: java.awt.Window, editor: Editor): Rectangle? {
+    private fun rectIn(
+        frame: java.awt.Window,
+        editor: Editor,
+    ): Rectangle? {
         val c = editor.component
         if (!c.isShowing || c.width <= 0 || c.height <= 0) return null
         return SwingUtilities.convertRectangle(c.parent, c.bounds, frame)
@@ -250,7 +278,10 @@ internal object Windmove {
 
     /** The caret in frame coordinates when scrolled into view, else null
      *  (reference() then applies window.el's edge+1 fallback). */
-    private fun caretPoint(editor: Editor, frame: java.awt.Window): Point? {
+    private fun caretPoint(
+        editor: Editor,
+        frame: java.awt.Window,
+    ): Point? {
         val xy = editor.visualPositionToXY(editor.caretModel.visualPosition)
         if (!editor.scrollingModel.visibleArea.contains(xy)) return null
         return SwingUtilities.convertPoint(editor.contentComponent, xy, frame)
@@ -261,7 +292,9 @@ internal object Windmove {
  *  $default shortcuts. Enabled only on editors: a focused tree keeps its
  *  native shift-selection. Modal contexts included — diffs open in dialogs
  *  (commit, ...) and windmove between their panes must work there. */
-internal sealed class WindmoveAction(private val dir: Windmove.Dir) : DumbAwareAction() {
+internal sealed class WindmoveAction(
+    private val dir: Windmove.Dir,
+) : DumbAwareAction() {
     init {
         templatePresentation.isEnabledInModalContext = true
     }
@@ -279,14 +312,19 @@ internal sealed class WindmoveAction(private val dir: Windmove.Dir) : DumbAwareA
 }
 
 internal class WindmoveLeftAction : WindmoveAction(Windmove.Dir.LEFT)
+
 internal class WindmoveRightAction : WindmoveAction(Windmove.Dir.RIGHT)
+
 internal class WindmoveUpAction : WindmoveAction(Windmove.Dir.UP)
+
 internal class WindmoveDownAction : WindmoveAction(Windmove.Dir.DOWN)
 
 /** The four windmove-swap-states commands — SPC w H/J/K/L only, like
  *  init.el's C-c w map (windmove-swap-states-default-keybindings is never
  *  called there, so no chords here either). */
-internal sealed class WindmoveSwapAction(private val dir: Windmove.Dir) : DumbAwareAction() {
+internal sealed class WindmoveSwapAction(
+    private val dir: Windmove.Dir,
+) : DumbAwareAction() {
     override fun getActionUpdateThread() = ActionUpdateThread.BGT
 
     override fun update(e: AnActionEvent) {
@@ -300,8 +338,11 @@ internal sealed class WindmoveSwapAction(private val dir: Windmove.Dir) : DumbAw
 }
 
 internal class WindmoveSwapLeftAction : WindmoveSwapAction(Windmove.Dir.LEFT)
+
 internal class WindmoveSwapRightAction : WindmoveSwapAction(Windmove.Dir.RIGHT)
+
 internal class WindmoveSwapUpAction : WindmoveSwapAction(Windmove.Dir.UP)
+
 internal class WindmoveSwapDownAction : WindmoveSwapAction(Windmove.Dir.DOWN)
 
 /** Shift+arrows already mean "extend selection" in editors
@@ -310,6 +351,8 @@ internal class WindmoveSwapDownAction : WindmoveSwapAction(Windmove.Dir.DOWN)
  *  `(windmove-default-keybindings)` makes in Emacs, where shift-select
  *  loses too. The actions are editor-gated, so nothing else changes. */
 internal class WindmovePromoter : ActionPromoter {
-    override fun promote(actions: MutableList<out AnAction>, context: DataContext): MutableList<AnAction> =
-        actions.sortedByDescending { it is WindmoveAction }.toMutableList()
+    override fun promote(
+        actions: MutableList<out AnAction>,
+        context: DataContext,
+    ): MutableList<AnAction> = actions.sortedByDescending { it is WindmoveAction }.toMutableList()
 }

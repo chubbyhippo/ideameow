@@ -49,7 +49,6 @@ import java.awt.event.KeyEvent
  * escape byte.
  */
 object ToolWindowEscape {
-
     /** Two presses at most this many ms apart count as a double-press. */
     const val TIMEOUT_MS = 500L
 
@@ -62,7 +61,10 @@ object ToolWindowEscape {
      *  tool window) and its event time; true = second press of a pair, the
      *  caller jumps. A miss (different window, too slow, null) re-arms with
      *  the current press. */
-    fun onEscape(windowId: String?, at: Long): Boolean {
+    fun onEscape(
+        windowId: String?,
+        at: Long,
+    ): Boolean {
         val doubled = windowId != null && windowId == lastWindow && at - lastAt <= TIMEOUT_MS
         if (doubled) {
             reset()
@@ -98,10 +100,11 @@ object ToolWindowEscape {
         }
         val component = e.component ?: return false
         val context = DataManager.getInstance().getDataContext(component)
-        val project = CommonDataKeys.PROJECT.getData(context) ?: run {
-            reset()
-            return false
-        }
+        val project =
+            CommonDataKeys.PROJECT.getData(context) ?: run {
+                reset()
+                return false
+            }
         val toolWindows = ToolWindowManager.getInstance(project)
         if (!onEscape(toolWindows.activeToolWindowId, e.`when`)) return false
         swallowTypedUntil = e.`when` + 100

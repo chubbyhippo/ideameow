@@ -39,7 +39,12 @@ enum class Pending { FIND, TILL, INNER, BOUNDS, BEGIN, END }
  * placeholder meow pushes when a selection is created from nothing —
  * popping it returns the caret to where the selection chain started.
  */
-data class SavedSelection(val type: SelType?, val expand: Boolean, val anchor: Int, val active: Int)
+data class SavedSelection(
+    val type: SelType?,
+    val expand: Boolean,
+    val anchor: Int,
+    val active: Int,
+)
 
 /** Everything meow remembers about one editor, stored in its user data. */
 class MeowState {

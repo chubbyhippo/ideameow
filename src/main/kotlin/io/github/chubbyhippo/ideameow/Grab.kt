@@ -33,35 +33,51 @@ import java.awt.Font
  * do the job of meow's kmacro replay.
  */
 internal object Grab {
-
     private val BG = JBColor(Color(0xCD, 0xE8, 0xCD), Color(0x2F, 0x47, 0x2F))
 
-    val commands: Map<String, MeowCommand> = mapOf(
-        "meow-grab" to MeowCommand { ed, st, _ -> grab(ed, st) },
-        "meow-sync-grab" to MeowCommand { ed, st, _ -> sync(ed, st) },
-        "meow-swap-grab" to MeowCommand { ed, st, _ -> swap(ed, st) },
-    )
+    val commands: Map<String, MeowCommand> =
+        mapOf(
+            "meow-grab" to MeowCommand { ed, st, _ -> grab(ed, st) },
+            "meow-sync-grab" to MeowCommand { ed, st, _ -> sync(ed, st) },
+            "meow-swap-grab" to MeowCommand { ed, st, _ -> swap(ed, st) },
+        )
 
-    fun clear(editor: Editor, st: MeowState) {
+    fun clear(
+        editor: Editor,
+        st: MeowState,
+    ) {
         st.grab?.dispose()
         st.grab = null
         st.grabHighlighter?.let { editor.markupModel.removeHighlighter(it) }
         st.grabHighlighter = null
     }
 
-    private fun set(editor: Editor, st: MeowState, s: Int, e: Int) {
+    private fun set(
+        editor: Editor,
+        st: MeowState,
+        s: Int,
+        e: Int,
+    ) {
         st.grab = editor.document.createRangeMarker(s, e)
         if (e > s) {
             val attrs = TextAttributes(null, BG, null, null, Font.PLAIN)
-            st.grabHighlighter = editor.markupModel.addRangeHighlighter(
-                s, e, HighlighterLayer.SELECTION - 1, attrs, HighlighterTargetArea.EXACT_RANGE
-            )
+            st.grabHighlighter =
+                editor.markupModel.addRangeHighlighter(
+                    s,
+                    e,
+                    HighlighterLayer.SELECTION - 1,
+                    attrs,
+                    HighlighterTargetArea.EXACT_RANGE,
+                )
         }
     }
 
     /** meow-grab: region -> secondary selection; with NO region the grab is
      *  cancelled instead (meow 1.5.0 body, despite its docstring). */
-    private fun grab(editor: Editor, st: MeowState) {
+    private fun grab(
+        editor: Editor,
+        st: MeowState,
+    ) {
         clear(editor, st)
         val sm = editor.selectionModel
         if (sm.hasSelection()) set(editor, st, sm.selectionStart, sm.selectionEnd)
@@ -69,9 +85,15 @@ internal object Grab {
     }
 
     /** meow-sync-grab: secondary := region; selection cancelled. */
-    private fun sync(editor: Editor, st: MeowState) {
+    private fun sync(
+        editor: Editor,
+        st: MeowState,
+    ) {
         val sm = editor.selectionModel
-        if (!sm.hasSelection()) { Ide.hint(editor, "meow-sync-grab needs a selection"); return }
+        if (!sm.hasSelection()) {
+            Ide.hint(editor, "meow-sync-grab needs a selection")
+            return
+        }
         clear(editor, st)
         set(editor, st, sm.selectionStart, sm.selectionEnd)
         Selections.cancel(editor, st)
@@ -79,18 +101,28 @@ internal object Grab {
 
     /** meow-swap-grab: exchange region and secondary text; the secondary stays
      *  at its location holding the swapped-in text. */
-    private fun swap(editor: Editor, st: MeowState) {
+    private fun swap(
+        editor: Editor,
+        st: MeowState,
+    ) {
         if (Edits.blockedReadOnly(editor)) return // swap-grab edits both regions
         val g = st.grab
         val sm = editor.selectionModel
-        if (g == null || !g.isValid) { Ide.hint(editor, "No grab"); return }
-        if (!sm.hasSelection()) { Ide.hint(editor, "meow-swap-grab needs a selection"); return }
+        if (g == null || !g.isValid) {
+            Ide.hint(editor, "No grab")
+            return
+        }
+        if (!sm.hasSelection()) {
+            Ide.hint(editor, "meow-swap-grab needs a selection")
+            return
+        }
         val gs = g.startOffset
         val ge = g.endOffset
         val ss = sm.selectionStart
         val se = sm.selectionEnd
         if (maxOf(gs, ss) < minOf(ge, se) && !(gs == ss && ge == se)) {
-            Ide.hint(editor, "Selection overlaps the grab"); return
+            Ide.hint(editor, "Selection overlaps the grab")
+            return
         }
         val text = editor.document.charsSequence
         val grabText = text.subSequence(gs, ge).toString()
@@ -116,7 +148,10 @@ internal object Grab {
     }
 
     /** meow-pop-grab, the pop-selection fallback: grab becomes the selection. */
-    fun pop(editor: Editor, st: MeowState): Boolean {
+    fun pop(
+        editor: Editor,
+        st: MeowState,
+    ): Boolean {
         val g = st.grab ?: return false
         if (!g.isValid) return false
         val s = g.startOffset
@@ -131,7 +166,10 @@ internal object Grab {
      * caret+selection on every similar range in the grab. Invoked from the
      * selection primitive, so every selecting command participates.
      */
-    fun beacon(editor: Editor, st: MeowState) {
+    fun beacon(
+        editor: Editor,
+        st: MeowState,
+    ) {
         val g = st.grab ?: return
         if (!g.isValid || g.endOffset <= g.startOffset) return
         val sm = editor.selectionModel
@@ -141,21 +179,27 @@ internal object Grab {
         if (ss < g.startOffset || se > g.endOffset || se == ss) return
         val text = editor.document.charsSequence
         val states = mutableListOf<CaretState>()
-        fun add(s: Int, e: Int) = states.add(
+
+        fun add(
+            s: Int,
+            e: Int,
+        ) = states.add(
             CaretState(
                 editor.offsetToLogicalPosition(e),
                 editor.offsetToLogicalPosition(s),
-                editor.offsetToLogicalPosition(e)
-            )
+                editor.offsetToLogicalPosition(e),
+            ),
         )
         when (st.selType) {
             SelType.WORD, SelType.SYMBOL, SelType.VISIT, SelType.FIND, SelType.TILL, SelType.CHAR -> {
                 val sel = text.subSequence(ss, se).toString()
                 if (sel.isBlank()) return
                 val re =
-                    if (st.selType == SelType.WORD || st.selType == SelType.SYMBOL)
+                    if (st.selType == SelType.WORD || st.selType == SelType.SYMBOL) {
                         Regex("\\b" + Regex.escape(sel) + "\\b")
-                    else Regex(Regex.escape(sel))
+                    } else {
+                        Regex(Regex.escape(sel))
+                    }
                 val region = text.subSequence(g.startOffset, g.endOffset)
                 var added = 0
                 for (m in re.findAll(region)) {
@@ -168,6 +212,7 @@ internal object Grab {
                 if (states.isEmpty()) return
                 add(ss, se)
             }
+
             SelType.LINE -> {
                 val doc = editor.document
                 val first = doc.getLineNumber(g.startOffset)
@@ -175,7 +220,10 @@ internal object Grab {
                 if (last <= first) return
                 for (ln in first..last) add(doc.getLineStartOffset(ln), doc.getLineEndOffset(ln))
             }
-            else -> return
+
+            else -> {
+                return
+            }
         }
         editor.caretModel.setCaretsAndSelections(states)
     }

@@ -26,7 +26,9 @@ import com.intellij.openapi.vfs.LocalFileSystem
 import java.io.File
 
 /** Reload ~/.ideameowrc (keypad: SPC c M). */
-class ReloadRcAction : AnAction(), DumbAware {
+class ReloadRcAction :
+    AnAction(),
+    DumbAware {
     override fun actionPerformed(e: AnActionEvent) {
         Rc.load()
         TreeMeow.refresh() // a focused tree picks the new mmap keys up now
@@ -36,13 +38,15 @@ class ReloadRcAction : AnAction(), DumbAware {
                 "${c.motion.size} motion map(s), " +
                 "${c.keypad.size} keypad map(s), ${c.keypadDesc.size} description(s)" +
                 if (c.errors.isEmpty()) "" else ", ${c.errors.size} problem(s)",
-            NotificationType.INFORMATION
+            NotificationType.INFORMATION,
         )
     }
 }
 
 /** Open (creating if needed) ~/.ideameowrc in the editor (keypad: SPC c m). */
-class EditRcAction : AnAction(), DumbAware {
+class EditRcAction :
+    AnAction(),
+    DumbAware {
     override fun actionPerformed(e: AnActionEvent) {
         val project = e.project ?: return
         val f = Rc.rcFile()
@@ -59,14 +63,14 @@ class EditRcAction : AnAction(), DumbAware {
             if (f.exists()) return
             f.writeText(
                 Rc.defaultsText()
-                // a missing bundled rc is a plugin bug (Rc reports it);
-                // leave a minimal self-describing file so SPC c m still works
+                    // a missing bundled rc is a plugin bug (Rc reports it);
+                    // leave a minimal self-describing file so SPC c m still works
                     ?: (
                         "\" ~/${Rc.FILE_NAME} — ideameow configuration\n" +
                             "\" the bundled defaults (full meow layout + keypad table) stay\n" +
                             "\" underneath — lines here override them entry by entry, e.g.:\n" +
                             "\" nmap Q meow-goto-line\n"
-                        )
+                    ),
             )
         }
     }

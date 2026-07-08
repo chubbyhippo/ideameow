@@ -58,7 +58,6 @@ import kotlin.math.ln
  *   extends to the target, a bare caret just moves.
  */
 object Avy {
-
     /** avy-keys default. */
     private const val KEYS = "asdfghjkl"
 
@@ -69,14 +68,17 @@ object Avy {
     private val LEAD_FG = JBColor(Color.WHITE, Color.WHITE)
     private val LEAD_BG = JBColor(Color(0xE5, 0x2B, 0x50), Color(0xE5, 0x2B, 0x50))
 
-    val commands: Map<String, MeowCommand> = mapOf(
-        "avy-goto-char-timer" to MeowCommand { ed, st, _ -> startCharTimer(ed, st) },
-        "avy-goto-line" to MeowCommand { ed, st, _ -> startGotoLine(ed, st) },
-    )
+    val commands: Map<String, MeowCommand> =
+        mapOf(
+            "avy-goto-char-timer" to MeowCommand { ed, st, _ -> startCharTimer(ed, st) },
+            "avy-goto-line" to MeowCommand { ed, st, _ -> startGotoLine(ed, st) },
+        )
 
     enum class Phase { COLLECTING, SELECTING }
 
-    class Session(val gotoLine: Boolean) {
+    class Session(
+        val gotoLine: Boolean,
+    ) {
         var phase = Phase.COLLECTING
         var input = ""
         var node: Branch? = null
@@ -88,11 +90,20 @@ object Avy {
     // ------------------------------------------------------------- the tree
 
     sealed class Node
-    class Leaf(val offset: Int) : Node()
-    class Branch(val children: List<Pair<Char, Node>>) : Node()
+
+    class Leaf(
+        val offset: Int,
+    ) : Node()
+
+    class Branch(
+        val children: List<Pair<Char, Node>>,
+    ) : Node()
 
     /** avy-subdiv: distribute N candidates over B keys in a balanced way. */
-    fun subdiv(n: Int, b: Int): List<Int> {
+    fun subdiv(
+        n: Int,
+        b: Int,
+    ): List<Int> {
         val p = kotlin.math.floor(ln(n.toDouble()) / ln(b.toDouble()) + 1e-6).toInt() - 1
         var x1 = 1
         repeat(p) { x1 *= b }
@@ -105,7 +116,10 @@ object Avy {
 
     /** avy-tree: fewer candidates than keys pair up 1:1; otherwise the
      *  subdiv sizes decide which keys are leaves and which host subtrees. */
-    fun tree(candidates: List<Int>, keys: String = KEYS): Branch {
+    fun tree(
+        candidates: List<Int>,
+        keys: String = KEYS,
+    ): Branch {
         if (candidates.size < keys.length) {
             return Branch(keys.toList().zip(candidates.map { Leaf(it) as Node }))
         }
@@ -122,7 +136,11 @@ object Avy {
     /** Every leaf with its remaining label path from [node]. */
     fun labels(node: Branch): List<Pair<Int, String>> {
         val out = mutableListOf<Pair<Int, String>>()
-        fun walk(n: Node, path: String) {
+
+        fun walk(
+            n: Node,
+            path: String,
+        ) {
             when (n) {
                 is Leaf -> out.add(n.offset to path)
                 is Branch -> n.children.forEach { (k, child) -> walk(child, path + k) }
@@ -134,12 +152,18 @@ object Avy {
 
     // ------------------------------------------------------------- sessions
 
-    private fun startCharTimer(editor: Editor, st: MeowState) {
+    private fun startCharTimer(
+        editor: Editor,
+        st: MeowState,
+    ) {
         cancel(editor, st)
         st.avy = Session(gotoLine = false)
     }
 
-    private fun startGotoLine(editor: Editor, st: MeowState) {
+    private fun startGotoLine(
+        editor: Editor,
+        st: MeowState,
+    ) {
         cancel(editor, st)
         val session = Session(gotoLine = true)
         st.avy = session
@@ -150,7 +174,11 @@ object Avy {
     }
 
     /** One key of an active session; printable keys only reach us. */
-    fun key(editor: Editor, st: MeowState, c: Char) {
+    fun key(
+        editor: Editor,
+        st: MeowState,
+        c: Char,
+    ) {
         val session = st.avy ?: return
         when (session.phase) {
             Phase.COLLECTING -> collect(editor, st, session, c)
@@ -158,18 +186,27 @@ object Avy {
         }
     }
 
-    private fun collect(editor: Editor, st: MeowState, session: Session, c: Char) {
+    private fun collect(
+        editor: Editor,
+        st: MeowState,
+        session: Session,
+        c: Char,
+    ) {
         session.input += c
         session.timer?.stop()
-        session.timer = Timer(TIMEOUT_MS) { finishInput(editor, st) }.apply {
-            isRepeats = false
-            start()
-        }
+        session.timer =
+            Timer(TIMEOUT_MS) { finishInput(editor, st) }.apply {
+                isRepeats = false
+                start()
+            }
         highlightMatches(editor, session)
     }
 
     /** The avy-timeout-seconds pause ended: label (or jump, or give up). */
-    fun finishInput(editor: Editor, st: MeowState) {
+    fun finishInput(
+        editor: Editor,
+        st: MeowState,
+    ) {
         val session = st.avy ?: return
         if (session.phase != Phase.COLLECTING) return
         session.timer?.stop()
@@ -180,29 +217,49 @@ object Avy {
                 cancel(editor, st)
                 Ide.hint(editor, "zero candidates")
             }
+
             candidates.size == 1 -> {
                 // avy-single-candidate-jump
                 cancel(editor, st)
                 jump(editor, st, candidates[0])
             }
-            else -> toSelecting(editor, st, session, candidates)
+
+            else -> {
+                toSelecting(editor, st, session, candidates)
+            }
         }
     }
 
-    private fun toSelecting(editor: Editor, st: MeowState, session: Session, candidates: List<Int>) {
+    private fun toSelecting(
+        editor: Editor,
+        st: MeowState,
+        session: Session,
+        candidates: List<Int>,
+    ) {
         clearVisuals(editor, session)
         session.phase = Phase.SELECTING
         session.node = tree(candidates)
         paintLabels(editor, session)
     }
 
-    private fun select(editor: Editor, st: MeowState, session: Session, c: Char) {
+    private fun select(
+        editor: Editor,
+        st: MeowState,
+        session: Session,
+        c: Char,
+    ) {
         // avy-goto-line: a digit switches to plain goto-line by number
         if (session.gotoLine && c.isDigit()) {
             cancel(editor, st)
-            val input = Messages.showInputDialog(
-                editor.project, "Goto line:", "Avy", null, c.toString(), null,
-            ) ?: return
+            val input =
+                Messages.showInputDialog(
+                    editor.project,
+                    "Goto line:",
+                    "Avy",
+                    null,
+                    c.toString(),
+                    null,
+                ) ?: return
             val doc = editor.document
             val ln = ((input.trim().toIntOrNull() ?: return) - 1).coerceIn(0, doc.lineCount - 1)
             jump(editor, st, doc.getLineStartOffset(ln))
@@ -214,16 +271,24 @@ object Avy {
                 cancel(editor, st)
                 jump(editor, st, child.offset)
             }
+
             is Branch -> {
                 session.node = child
                 paintLabels(editor, session)
             }
-            null -> Ide.hint(editor, "No such candidate: $c") // avy-handler-default: stay
+
+            null -> {
+                Ide.hint(editor, "No such candidate: $c")
+            } // avy-handler-default: stay
         }
     }
 
     /** avy-action-goto: plain goto-char — an active selection extends. */
-    private fun jump(editor: Editor, st: MeowState, offset: Int) {
+    private fun jump(
+        editor: Editor,
+        st: MeowState,
+        offset: Int,
+    ) {
         val sm = editor.selectionModel
         if (sm.hasSelection()) {
             val anchor = Selections.mark(editor)
@@ -235,7 +300,10 @@ object Avy {
         editor.scrollingModel.scrollToCaret(com.intellij.openapi.editor.ScrollType.RELATIVE)
     }
 
-    fun cancel(editor: Editor, st: MeowState) {
+    fun cancel(
+        editor: Editor,
+        st: MeowState,
+    ) {
         st.avy?.let { session ->
             session.timer?.stop()
             session.timer = null
@@ -259,7 +327,10 @@ object Avy {
 
     /** Literal, case-insensitive, non-overlapping matches in the visible
      *  region (avy--read-candidates with regexp-quote + case folding). */
-    private fun matches(editor: Editor, input: String): List<Int> {
+    private fun matches(
+        editor: Editor,
+        input: String,
+    ): List<Int> {
         if (input.isEmpty()) return emptyList()
         val doc = editor.document
         val (first, last) = visibleLines(editor)
@@ -281,21 +352,30 @@ object Avy {
 
     // -------------------------------------------------------------- visuals
 
-    private fun highlightMatches(editor: Editor, session: Session) {
+    private fun highlightMatches(
+        editor: Editor,
+        session: Session,
+    ) {
         session.matchHighlights.forEach { editor.markupModel.removeHighlighter(it) }
         session.matchHighlights.clear()
         val attrs = editor.colorsScheme.getAttributes(EditorColors.SEARCH_RESULT_ATTRIBUTES)
         for (offset in matches(editor, session.input)) {
             session.matchHighlights.add(
                 editor.markupModel.addRangeHighlighter(
-                    offset, offset + session.input.length,
-                    HighlighterLayer.SELECTION + 1, attrs, HighlighterTargetArea.EXACT_RANGE,
+                    offset,
+                    offset + session.input.length,
+                    HighlighterLayer.SELECTION + 1,
+                    attrs,
+                    HighlighterTargetArea.EXACT_RANGE,
                 ),
             )
         }
     }
 
-    private fun paintLabels(editor: Editor, session: Session) {
+    private fun paintLabels(
+        editor: Editor,
+        session: Session,
+    ) {
         clearVisuals(editor, session)
         val labels = session.node?.let { labels(it) } ?: return
         val host = editor.contentComponent
@@ -307,7 +387,10 @@ object Avy {
         session.canvas = canvas
     }
 
-    private fun clearVisuals(editor: Editor, session: Session) {
+    private fun clearVisuals(
+        editor: Editor,
+        session: Session,
+    ) {
         session.canvas?.let { canvas ->
             canvas.parent?.let { parent ->
                 parent.remove(canvas)
@@ -326,7 +409,6 @@ object Avy {
         private val editor: Editor,
         private val labels: List<Pair<Int, String>>,
     ) : JComponent() {
-
         override fun paintComponent(g: Graphics) {
             if (editor.isDisposed) return
             val g2 = g as Graphics2D
@@ -345,11 +427,12 @@ object Avy {
                     covered++
                 }
                 val right = if (end > offset) editor.offsetToXY(end, true, false) else null
-                val width = if (right != null && right.y == p.y && right.x > p.x) {
-                    maxOf(right.x - p.x, metrics.stringWidth(label) + 2)
-                } else {
-                    metrics.stringWidth(label) + 2
-                }
+                val width =
+                    if (right != null && right.y == p.y && right.x > p.x) {
+                        maxOf(right.x - p.x, metrics.stringWidth(label) + 2)
+                    } else {
+                        metrics.stringWidth(label) + 2
+                    }
                 g2.color = LEAD_BG
                 g2.fillRect(p.x, p.y, width, editor.lineHeight)
                 g2.color = LEAD_FG

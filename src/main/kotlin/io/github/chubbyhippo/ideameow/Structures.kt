@@ -26,49 +26,81 @@ import com.intellij.openapi.editor.Editor
  * hand the thing char to [thingSelect].
  */
 internal object Structures {
+    val commands: Map<String, MeowCommand> =
+        mapOf(
+            "meow-inner-of-thing" to MeowCommand { ed, st, _ -> pendThing(ed, st, Pending.INNER) },
+            "meow-bounds-of-thing" to MeowCommand { ed, st, _ -> pendThing(ed, st, Pending.BOUNDS) },
+            "meow-beginning-of-thing" to MeowCommand { ed, st, _ -> pendThing(ed, st, Pending.BEGIN) },
+            "meow-end-of-thing" to MeowCommand { ed, st, _ -> pendThing(ed, st, Pending.END) },
+            "meow-block" to MeowCommand { ed, st, _ -> block(ed, st) },
+            "meow-to-block" to MeowCommand { ed, st, _ -> toBlock(ed, st) },
+            "meow-join" to MeowCommand { ed, st, _ -> join(ed, st) },
+        )
 
-    val commands: Map<String, MeowCommand> = mapOf(
-        "meow-inner-of-thing" to MeowCommand { ed, st, _ -> pendThing(ed, st, Pending.INNER) },
-        "meow-bounds-of-thing" to MeowCommand { ed, st, _ -> pendThing(ed, st, Pending.BOUNDS) },
-        "meow-beginning-of-thing" to MeowCommand { ed, st, _ -> pendThing(ed, st, Pending.BEGIN) },
-        "meow-end-of-thing" to MeowCommand { ed, st, _ -> pendThing(ed, st, Pending.END) },
-        "meow-block" to MeowCommand { ed, st, _ -> block(ed, st) },
-        "meow-to-block" to MeowCommand { ed, st, _ -> toBlock(ed, st) },
-        "meow-join" to MeowCommand { ed, st, _ -> join(ed, st) },
-    )
-
-    private fun pendThing(editor: Editor, st: MeowState, p: Pending) {
+    private fun pendThing(
+        editor: Editor,
+        st: MeowState,
+        p: Pending,
+    ) {
         st.pending = p
         WhichKey.scheduleThings(editor)
     }
 
     /** The second half of the thing commands, once the thing char arrives. */
-    fun thingSelect(editor: Editor, st: MeowState, kind: Pending, ch: Char) {
+    fun thingSelect(
+        editor: Editor,
+        st: MeowState,
+        kind: Pending,
+        ch: Char,
+    ) {
         val off = editor.caretModel.offset
-        val b = when (kind) {
-            Pending.BOUNDS -> Things.bounds(editor, ch, off)
-            else -> Things.inner(editor, ch, off)
-        } ?: run { Ide.hint(editor, "No thing '$ch' here"); return }
+        val b =
+            when (kind) {
+                Pending.BOUNDS -> Things.bounds(editor, ch, off)
+                else -> Things.inner(editor, ch, off)
+            } ?: run {
+                Ide.hint(editor, "No thing '$ch' here")
+                return
+            }
         when (kind) {
-            Pending.INNER -> Selections.select(editor, st, SelType.TRANSIENT, b.start, b.end, expand = false)
+            Pending.INNER -> {
+                Selections.select(editor, st, SelType.TRANSIENT, b.start, b.end, expand = false)
+            }
+
             // meow-thing-selection-directions: bounds select BACKWARD (caret
             // at the opening delimiter), inner forward — verified by probe
-            Pending.BOUNDS -> Selections.select(editor, st, SelType.TRANSIENT, b.end, b.start, expand = false)
-            Pending.BEGIN -> Selections.select(editor, st, SelType.TRANSIENT, off, b.start, expand = false)
-            Pending.END -> Selections.select(editor, st, SelType.TRANSIENT, off, b.end, expand = false)
+            Pending.BOUNDS -> {
+                Selections.select(editor, st, SelType.TRANSIENT, b.end, b.start, expand = false)
+            }
+
+            Pending.BEGIN -> {
+                Selections.select(editor, st, SelType.TRANSIENT, off, b.start, expand = false)
+            }
+
+            Pending.END -> {
+                Selections.select(editor, st, SelType.TRANSIENT, off, b.end, expand = false)
+            }
+
             else -> {}
         }
     }
 
     // ---------------------------------------------------------------- blocks
 
-    private data class PairRange(val open: Int, val close: Int)
+    private data class PairRange(
+        val open: Int,
+        val close: Int,
+    )
 
     /**
      * Smallest bracket pair strictly enclosing [s, e). Same-line quoted runs
      * are skipped — a text approximation of syntax-ppss.
      */
-    private fun enclosingPair(text: CharSequence, s: Int, e: Int): PairRange? {
+    private fun enclosingPair(
+        text: CharSequence,
+        s: Int,
+        e: Int,
+    ): PairRange? {
         val opens = "([{"
         val closes = ")]}"
         val stack = ArrayDeque<Int>()
@@ -82,10 +114,16 @@ internal object Structures {
                     if (text[j] == '\\') j++
                     j++
                 }
-                if (j < text.length && text[j] == c) { i = j + 1; continue }
+                if (j < text.length && text[j] == c) {
+                    i = j + 1
+                    continue
+                }
             }
             when (c) {
-                in opens -> stack.addLast(i)
+                in opens -> {
+                    stack.addLast(i)
+                }
+
                 in closes -> {
                     val kind = closes.indexOf(c)
                     while (stack.isNotEmpty()) {
@@ -107,26 +145,46 @@ internal object Structures {
     /** meow-block: innermost pair INCLUDING delimiters; with an active block
      *  selection it expands to the parent. Backward (caret at the opening
      *  delimiter) when the region is reversed XOR a negative argument. */
-    private fun block(editor: Editor, st: MeowState) {
+    private fun block(
+        editor: Editor,
+        st: MeowState,
+    ) {
         val sm = editor.selectionModel
         val text = editor.document.charsSequence
         val back = Selections.backwardP(editor) != (st.takeCount(1) < 0) // xor, like meow-block
         val (s, e) =
-            if (st.selType == SelType.BLOCK && sm.hasSelection()) sm.selectionStart to sm.selectionEnd
-            else editor.caretModel.offset to editor.caretModel.offset
-        val p = enclosingPair(text, s, e) ?: run { Ide.hint(editor, "No enclosing block"); return }
-        if (back) Selections.select(editor, st, SelType.BLOCK, p.close + 1, p.open, expand = true)
-        else Selections.select(editor, st, SelType.BLOCK, p.open, p.close + 1, expand = true)
+            if (st.selType == SelType.BLOCK && sm.hasSelection()) {
+                sm.selectionStart to sm.selectionEnd
+            } else {
+                editor.caretModel.offset to editor.caretModel.offset
+            }
+        val p =
+            enclosingPair(text, s, e) ?: run {
+                Ide.hint(editor, "No enclosing block")
+                return
+            }
+        if (back) {
+            Selections.select(editor, st, SelType.BLOCK, p.close + 1, p.open, expand = true)
+        } else {
+            Selections.select(editor, st, SelType.BLOCK, p.open, p.close + 1, expand = true)
+        }
     }
 
     /** meow-to-block: from point to the closing delimiter of the enclosing
      *  block (to the opening one when the block selection is reversed or the
      *  argument is negative). */
-    private fun toBlock(editor: Editor, st: MeowState) {
+    private fun toBlock(
+        editor: Editor,
+        st: MeowState,
+    ) {
         val text = editor.document.charsSequence
         val back = (st.selType == SelType.BLOCK && Selections.backwardP(editor)) || st.takeCount(1) < 0
         val caret = editor.caretModel.offset
-        val p = enclosingPair(text, caret, caret) ?: run { Ide.hint(editor, "No enclosing block"); return }
+        val p =
+            enclosingPair(text, caret, caret) ?: run {
+                Ide.hint(editor, "No enclosing block")
+                return
+            }
         Selections.select(editor, st, SelType.BLOCK, caret, if (back) p.open else p.close + 1, expand = true)
     }
 
@@ -135,13 +193,16 @@ internal object Structures {
     /** meow-join: select (expand . join) — end of the previous non-empty line
      *  through this line's indentation (forward variant with a negative arg);
      *  killing that selection is delete-indentation (see Edits.joinKill). */
-    private fun join(editor: Editor, st: MeowState) {
+    private fun join(
+        editor: Editor,
+        st: MeowState,
+    ) {
         val doc = editor.document
         if (doc.textLength == 0) return
         val n = st.takeCount(1)
         val text = doc.charsSequence
-        fun blank(l: Int) =
-            text.subSequence(doc.getLineStartOffset(l), doc.getLineEndOffset(l)).isBlank()
+
+        fun blank(l: Int) = text.subSequence(doc.getLineStartOffset(l), doc.getLineEndOffset(l)).isBlank()
 
         val ln = doc.getLineNumber(editor.caretModel.offset)
         if (n >= 0) {

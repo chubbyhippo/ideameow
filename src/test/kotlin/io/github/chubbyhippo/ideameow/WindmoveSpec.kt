@@ -37,7 +37,6 @@ import javax.swing.KeyStroke
  * pixel geometry: 80x25, left column L1(h12)/L2(h6)/L3(h6), right R(h24).
  */
 class WindmoveSpec : MeowSpec() {
-
     private val frame = Dimension(80, 25)
 
     /**
@@ -54,8 +53,7 @@ class WindmoveSpec : MeowSpec() {
     private val l3 = "L3" to Rectangle(0, 18, 40, 6)
     private val r = "R" to Rectangle(40, 0, 40, 24)
 
-    private fun stacked(vararg but: String) =
-        listOf(l1, l2, l3, r).filter { it.first !in but }
+    private fun stacked(vararg but: String) = listOf(l1, l2, l3, r).filter { it.first !in but }
 
     // ------------------------------------------------------- the caret band
 
@@ -117,9 +115,14 @@ class WindmoveSpec : MeowSpec() {
         val current = Rectangle(0, 100, 50, 50)
         val covering = "covering" to Rectangle(0, 20, 50, 40) // bottom edge 60
         val nearer = "nearer" to Rectangle(60, 95, 40, 5) // bottom edge 100
-        val picked = Windmove.pick(
-            Windmove.Dir.UP, current, 10, Dimension(200, 200), listOf(covering, nearer),
-        )
+        val picked =
+            Windmove.pick(
+                Windmove.Dir.UP,
+                current,
+                10,
+                Dimension(200, 200),
+                listOf(covering, nearer),
+            )
         assertEquals("covering", picked)
     }
 
@@ -129,9 +132,14 @@ class WindmoveSpec : MeowSpec() {
         val current = Rectangle(0, 100, 50, 50)
         val bandNear = "bandNear" to Rectangle(60, 20, 40, 40) // band starts at x=60
         val bandFar = "bandFar" to Rectangle(120, 50, 40, 40) // nearer above, band x=120
-        val picked = Windmove.pick(
-            Windmove.Dir.UP, current, 10, Dimension(200, 200), listOf(bandFar, bandNear),
-        )
+        val picked =
+            Windmove.pick(
+                Windmove.Dir.UP,
+                current,
+                10,
+                Dimension(200, 200),
+                listOf(bandFar, bandNear),
+            )
         assertEquals("bandNear", picked)
     }
 
@@ -145,12 +153,13 @@ class WindmoveSpec : MeowSpec() {
 
     fun `test given the default keymap then shift+arrows are the windmove shortcuts`() {
         // (windmove-default-keybindings) == shift + left/right/up/down
-        val expected = mapOf(
-            "Ideameow.WindmoveLeft" to "shift LEFT",
-            "Ideameow.WindmoveRight" to "shift RIGHT",
-            "Ideameow.WindmoveUp" to "shift UP",
-            "Ideameow.WindmoveDown" to "shift DOWN",
-        )
+        val expected =
+            mapOf(
+                "Ideameow.WindmoveLeft" to "shift LEFT",
+                "Ideameow.WindmoveRight" to "shift RIGHT",
+                "Ideameow.WindmoveUp" to "shift UP",
+                "Ideameow.WindmoveDown" to "shift DOWN",
+            )
         for ((id, key) in expected) {
             val action = ActionManager.getInstance().getAction(id)
             assertTrue("$id must be a windmove action", action is WindmoveAction)
@@ -187,14 +196,21 @@ class WindmoveSpec : MeowSpec() {
         // windmove-swap-states-default-keybindings is never called in
         // init.el — the swaps live only on the C-c w map, so only on SPC w
         for (id in listOf(
-            "Ideameow.WindmoveSwapLeft", "Ideameow.WindmoveSwapRight",
-            "Ideameow.WindmoveSwapUp", "Ideameow.WindmoveSwapDown",
+            "Ideameow.WindmoveSwapLeft",
+            "Ideameow.WindmoveSwapRight",
+            "Ideameow.WindmoveSwapUp",
+            "Ideameow.WindmoveSwapDown",
         )) {
             val action = ActionManager.getInstance().getAction(id)
             assertTrue("$id must be a windmove swap action", action is WindmoveSwapAction)
             assertEquals(
                 "$id must not claim a keymap chord",
-                0, KeymapManager.getInstance().activeKeymap.getShortcuts(id).size,
+                0,
+                KeymapManager
+                    .getInstance()
+                    .activeKeymap
+                    .getShortcuts(id)
+                    .size,
             )
         }
     }

@@ -19,21 +19,32 @@ package io.github.chubbyhippo.ideameow
 
 // Plain-text scanning shared by the command modules and the expand hints.
 
-internal fun CharSequence.indexOfChar(c: Char, from: Int): Int {
+internal fun CharSequence.indexOfChar(
+    c: Char,
+    from: Int,
+): Int {
     var i = from.coerceAtLeast(0)
-    while (i < length) { if (this[i] == c) return i; i++ }
+    while (i < length) {
+        if (this[i] == c) return i
+        i++
+    }
     return -1
 }
 
-internal fun CharSequence.lastIndexOfChar(c: Char, from: Int): Int {
+internal fun CharSequence.lastIndexOfChar(
+    c: Char,
+    from: Int,
+): Int {
     var i = from.coerceAtMost(length - 1)
-    while (i >= 0) { if (this[i] == c) return i; i-- }
+    while (i >= 0) {
+        if (this[i] == c) return i
+        i--
+    }
     return -1
 }
 
 /** The char class a word or symbol motion scans by. */
-internal fun charPred(symbol: Boolean): (Char) -> Boolean =
-    if (symbol) Things::isSymbolChar else Things::isWordChar
+internal fun charPred(symbol: Boolean): (Char) -> Boolean = if (symbol) Things::isSymbolChar else Things::isWordChar
 
 /**
  * Selection target after the [n]th occurrence of [ch] from [caret] — the scan
@@ -42,15 +53,21 @@ internal fun charPred(symbol: Boolean): (Char) -> Boolean =
  * is no nth occurrence.
  */
 internal fun nthCharTarget(
-    text: CharSequence, ch: Char, caret: Int, n: Int, backward: Boolean, till: Boolean,
+    text: CharSequence,
+    ch: Char,
+    caret: Int,
+    n: Int,
+    backward: Boolean,
+    till: Boolean,
 ): Int {
     var found = -1
-    var from = when {
-        backward && till -> caret - 2
-        backward -> caret - 1
-        till -> caret + 1
-        else -> caret
-    }
+    var from =
+        when {
+            backward && till -> caret - 2
+            backward -> caret - 1
+            till -> caret + 1
+            else -> caret
+        }
     repeat(n) {
         found = if (backward) text.lastIndexOfChar(ch, from) else text.indexOfChar(ch, from)
         if (found < 0) return -1
@@ -65,7 +82,12 @@ internal fun nthCharTarget(
 
 /** Word/symbol scanning shared by commands and hints. */
 object Words {
-    fun nextEnd(text: CharSequence, from: Int, n: Int, pred: (Char) -> Boolean): Int {
+    fun nextEnd(
+        text: CharSequence,
+        from: Int,
+        n: Int,
+        pred: (Char) -> Boolean,
+    ): Int {
         var i = from.coerceIn(0, text.length)
         repeat(n) {
             while (i < text.length && !pred(text[i])) i++
@@ -74,7 +96,12 @@ object Words {
         return i
     }
 
-    fun prevStart(text: CharSequence, from: Int, n: Int, pred: (Char) -> Boolean): Int {
+    fun prevStart(
+        text: CharSequence,
+        from: Int,
+        n: Int,
+        pred: (Char) -> Boolean,
+    ): Int {
         var i = from.coerceIn(0, text.length)
         repeat(n) {
             while (i > 0 && !pred(text[i - 1])) i--
@@ -90,17 +117,29 @@ object Words {
      *  (mark < pos): max(mark, start of the thing ending at pos); backward:
      *  min(mark, end of the thing starting at pos). Expand chains ignore
      *  this (the anchor comes from the region ends). */
-    fun fixSelectionMark(text: CharSequence, pos: Int, mark: Int, pred: (Char) -> Boolean): Int {
+    fun fixSelectionMark(
+        text: CharSequence,
+        pos: Int,
+        mark: Int,
+        pred: (Char) -> Boolean,
+    ): Int {
         val probe = (if (mark > pos) pos else pos - 1).coerceIn(0, (text.length - 1).coerceAtLeast(0))
         val bounds = boundsAt(text, probe, pred) ?: return mark
         return if (mark > pos) minOf(mark, bounds.second) else maxOf(mark, bounds.first)
     }
 
-    fun boundsAt(text: CharSequence, offset: Int, pred: (Char) -> Boolean): Pair<Int, Int>? {
+    fun boundsAt(
+        text: CharSequence,
+        offset: Int,
+        pred: (Char) -> Boolean,
+    ): Pair<Int, Int>? {
         var o = offset
         if (o >= text.length || !pred(text[o])) {
             when {
-                o > 0 && pred(text[o - 1]) -> o--
+                o > 0 && pred(text[o - 1]) -> {
+                    o--
+                }
+
                 else -> {
                     // between words: take the next word, like forward-thing
                     var f = o

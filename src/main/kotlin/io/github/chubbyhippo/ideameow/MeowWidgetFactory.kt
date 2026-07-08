@@ -32,21 +32,35 @@ class MeowWidgetFactory : StatusBarWidgetFactory {
     }
 
     override fun getId(): String = ID
+
     override fun getDisplayName(): String = "Meow Mode"
+
     override fun isAvailable(project: Project): Boolean = true
+
     override fun createWidget(project: Project): StatusBarWidget = MeowWidget(project)
+
     override fun disposeWidget(widget: StatusBarWidget) = widget.dispose()
+
     override fun canBeEnabledOn(statusBar: StatusBar): Boolean = true
 }
 
-private class MeowWidget(private val project: Project) : StatusBarWidget, StatusBarWidget.TextPresentation {
+private class MeowWidget(
+    private val project: Project,
+) : StatusBarWidget,
+    StatusBarWidget.TextPresentation {
     override fun ID(): String = MeowWidgetFactory.ID
+
     override fun getPresentation(): StatusBarWidget.WidgetPresentation = this
+
     override fun install(statusBar: StatusBar) {}
+
     override fun dispose() {}
 
     override fun getText(): String = Meow.statusText(project)
+
     override fun getTooltipText(): String = "Meow modal editing state"
+
     override fun getClickConsumer(): Consumer<MouseEvent>? = null
+
     override fun getAlignment(): Float = Component.CENTER_ALIGNMENT
 }

@@ -22,7 +22,6 @@ import java.io.File
 /** ~/.ideameowrc parsing, nmap/mmap/map dispatch (including relayouting the
  *  meow keys themselves), and which-key rows. */
 class RcSpec : MeowSpec() {
-
     // ------------------------------------------------------------- parsing
 
     fun `test given an action mapping then it parses into a normal override`() {
@@ -66,12 +65,13 @@ class RcSpec : MeowSpec() {
     }
 
     fun `test given leader mappings and descriptions then the keypad table extends`() {
-        val c = Rc.parse(
-            listOf(
-                "map <leader>gd <action>(GotoDeclaration)",
-                "desc <leader>g goto things",
+        val c =
+            Rc.parse(
+                listOf(
+                    "map <leader>gd <action>(GotoDeclaration)",
+                    "desc <leader>g goto things",
+                ),
             )
-        )
         assertEquals("GotoDeclaration", c.keypad["gd"]!!.action)
         assertEquals("goto things", c.keypadDesc["g"])
         Rc.setForTest(c)
@@ -86,14 +86,15 @@ class RcSpec : MeowSpec() {
     }
 
     fun `test given set lines then which-key options apply and vim options are ignored`() {
-        val c = Rc.parse(
-            listOf(
-                "set nowhich-key",
-                "set timeoutlen=400",
-                "set clipboard+=unnamedplus", // pasted from .ideavimrc: ignored
-                "let mapleader=\" \"",
+        val c =
+            Rc.parse(
+                listOf(
+                    "set nowhich-key",
+                    "set timeoutlen=400",
+                    "set clipboard+=unnamedplus", // pasted from .ideavimrc: ignored
+                    "let mapleader=\" \"",
+                ),
             )
-        )
         assertEquals(false, c.whichKey)
         assertEquals(400, c.whichKeyDelayMs)
         assertTrue(c.errors.isEmpty())
@@ -109,12 +110,13 @@ class RcSpec : MeowSpec() {
     }
 
     fun `test given a trailing comment then it is stripped from the line`() {
-        val c = Rc.parse(
-            listOf(
-                "nmap S <action>(AceAction)   \" jump anywhere",
-                "map <leader>zz ,b            \" select the buffer",
+        val c =
+            Rc.parse(
+                listOf(
+                    "nmap S <action>(AceAction)   \" jump anywhere",
+                    "map <leader>zz ,b            \" select the buffer",
+                ),
             )
-        )
         assertEquals("AceAction", c.normal['S']!!.action)
         assertEquals(",b", c.keypad["zz"]!!.keys)
         assertTrue(c.errors.isEmpty())
@@ -162,15 +164,16 @@ class RcSpec : MeowSpec() {
     }
 
     fun `test given bad lines then errors are collected with line numbers`() {
-        val c = Rc.parse(
-            listOf(
-                "frobnicate everything",   // unknown command
-                "nmap <Space> ,b",          // SPC is reserved
-                "map <leader>1 <action>(X)", // keypad digits are reserved
-                "nmap Q <CR>",               // unsupported key token
-                "mmap <leader>x ,b",         // keypad entries are mode-independent
+        val c =
+            Rc.parse(
+                listOf(
+                    "frobnicate everything", // unknown command
+                    "nmap <Space> ,b", // SPC is reserved
+                    "map <leader>1 <action>(X)", // keypad digits are reserved
+                    "nmap Q <CR>", // unsupported key token
+                    "mmap <leader>x ,b", // keypad entries are mode-independent
+                ),
             )
-        )
         assertEquals(5, c.errors.size)
         assertTrue(c.errors[0].startsWith("line 1"))
     }
@@ -289,60 +292,61 @@ class RcSpec : MeowSpec() {
          * `<` and `>` are plugin aliases for `[` and `]`) — the contract the
          * bundled .ideameowrc layout block must satisfy.
          */
-        private val QWERTY: Map<Char, String> = buildMap {
-            for (n in 0..9) put('0' + n, "meow-expand-$n")
-            put('-', "meow-negative-argument")
-            put(';', "meow-reverse")
-            put(',', "meow-inner-of-thing")
-            put('.', "meow-bounds-of-thing")
-            put('[', "meow-beginning-of-thing")
-            put(']', "meow-end-of-thing")
-            put('<', "meow-beginning-of-thing")
-            put('>', "meow-end-of-thing")
-            put('a', "meow-append")
-            put('A', "meow-open-below")
-            put('b', "meow-back-word")
-            put('B', "meow-back-symbol")
-            put('c', "meow-change")
-            put('d', "meow-delete")
-            put('D', "meow-backward-delete")
-            put('e', "meow-next-word")
-            put('E', "meow-next-symbol")
-            put('f', "meow-find")
-            put('g', "meow-cancel-selection")
-            put('G', "meow-grab")
-            put('h', "meow-left")
-            put('H', "meow-left-expand")
-            put('i', "meow-insert")
-            put('I', "meow-open-above")
-            put('j', "meow-next")
-            put('J', "meow-next-expand")
-            put('k', "meow-prev")
-            put('K', "meow-prev-expand")
-            put('l', "meow-right")
-            put('L', "meow-right-expand")
-            put('m', "meow-join")
-            put('n', "meow-search")
-            put('o', "meow-block")
-            put('O', "meow-to-block")
-            put('p', "meow-yank")
-            put('q', "meow-quit")
-            put('Q', "meow-goto-line")
-            put('r', "meow-replace")
-            put('R', "meow-swap-grab")
-            put('s', "meow-kill")
-            put('t', "meow-till")
-            put('u', "meow-undo")
-            put('U', "meow-undo-in-selection")
-            put('v', "meow-visit")
-            put('w', "meow-mark-word")
-            put('W', "meow-mark-symbol")
-            put('x', "meow-line")
-            put('X', "meow-goto-line")
-            put('y', "meow-save")
-            put('Y', "meow-sync-grab")
-            put('z', "meow-pop-selection")
-            put('\'', "repeat")
-        }
+        private val QWERTY: Map<Char, String> =
+            buildMap {
+                for (n in 0..9) put('0' + n, "meow-expand-$n")
+                put('-', "meow-negative-argument")
+                put(';', "meow-reverse")
+                put(',', "meow-inner-of-thing")
+                put('.', "meow-bounds-of-thing")
+                put('[', "meow-beginning-of-thing")
+                put(']', "meow-end-of-thing")
+                put('<', "meow-beginning-of-thing")
+                put('>', "meow-end-of-thing")
+                put('a', "meow-append")
+                put('A', "meow-open-below")
+                put('b', "meow-back-word")
+                put('B', "meow-back-symbol")
+                put('c', "meow-change")
+                put('d', "meow-delete")
+                put('D', "meow-backward-delete")
+                put('e', "meow-next-word")
+                put('E', "meow-next-symbol")
+                put('f', "meow-find")
+                put('g', "meow-cancel-selection")
+                put('G', "meow-grab")
+                put('h', "meow-left")
+                put('H', "meow-left-expand")
+                put('i', "meow-insert")
+                put('I', "meow-open-above")
+                put('j', "meow-next")
+                put('J', "meow-next-expand")
+                put('k', "meow-prev")
+                put('K', "meow-prev-expand")
+                put('l', "meow-right")
+                put('L', "meow-right-expand")
+                put('m', "meow-join")
+                put('n', "meow-search")
+                put('o', "meow-block")
+                put('O', "meow-to-block")
+                put('p', "meow-yank")
+                put('q', "meow-quit")
+                put('Q', "meow-goto-line")
+                put('r', "meow-replace")
+                put('R', "meow-swap-grab")
+                put('s', "meow-kill")
+                put('t', "meow-till")
+                put('u', "meow-undo")
+                put('U', "meow-undo-in-selection")
+                put('v', "meow-visit")
+                put('w', "meow-mark-word")
+                put('W', "meow-mark-symbol")
+                put('x', "meow-line")
+                put('X', "meow-goto-line")
+                put('y', "meow-save")
+                put('Y', "meow-sync-grab")
+                put('z', "meow-pop-selection")
+                put('\'', "repeat")
+            }
     }
 }

@@ -28,9 +28,14 @@ import com.intellij.openapi.editor.actionSystem.EditorActionHandler
  * collapses beacon carets; delegates when a completion popup is up or the
  * editor has no meow state.
  */
-class MeowEscapeHandler(private val original: EditorActionHandler) : EditorActionHandler() {
-
-    override fun doExecute(editor: Editor, caret: Caret?, dataContext: DataContext?) {
+class MeowEscapeHandler(
+    private val original: EditorActionHandler,
+) : EditorActionHandler() {
+    override fun doExecute(
+        editor: Editor,
+        caret: Caret?,
+        dataContext: DataContext?,
+    ) {
         val st = Meow.state(editor)
         if (st == null || LookupManager.getActiveLookup(editor) != null) {
             original.execute(editor, caret, dataContext)
@@ -45,13 +50,22 @@ class MeowEscapeHandler(private val original: EditorActionHandler) : EditorActio
         WhichKey.hide()
         ExpandHints.clear(st)
         when {
-            st.mode == MeowMode.INSERT -> Meow.setMode(editor, st, MeowMode.NORMAL)
-            st.mode == MeowMode.KEYPAD -> Meow.setMode(editor, st, MeowMode.NORMAL)
+            st.mode == MeowMode.INSERT -> {
+                Meow.setMode(editor, st, MeowMode.NORMAL)
+            }
+
+            st.mode == MeowMode.KEYPAD -> {
+                Meow.setMode(editor, st, MeowMode.NORMAL)
+            }
+
             editor.caretModel.caretCount > 1 -> {
                 editor.caretModel.removeSecondaryCarets()
                 Meow.updateWidgets()
             }
-            else -> original.execute(editor, caret, dataContext)
+
+            else -> {
+                original.execute(editor, caret, dataContext)
+            }
         }
     }
 }

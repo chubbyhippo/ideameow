@@ -31,8 +31,12 @@ import com.intellij.openapi.ui.Messages
  * continuations of a prefix.
  */
 object Keypad {
-
-    fun key(editor: Editor, st: MeowState, c: Char, ctx: DataContext?) {
+    fun key(
+        editor: Editor,
+        st: MeowState,
+        c: Char,
+        ctx: DataContext?,
+    ) {
         WhichKey.hide()
         val keypad = Rc.keypad()
         val buf = st.keypad.toString()
@@ -49,11 +53,13 @@ object Keypad {
                     exit(editor, st)
                     return
                 }
+
                 '?' -> {
                     exit(editor, st)
                     Messages.showInfoMessage(editor.project, CHEATSHEET, "Meow Cheatsheet")
                     return
                 }
+
                 '/' -> {
                     st.keypad.append('/')
                     return
@@ -77,29 +83,39 @@ object Keypad {
         }
     }
 
-    fun exit(editor: Editor, st: MeowState) {
+    fun exit(
+        editor: Editor,
+        st: MeowState,
+    ) {
         WhichKey.hide()
         Meow.setMode(editor, st, MeowMode.NORMAL)
     }
 
-    private fun describe(editor: Editor, c: Char) {
+    private fun describe(
+        editor: Editor,
+        c: Char,
+    ) {
         val descs = Rc.keypadDescs()
-        val entries = Rc.keypad().entries
-            .filter { it.key.startsWith(c.toString()) }
-            .sortedBy { it.key }
-            .joinToString("\n") { (seq, b) ->
-                val target = b.action ?: b.command ?: b.keys.orEmpty()
-                val desc = descs[seq]?.let { "  ($it)" } ?: ""
-                "SPC ${seq.toCharArray().joinToString(" ")}  ->  $target$desc"
-            }
+        val entries =
+            Rc
+                .keypad()
+                .entries
+                .filter { it.key.startsWith(c.toString()) }
+                .sortedBy { it.key }
+                .joinToString("\n") { (seq, b) ->
+                    val target = b.action ?: b.command ?: b.keys.orEmpty()
+                    val desc = descs[seq]?.let { "  ($it)" } ?: ""
+                    "SPC ${seq.toCharArray().joinToString(" ")}  ->  $target$desc"
+                }
         Messages.showInfoMessage(
             editor.project,
             if (entries.isEmpty()) "SPC $c is undefined" else entries,
-            "Meow Describe: SPC $c"
+            "Meow Describe: SPC $c",
         )
     }
 
-    private val CHEATSHEET = """
+    private val CHEATSHEET =
+        """
         The bundled default layout (meow's suggested QWERTY) — every key
         below can be rebound from ~/.ideameowrc.
 
@@ -138,5 +154,5 @@ object Keypad {
           mmap ... (MOTION mode) | map <leader><seq> ... | desc <leader><seq> text | set nowhich-key
           every binding above is an rc line — the defaults ship as a bundled
           .ideameowrc inside the plugin; ~/.ideameowrc overrides them key by key
-    """.trimIndent()
+        """.trimIndent()
 }

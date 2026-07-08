@@ -49,13 +49,26 @@ object WhichKey {
     /** which-key-separator. */
     private const val SEPARATOR = " → "
 
-    private val THINGS = listOf(
-        "r" to "round ( )", "s" to "square [ ]", "c" to "curly { }", "g" to "string",
-        "e" to "symbol", "w" to "window", "b" to "buffer", "p" to "paragraph",
-        "l" to "line", "v" to "visual line", "d" to "defun", "." to "sentence",
-    )
+    private val THINGS =
+        listOf(
+            "r" to "round ( )",
+            "s" to "square [ ]",
+            "c" to "curly { }",
+            "g" to "string",
+            "e" to "symbol",
+            "w" to "window",
+            "b" to "buffer",
+            "p" to "paragraph",
+            "l" to "line",
+            "v" to "visual line",
+            "d" to "defun",
+            "." to "sentence",
+        )
 
-    fun scheduleKeypad(editor: Editor, buffer: String) = schedule(editor) { keypadRows(buffer) }
+    fun scheduleKeypad(
+        editor: Editor,
+        buffer: String,
+    ) = schedule(editor) { keypadRows(buffer) }
 
     fun scheduleThings(editor: Editor) = schedule(editor) { THINGS }
 
@@ -67,8 +80,11 @@ object WhichKey {
             if (!seq.startsWith(buffer) || seq == buffer) continue
             val child = buffer + seq[buffer.length]
             val label =
-                if (seq == child) descs[seq] ?: b.action ?: b.command ?: b.keys.orEmpty()
-                else descs[child] ?: "+more"
+                if (seq == child) {
+                    descs[seq] ?: b.action ?: b.command ?: b.keys.orEmpty()
+                } else {
+                    descs[child] ?: "+more"
+                }
             if (child !in rows || descs.containsKey(child)) rows[child] = label
         }
         return rows.map { (child, label) ->
@@ -77,7 +93,10 @@ object WhichKey {
         }
     }
 
-    private fun schedule(editor: Editor, rowsProvider: () -> List<Pair<String, String>>) {
+    private fun schedule(
+        editor: Editor,
+        rowsProvider: () -> List<Pair<String, String>>,
+    ) {
         hide()
         if (!Rc.whichKeyEnabled()) {
             chainVisible = false
@@ -85,28 +104,35 @@ object WhichKey {
         }
         val delay = if (chainVisible) 0 else Rc.whichKeyDelayMs().coerceAtLeast(0)
         chainVisible = false
-        timer = Timer(delay) {
-            timer = null
-            show(editor, rowsProvider())
-        }.apply {
-            isRepeats = false
-            start()
-        }
+        timer =
+            Timer(delay) {
+                timer = null
+                show(editor, rowsProvider())
+            }.apply {
+                isRepeats = false
+                start()
+            }
     }
 
-    private fun show(editor: Editor, rows: List<Pair<String, String>>) {
+    private fun show(
+        editor: Editor,
+        rows: List<Pair<String, String>>,
+    ) {
         runCatching {
             if (rows.isEmpty() || editor.isDisposed) return
-            val label = JBLabel(gridHtml(editor, rows)).apply {
-                border = JBUI.Borders.empty(6, 10)
-            }
-            val p = JBPopupFactory.getInstance()
-                .createComponentPopupBuilder(label, null)
-                .setRequestFocus(false)
-                .setFocusable(false)
-                .setCancelKeyEnabled(false) // ESC belongs to the editor
-                .setCancelOnClickOutside(true)
-                .createPopup()
+            val label =
+                JBLabel(gridHtml(editor, rows)).apply {
+                    border = JBUI.Borders.empty(6, 10)
+                }
+            val p =
+                JBPopupFactory
+                    .getInstance()
+                    .createComponentPopupBuilder(label, null)
+                    .setRequestFocus(false)
+                    .setFocusable(false)
+                    .setCancelKeyEnabled(false) // ESC belongs to the editor
+                    .setCancelOnClickOutside(true)
+                    .createPopup()
             popup = p
             // Emacs shows which-key in a bottom side window spanning the
             // frame — the closest here: bottom-left of the editor component
@@ -119,7 +145,10 @@ object WhichKey {
 
     /** which-key's grid: entries run DOWN each column, then across, with as
      *  many columns as the editor width fits. */
-    private fun gridHtml(editor: Editor, rows: List<Pair<String, String>>): String {
+    private fun gridHtml(
+        editor: Editor,
+        rows: List<Pair<String, String>>,
+    ): String {
         val metrics = editor.component.getFontMetrics(JBFont.label())
         val entryWidth = rows.maxOf { (k, d) -> metrics.stringWidth(k + SEPARATOR + d) } + JBUI.scale(28)
         val available = (editor.component.width - JBUI.scale(28)).coerceAtLeast(entryWidth)
@@ -154,6 +183,5 @@ object WhichKey {
         popup = null
     }
 
-    private fun esc(s: String) =
-        s.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+    private fun esc(s: String) = s.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
 }

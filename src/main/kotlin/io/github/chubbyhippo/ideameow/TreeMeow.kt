@@ -54,7 +54,6 @@ import javax.swing.KeyStroke
  * update() disables the whole action: typing into the search always wins.
  */
 object TreeMeow {
-
     /**
      * The meow motion commands with a native tree meaning — the four arrows.
      * Values are JTree's BasicTreeUI ActionMap keys, the exact handlers the
@@ -62,12 +61,13 @@ object TreeMeow {
      * map: it survives separator skipping, cycle scrolling, loading nodes).
      * Every other meow command needs a text buffer and is simply inert here.
      */
-    private val SWING_MOTIONS = mapOf(
-        "meow-next" to "selectNext",
-        "meow-prev" to "selectPrevious",
-        "meow-left" to "selectParent", // collapse, else go to the parent
-        "meow-right" to "selectChild", // expand, else go to the first child
-    )
+    private val SWING_MOTIONS =
+        mapOf(
+            "meow-next" to "selectNext",
+            "meow-prev" to "selectPrevious",
+            "meow-left" to "selectParent", // collapse, else go to the parent
+            "meow-right" to "selectChild", // expand, else go to the first child
+        )
 
     /** Every char the MOTION map binds (defaults + ~/.ideameowrc) — the
      *  tree shortcut set. Anything else never reaches the dispatcher; a key
@@ -82,7 +82,12 @@ object TreeMeow {
      *  the tree-surface analog of Engine.handleChar + runBinding, with the
      *  same layering (user maps unless inside a noremap replay, then the
      *  bundled defaults) and the same replay depth guard. */
-    fun dispatch(tree: JTree, c: Char, noremap: Boolean = false, depth: Int = 0) {
+    fun dispatch(
+        tree: JTree,
+        c: Char,
+        noremap: Boolean = false,
+        depth: Int = 0,
+    ) {
         val b = (if (noremap) null else Rc.cfg().motion[c]) ?: Rc.defaults().motion[c] ?: return
         val command = b.command
         if (command != null) {
@@ -99,48 +104,55 @@ object TreeMeow {
         for (k in keys) dispatch(tree, k, noremap || !b.recursive, depth + 1)
     }
 
-    private fun swing(tree: JTree, name: String) {
-        tree.actionMap.get(name)
+    private fun swing(
+        tree: JTree,
+        name: String,
+    ) {
+        tree.actionMap
+            .get(name)
             ?.actionPerformed(ActionEvent(tree, ActionEvent.ACTION_PERFORMED, name))
     }
 
     // -------------------------------------------------- focus-scoped wiring
 
-    private val dispatcher = object : DumbAwareAction() {
-        init {
-            // settings-dialog trees and friends live in modal contexts
-            templatePresentation.isEnabledInModalContext = true
-        }
+    private val dispatcher =
+        object : DumbAwareAction() {
+            init {
+                // settings-dialog trees and friends live in modal contexts
+                templatePresentation.isEnabledInModalContext = true
+            }
 
-        override fun getActionUpdateThread() = ActionUpdateThread.BGT
+            override fun getActionUpdateThread() = ActionUpdateThread.BGT
 
-        override fun update(e: AnActionEvent) {
-            e.presentation.isEnabled =
-                e.getData(PlatformDataKeys.SPEED_SEARCH_TEXT) == null &&
+            override fun update(e: AnActionEvent) {
+                e.presentation.isEnabled =
+                    e.getData(PlatformDataKeys.SPEED_SEARCH_TEXT) == null &&
                     e.getData(PlatformDataKeys.CONTEXT_COMPONENT) is JTree
-        }
+            }
 
-        override fun actionPerformed(e: AnActionEvent) {
-            val tree = e.getData(PlatformDataKeys.CONTEXT_COMPONENT) as? JTree ?: return
-            val c = (e.inputEvent as? KeyEvent)?.keyChar ?: return
-            if (c == KeyEvent.CHAR_UNDEFINED) return
-            dispatch(tree, c)
+            override fun actionPerformed(e: AnActionEvent) {
+                val tree = e.getData(PlatformDataKeys.CONTEXT_COMPONENT) as? JTree ?: return
+                val c = (e.inputEvent as? KeyEvent)?.keyChar ?: return
+                if (c == KeyEvent.CHAR_UNDEFINED) return
+                dispatch(tree, c)
+            }
         }
-    }
 
     private val installed = AtomicBoolean()
 
-    private val focusListener = PropertyChangeListener { evt ->
-        (evt.oldValue as? JTree)?.let { dispatcher.unregisterCustomShortcutSet(it) }
-        (evt.newValue as? JTree)?.let { register(it) }
-    }
+    private val focusListener =
+        PropertyChangeListener { evt ->
+            (evt.oldValue as? JTree)?.let { dispatcher.unregisterCustomShortcutSet(it) }
+            (evt.newValue as? JTree)?.let { register(it) }
+        }
 
     /** Install the app-wide focus hook once; every JTree gaining focus gets
      *  the current mmap keys as component shortcuts, and loses them again
      *  with focus (registration is per-component, so nothing leaks). */
     fun install() {
         if (!installed.compareAndSet(false, true)) return
-        KeyboardFocusManager.getCurrentKeyboardFocusManager()
+        KeyboardFocusManager
+            .getCurrentKeyboardFocusManager()
             .addPropertyChangeListener("focusOwner", focusListener)
     }
 
@@ -163,8 +175,9 @@ object TreeMeow {
 
     private fun register(tree: JTree) {
         dispatcher.unregisterCustomShortcutSet(tree)
-        val shortcuts = boundChars()
-            .map { KeyboardShortcut(KeyStroke.getKeyStroke(it), null) }
+        val shortcuts =
+            boundChars()
+                .map { KeyboardShortcut(KeyStroke.getKeyStroke(it), null) }
         dispatcher.registerCustomShortcutSet(CustomShortcutSet(*shortcuts.toTypedArray()), tree)
     }
 }

@@ -23,7 +23,6 @@ package io.github.chubbyhippo.ideameow
  * EditingSpec).
  */
 class ThingsSpec : MeowSpec() {
-
     fun `test given caret inside parens when comma r then inner round is selected forward`() {
         given("round pair", "foo (b<caret>ar baz) qux")
         whenKeys(",r")

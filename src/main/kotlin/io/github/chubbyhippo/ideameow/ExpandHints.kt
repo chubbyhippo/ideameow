@@ -40,7 +40,10 @@ import javax.swing.Timer
 object ExpandHints {
     private val HINT_COLOR = JBColor(Color(0xD0, 0x5C, 0x0A), Color(0xFF, 0xB0, 0x50))
 
-    fun show(editor: Editor, st: MeowState) {
+    fun show(
+        editor: Editor,
+        st: MeowState,
+    ) {
         clear(st)
         if (!editor.selectionModel.hasSelection()) return
         val positions = positions(editor, st, 10)
@@ -53,7 +56,11 @@ object ExpandHints {
         host.add(canvas)
         host.repaint()
         st.hintOverlay = canvas
-        st.hintTimer = Timer(1000) { clear(st) }.apply { isRepeats = false; start() }
+        st.hintTimer =
+            Timer(1000) { clear(st) }.apply {
+                isRepeats = false
+                start()
+            }
     }
 
     fun clear(st: MeowState) {
@@ -68,7 +75,11 @@ object ExpandHints {
         st.hintOverlay = null
     }
 
-    private fun positions(editor: Editor, st: MeowState, count: Int): List<Int> {
+    private fun positions(
+        editor: Editor,
+        st: MeowState,
+        count: Int,
+    ): List<Int> {
         val text = editor.document.charsSequence
         val doc = editor.document
         val caret = editor.caretModel.offset
@@ -84,6 +95,7 @@ object ExpandHints {
                     out.add(i)
                 }
             }
+
             SelType.LINE -> {
                 var ln = doc.getLineNumber(caret)
                 repeat(count) {
@@ -92,6 +104,7 @@ object ExpandHints {
                     out.add(if (backward) doc.getLineStartOffset(ln) else doc.getLineEndOffset(ln))
                 }
             }
+
             SelType.FIND, SelType.TILL -> {
                 val c = st.lastFind ?: return out
                 var i = caret
@@ -102,6 +115,7 @@ object ExpandHints {
                     i = next
                 }
             }
+
             else -> {}
         }
         return out.distinct()
@@ -119,7 +133,6 @@ object ExpandHints {
         private val editor: Editor,
         private val hints: List<Pair<Int, String>>,
     ) : JComponent() {
-
         override fun paintComponent(g: Graphics) {
             if (editor.isDisposed) return
             val g2 = g as Graphics2D
@@ -133,11 +146,18 @@ object ExpandHints {
                 val p = editor.offsetToXY(offset, true, false)
                 // the covered char's real cell width (handles tabs and
                 // full-width chars); past eol/eof there is nothing to cover
-                val next = if (offset < text.length && text[offset] != '\n') {
-                    editor.offsetToXY(offset + 1, true, false)
-                } else null
-                val cell = if (next != null && next.y == p.y && next.x > p.x) next.x - p.x
-                else metrics.stringWidth(label) + 2
+                val next =
+                    if (offset < text.length && text[offset] != '\n') {
+                        editor.offsetToXY(offset + 1, true, false)
+                    } else {
+                        null
+                    }
+                val cell =
+                    if (next != null && next.y == p.y && next.x > p.x) {
+                        next.x - p.x
+                    } else {
+                        metrics.stringWidth(label) + 2
+                    }
                 g2.color = editor.colorsScheme.defaultBackground
                 g2.fillRect(p.x, p.y, cell, lineHeight)
                 g2.color = HINT_COLOR

@@ -30,12 +30,29 @@ import com.intellij.psi.PsiFile
  * (startOffset, endOffset) or null when the thing doesn't exist at point.
  */
 object Things {
-    data class Bounds(val start: Int, val end: Int)
+    data class Bounds(
+        val start: Int,
+        val end: Int,
+    )
 
-    fun inner(editor: Editor, ch: Char, offset: Int): Bounds? = compute(editor, ch, offset, inner = true)
-    fun bounds(editor: Editor, ch: Char, offset: Int): Bounds? = compute(editor, ch, offset, inner = false)
+    fun inner(
+        editor: Editor,
+        ch: Char,
+        offset: Int,
+    ): Bounds? = compute(editor, ch, offset, inner = true)
 
-    private fun compute(editor: Editor, ch: Char, offset: Int, inner: Boolean): Bounds? {
+    fun bounds(
+        editor: Editor,
+        ch: Char,
+        offset: Int,
+    ): Bounds? = compute(editor, ch, offset, inner = false)
+
+    private fun compute(
+        editor: Editor,
+        ch: Char,
+        offset: Int,
+        inner: Boolean,
+    ): Bounds? {
         val text = editor.document.charsSequence
         return when (ch) {
             'r' -> pair(text, offset, '(', ')', inner)
@@ -55,15 +72,25 @@ object Things {
     }
 
     /** Innermost pair of [open]/[close] containing [offset], nesting-aware. */
-    fun pair(text: CharSequence, offset: Int, open: Char, close: Char, inner: Boolean): Bounds? {
+    fun pair(
+        text: CharSequence,
+        offset: Int,
+        open: Char,
+        close: Char,
+        inner: Boolean,
+    ): Bounds? {
         var depth = 0
         var start = -1
         var i = offset - 1
         while (i >= 0) {
             val c = text[i]
-            if (c == close) depth++
-            else if (c == open) {
-                if (depth == 0) { start = i; break }
+            if (c == close) {
+                depth++
+            } else if (c == open) {
+                if (depth == 0) {
+                    start = i
+                    break
+                }
                 depth--
             }
             i--
@@ -74,9 +101,13 @@ object Things {
         var j = offset
         while (j < text.length) {
             val c = text[j]
-            if (c == open && j != start) depth++
-            else if (c == close) {
-                if (depth == 0) { end = j; break }
+            if (c == open && j != start) {
+                depth++
+            } else if (c == close) {
+                if (depth == 0) {
+                    end = j
+                    break
+                }
                 depth--
             }
             j++
@@ -90,14 +121,21 @@ object Things {
      * escapes); if [offset] is inside a quoted run, return it. Heuristic —
      * comments containing apostrophes can fool it, like any text-based scan.
      */
-    private fun string(text: CharSequence, offset: Int, inner: Boolean): Bounds? {
+    private fun string(
+        text: CharSequence,
+        offset: Int,
+        inner: Boolean,
+    ): Bounds? {
         var i = 0
         var quote = 0.toChar()
         var start = -1
         while (i < text.length) {
             val c = text[i]
             if (quote != 0.toChar()) {
-                if (c == '\\') { i += 2; continue }
+                if (c == '\\') {
+                    i += 2
+                    continue
+                }
                 if (c == quote) {
                     if (offset in (start + 1)..i || (offset == start)) {
                         return if (inner) Bounds(start + 1, i) else Bounds(start, i + 1)
@@ -114,9 +152,13 @@ object Things {
     }
 
     fun isWordChar(c: Char) = Character.isLetterOrDigit(c)
+
     fun isSymbolChar(c: Char) = isWordChar(c) || c == '_' || c == '$'
 
-    private fun symbol(text: CharSequence, offset: Int): Bounds? {
+    private fun symbol(
+        text: CharSequence,
+        offset: Int,
+    ): Bounds? {
         var o = offset
         if (o >= text.length || !isSymbolChar(text[o])) {
             if (o > 0 && isSymbolChar(text[o - 1])) o-- else return null
@@ -138,9 +180,14 @@ object Things {
         return Bounds(doc.getLineStartOffset(startLine), doc.getLineEndOffset(endLine))
     }
 
-    private fun paragraph(editor: Editor, offset: Int, inner: Boolean): Bounds? {
+    private fun paragraph(
+        editor: Editor,
+        offset: Int,
+        inner: Boolean,
+    ): Bounds? {
         val doc = editor.document
         if (doc.lineCount == 0) return null
+
         fun blank(l: Int) = doc.charsSequence.subSequence(doc.getLineStartOffset(l), doc.getLineEndOffset(l)).isBlank()
         var ln = doc.getLineNumber(offset.coerceIn(0, doc.textLength))
         if (blank(ln)) return null
@@ -157,20 +204,33 @@ object Things {
         return Bounds(start, end)
     }
 
-    private fun line(editor: Editor, offset: Int, inner: Boolean): Bounds {
+    private fun line(
+        editor: Editor,
+        offset: Int,
+        inner: Boolean,
+    ): Bounds {
         val doc = editor.document
         val ln = doc.getLineNumber(offset.coerceIn(0, doc.textLength))
         val end = doc.getLineEndOffset(ln)
-        return if (inner) Bounds(doc.getLineStartOffset(ln), end)
-        else Bounds(doc.getLineStartOffset(ln), (end + 1).coerceAtMost(doc.textLength))
+        return if (inner) {
+            Bounds(doc.getLineStartOffset(ln), end)
+        } else {
+            Bounds(doc.getLineStartOffset(ln), (end + 1).coerceAtMost(doc.textLength))
+        }
     }
 
-    private fun visualLine(editor: Editor, offset: Int): Bounds {
+    private fun visualLine(
+        editor: Editor,
+        offset: Int,
+    ): Bounds {
         val vLine = editor.offsetToVisualPosition(offset).line
         val start = editor.visualPositionToOffset(VisualPosition(vLine, 0))
         var end = editor.visualPositionToOffset(VisualPosition(vLine + 1, 0))
-        if (end <= start) end = editor.document.textLength
-        else if (end > 0 && editor.document.charsSequence[end - 1] == '\n') end--
+        if (end <= start) {
+            end = editor.document.textLength
+        } else if (end > 0 && editor.document.charsSequence[end - 1] == '\n') {
+            end--
+        }
         return Bounds(start, end)
     }
 
@@ -178,7 +238,10 @@ object Things {
      * defun: nearest PSI ancestor that looks like a function/method; falls
      * back to the outermost curly block around point for plain text.
      */
-    private fun defun(editor: Editor, offset: Int): Bounds? {
+    private fun defun(
+        editor: Editor,
+        offset: Int,
+    ): Bounds? {
         val project = editor.project
         if (project != null) {
             val pdm = PsiDocumentManager.getInstance(project)
@@ -187,7 +250,11 @@ object Things {
             if (file != null) {
                 var el = file.findElementAt(offset.coerceIn(0, (editor.document.textLength - 1).coerceAtLeast(0)))
                 while (el != null && el !is PsiFile) {
-                    val t = el.node?.elementType?.toString()?.uppercase() ?: ""
+                    val t =
+                        el.node
+                            ?.elementType
+                            ?.toString()
+                            ?.uppercase() ?: ""
                     if (t.contains("METHOD") || t.contains("FUNCTION") || t.startsWith("FUN") || t.contains("LAMBDA")) {
                         return Bounds(el.textRange.startOffset, el.textRange.endOffset)
                     }
@@ -204,13 +271,17 @@ object Things {
         return b
     }
 
-    private fun sentence(text: CharSequence, offset: Int, inner: Boolean): Bounds? {
+    private fun sentence(
+        text: CharSequence,
+        offset: Int,
+        inner: Boolean,
+    ): Bounds? {
         if (text.isEmpty()) return null
         val enders = ".!?"
         var s = offset.coerceIn(0, text.length - 1)
         while (s > 0) {
             val c = text[s - 1]
-            if (c in enders || c == '\n' && s > 1 && text[s - 2] == '\n') break
+            if (c in enders || (c == '\n' && s > 1 && text[s - 2] == '\n')) break
             s--
         }
         while (s < text.length && text[s].isWhitespace()) s++

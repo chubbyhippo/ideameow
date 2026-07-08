@@ -36,7 +36,6 @@ import java.awt.datatransfer.StringSelection
  * source (docstrings and command bodies) — not against vim intuition.
  */
 abstract class MeowSpec : BasePlatformTestCase() {
-
     protected lateinit var st: MeowState
 
     protected val ed get() = myFixture.editor
@@ -60,7 +59,10 @@ abstract class MeowSpec : BasePlatformTestCase() {
 
     // ------------------------------------------------------------------ DSL
 
-    protected fun given(@Suppress("UNUSED_PARAMETER") description: String, text: String) {
+    protected fun given(
+        @Suppress("UNUSED_PARAMETER") description: String,
+        text: String,
+    ) {
         myFixture.configureByText("spec.txt", text)
         st = MeowState()
         ed.putUserData(Meow.KEY, st)
@@ -86,14 +88,11 @@ abstract class MeowSpec : BasePlatformTestCase() {
         for (c in keys) Engine.handleChar(ed, c, null)
     }
 
-    protected fun thenSelection(expected: String) =
-        assertEquals("selected text", expected, ed.selectionModel.selectedText)
+    protected fun thenSelection(expected: String) = assertEquals("selected text", expected, ed.selectionModel.selectedText)
 
-    protected fun thenNoSelection() =
-        assertFalse("expected no selection", ed.selectionModel.hasSelection())
+    protected fun thenNoSelection() = assertFalse("expected no selection", ed.selectionModel.hasSelection())
 
-    protected fun thenCaretAt(offset: Int) =
-        assertEquals("caret offset", offset, ed.caretModel.offset)
+    protected fun thenCaretAt(offset: Int) = assertEquals("caret offset", offset, ed.caretModel.offset)
 
     protected fun thenCaretAtSelectionStart() =
         assertEquals("caret at selection start (reversed)", ed.selectionModel.selectionStart, ed.caretModel.offset)
@@ -101,22 +100,18 @@ abstract class MeowSpec : BasePlatformTestCase() {
     protected fun thenCaretAtSelectionEnd() =
         assertEquals("caret at selection end (forward)", ed.selectionModel.selectionEnd, ed.caretModel.offset)
 
-    protected fun thenText(expected: String) =
-        assertEquals("buffer text", expected, doc.text)
+    protected fun thenText(expected: String) = assertEquals("buffer text", expected, doc.text)
 
-    protected fun thenMode(expected: MeowMode) =
-        assertEquals("meow mode", expected, st.mode)
+    protected fun thenMode(expected: MeowMode) = assertEquals("meow mode", expected, st.mode)
 
-    protected fun thenSelType(expected: SelType) =
-        assertEquals("selection type", expected, st.selType)
+    protected fun thenSelType(expected: SelType) = assertEquals("selection type", expected, st.selType)
 
     protected fun thenClipboard(expected: String) =
         assertEquals(
             "clipboard",
             expected,
-            CopyPasteManager.getInstance().getContents<String>(DataFlavor.stringFlavor)
+            CopyPasteManager.getInstance().getContents<String>(DataFlavor.stringFlavor),
         )
 
-    protected fun thenCaretCount(expected: Int) =
-        assertEquals("caret count", expected, ed.caretModel.caretCount)
+    protected fun thenCaretCount(expected: Int) = assertEquals("caret count", expected, ed.caretModel.caretCount)
 }

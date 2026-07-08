@@ -37,16 +37,23 @@ import com.intellij.openapi.editor.event.EditorFactoryListener
  * working for editors born inside modal dialogs.
  */
 class MeowEditorFactoryListener : EditorFactoryListener {
-
     override fun editorCreated(event: EditorFactoryEvent) {
         val editor = event.editor
         when (editor.editorKind) {
-            EditorKind.MAIN_EDITOR, EditorKind.DIFF -> attach(editor)
-            EditorKind.UNTYPED -> ApplicationManager.getApplication().invokeLater(
-                { if (shouldAttachUntyped(editor)) attach(editor) },
-                ModalityState.any(),
-            )
-            else -> Unit
+            EditorKind.MAIN_EDITOR, EditorKind.DIFF -> {
+                attach(editor)
+            }
+
+            EditorKind.UNTYPED -> {
+                ApplicationManager.getApplication().invokeLater(
+                    { if (shouldAttachUntyped(editor)) attach(editor) },
+                    ModalityState.any(),
+                )
+            }
+
+            else -> {
+                Unit
+            }
         }
     }
 
