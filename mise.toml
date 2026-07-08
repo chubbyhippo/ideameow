@@ -1,3 +1,4 @@
 [tools]
 java = "21"
 gradle = "latest"
+ktlint = "1.8.0"
