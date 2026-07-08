@@ -61,14 +61,14 @@ class TreeMeowSpec : MeowSpec() {
 
     // ------------------------------------------------- the Swing contract
 
-    fun testTreeActionMapProvidesTheArrowKeyActions() {
+    fun `test given a JTree then its ActionMap provides the arrow key actions`() {
         val tree = givenTree()
         for (name in listOf("selectNext", "selectPrevious", "selectParent", "selectChild")) {
             assertNotNull("JTree ActionMap must provide '$name'", tree.actionMap.get(name))
         }
     }
 
-    fun testBundledRcBindsTheTreeKeys() {
+    fun `test given the bundled rc then it binds the tree keys`() {
         val d = Rc.defaults().motion
         assertEquals("meow-next", d['j']?.command)
         assertEquals("meow-prev", d['k']?.command)
@@ -79,7 +79,7 @@ class TreeMeowSpec : MeowSpec() {
 
     // ------------------------------------------------------- j k h l keys
 
-    fun testJAndKMoveTheSelectionLikeTheArrowKeys() {
+    fun `test given a tree when j and k then the selection moves like the arrow keys`() {
         val tree = givenTree()
         TreeMeow.dispatch(tree, 'j')
         assertEquals("a", tree.selectedText())
@@ -89,7 +89,7 @@ class TreeMeowSpec : MeowSpec() {
         assertEquals("a", tree.selectedText())
     }
 
-    fun testLExpandsACollapsedNodeThenEntersIt() {
+    fun `test given a collapsed node when l then it expands, and l again enters it`() {
         val tree = givenTree()
         tree.setSelectionRow(1) // "a", collapsed
         TreeMeow.dispatch(tree, 'l')
@@ -99,7 +99,7 @@ class TreeMeowSpec : MeowSpec() {
         assertEquals("a1", tree.selectedText())
     }
 
-    fun testHCollapsesAnExpandedNodeThenGoesToTheParent() {
+    fun `test given an expanded node when h then it collapses, then goes to the parent`() {
         val tree = givenTree()
         tree.expandRow(1) // open "a"
         tree.setSelectionRow(2) // "a1"
@@ -114,28 +114,28 @@ class TreeMeowSpec : MeowSpec() {
 
     // --------------------------------------------------- resolution rules
 
-    fun testEditorOnlyCommandsAreInertOnTrees() {
+    fun `test given an editor-only command in the mmap then it is inert on trees`() {
         givenRc("mmap w meow-next-word")
         val tree = givenTree()
         TreeMeow.dispatch(tree, 'w')
         assertEquals("a word motion has no tree meaning", "root", tree.selectedText())
     }
 
-    fun testUserMotionMapsOverrideTheBundledDefaults() {
+    fun `test given a user mmap override then it shadows the bundled defaults`() {
         givenRc("mmap j ignore")
         val tree = givenTree()
         TreeMeow.dispatch(tree, 'j')
         assertEquals("root", tree.selectedText())
     }
 
-    fun testKeysReplayResolvesEveryKeyThroughTheMotionMap() {
+    fun `test given a keys mapping then the replay resolves every key through the motion map`() {
         givenRc("mmap g jj")
         val tree = givenTree()
         TreeMeow.dispatch(tree, 'g')
         assertEquals("b", tree.selectedText())
     }
 
-    fun testNoremapReplaysSkipUserMapsLikeTheEngine() {
+    fun `test given a noremap replay then it skips user maps like the engine`() {
         givenRc(
             """
             mnoremap g jj
@@ -149,7 +149,7 @@ class TreeMeowSpec : MeowSpec() {
         assertEquals("the replay resolves j via the defaults", "b", tree.selectedText())
     }
 
-    fun testActionBindingsDispatchWithTheTreeAsContext() {
+    fun `test given an action mmap then it dispatches with the tree as context`() {
         val id = "IdeameowTreeMeowSpecProbe"
         var performed = 0
         val probe = object : AnAction(), DumbAware {
@@ -167,14 +167,14 @@ class TreeMeowSpec : MeowSpec() {
         }
     }
 
-    fun testBoundCharsMergeTheDefaultsAndTheUserMaps() {
+    fun `test given defaults and user maps then boundChars merges them`() {
         givenRc("mmap w meow-next-word")
         val bound = TreeMeow.boundChars()
         for (c in "jkhlqw") assertTrue("'$c' must be bound", c in bound)
         assertFalse("unmapped letters stay native (speed search)", 'z' in bound)
     }
 
-    fun testIgnoreGivesAKeyBackToTheTree() {
+    fun `test given mmap q ignore then the key returns to the tree`() {
         givenRc("mmap q ignore")
         assertFalse("an ignored key leaves the shortcut set", 'q' in TreeMeow.boundChars())
         assertTrue("the other defaults stay", 'j' in TreeMeow.boundChars())

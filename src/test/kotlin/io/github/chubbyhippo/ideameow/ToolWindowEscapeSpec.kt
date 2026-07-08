@@ -37,34 +37,34 @@ class ToolWindowEscapeSpec : MeowSpec() {
         super.tearDown()
     }
 
-    fun testTheFirstEscapeInAToolWindowDoesNotJump() {
+    fun `test given a single escape in a tool window then it does not jump`() {
         assertFalse(ToolWindowEscape.onEscape("Terminal", 1_000))
     }
 
-    fun testASecondEscapeInTheSameToolWindowWithinTheTimeoutJumps() {
+    fun `test given a second escape in the same tool window within the timeout then it jumps`() {
         ToolWindowEscape.onEscape("Terminal", 1_000)
         assertTrue(ToolWindowEscape.onEscape("Terminal", 1_000 + ToolWindowEscape.TIMEOUT_MS))
     }
 
-    fun testAJumpConsumesThePairSoTheNextEscapeStartsANewOne() {
+    fun `test given a completed jump then the next escape starts a new pair`() {
         ToolWindowEscape.onEscape("Terminal", 1_000)
         assertTrue(ToolWindowEscape.onEscape("Terminal", 1_100))
         assertFalse(ToolWindowEscape.onEscape("Terminal", 1_200))
     }
 
-    fun testEscapesSlowerThanTheTimeoutDoNotPairButReArm() {
+    fun `test given escapes slower than the timeout then they do not pair but re-arm`() {
         ToolWindowEscape.onEscape("Terminal", 1_000)
         assertFalse(ToolWindowEscape.onEscape("Terminal", 1_001 + ToolWindowEscape.TIMEOUT_MS))
         assertTrue(ToolWindowEscape.onEscape("Terminal", 1_200 + ToolWindowEscape.TIMEOUT_MS))
     }
 
-    fun testEscapesInDifferentToolWindowsDoNotPair() {
+    fun `test given escapes in different tool windows then they do not pair`() {
         ToolWindowEscape.onEscape("Terminal", 1_000)
         assertFalse(ToolWindowEscape.onEscape("AIAssistant", 1_100))
         assertTrue(ToolWindowEscape.onEscape("AIAssistant", 1_200))
     }
 
-    fun testFocusOutsideAnyToolWindowBreaksThePair() {
+    fun `test given focus outside any tool window then the pair breaks`() {
         ToolWindowEscape.onEscape("Terminal", 1_000)
         assertFalse(ToolWindowEscape.onEscape(null, 1_100))
         assertFalse(ToolWindowEscape.onEscape("Terminal", 1_200))
