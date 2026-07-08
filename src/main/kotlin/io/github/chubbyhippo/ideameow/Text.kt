@@ -83,6 +83,19 @@ object Words {
         return i
     }
 
+    /** meow--fix-thing-selection-mark (meow 1.5.0): the mark of a fresh
+     *  next/back-thing selection snaps to the selected thing's own bounds,
+     *  so the separators between the old point and the thing stay outside —
+     *  e e e steps bare word by bare word (batch-probed). Forward
+     *  (mark < pos): max(mark, start of the thing ending at pos); backward:
+     *  min(mark, end of the thing starting at pos). Expand chains ignore
+     *  this (the anchor comes from the region ends). */
+    fun fixSelectionMark(text: CharSequence, pos: Int, mark: Int, pred: (Char) -> Boolean): Int {
+        val probe = (if (mark > pos) pos else pos - 1).coerceIn(0, (text.length - 1).coerceAtLeast(0))
+        val bounds = boundsAt(text, probe, pred) ?: return mark
+        return if (mark > pos) minOf(mark, bounds.second) else maxOf(mark, bounds.first)
+    }
+
     fun boundsAt(text: CharSequence, offset: Int, pred: (Char) -> Boolean): Pair<Int, Int>? {
         var o = offset
         if (o >= text.length || !pred(text[o])) {

@@ -35,6 +35,25 @@ class FindSearchSpec : MeowSpec() {
         thenSelType(SelType.TILL)
     }
 
+    fun `test given w then f X then a fresh find selection runs from the word end through the char`() {
+        given("comma separated", "w<caret>ord1, word2 word3")
+        whenKeys("w")
+        thenSelection("word1")
+        whenKeys("f3")
+        // probed (meow 1.5.0): find REPLACES the word selection with
+        // (select . find) from the old point — region [6,19)
+        thenSelection(", word2 word3")
+        thenSelType(SelType.FIND)
+        thenCaretAtSelectionEnd()
+    }
+
+    fun `test given w then t X then the till selection stops before the char`() {
+        given("comma separated", "w<caret>ord1, word2 word3")
+        whenKeys("wt3")
+        thenSelection(", word2 word") // probed: region [6,18)
+        thenSelType(SelType.TILL)
+    }
+
     fun `test given a count when 2 f a then the second occurrence is reached`() {
         given("repeating", "<caret>xaxaxa")
         whenKeys("2fa")

@@ -55,7 +55,47 @@ class SelectionSpec : MeowSpec() {
         whenKeys("e")
         thenSelection("one")
         whenKeys("e")
-        thenSelection(" two")
+        // meow--fix-thing-selection-mark: the mark snaps past the separator,
+        // a fresh selection is the bare word (batch-probed, meow 1.5.0)
+        thenSelection("two")
+    }
+
+    fun `test given words separated by punctuation when e e e then each selection is one bare word`() {
+        given("comma separated", "<caret>word1, word2 word3")
+        whenKeys("ee")
+        thenSelection("word2") // probed: [8,13), the ", " stays outside
+        whenKeys("e")
+        thenSelection("word3")
+        thenCaretAtSelectionEnd()
+    }
+
+    fun `test given b b b from the end then each selection is one bare word`() {
+        given("comma separated", "word1, word2 word3<caret>")
+        whenKeys("b")
+        thenSelection("word3")
+        thenCaretAtSelectionStart()
+        whenKeys("bb")
+        thenSelection("word1") // probed: [1,6), separators never included
+    }
+
+    fun `test given e then b then the same word is re-selected backward`() {
+        given("comma separated", "<caret>word1, word2 word3")
+        whenKeys("eb")
+        thenSelection("word1") // probed: [1,6) point 1 — b flips onto the word
+        thenCaretAtSelectionStart()
+    }
+
+    fun `test given a selection of another type when e then the history restarts at the cancel`() {
+        given("two lines", "<caret>hello world\nnext line")
+        whenKeys("x")
+        thenSelection("hello world")
+        whenKeys("e")
+        thenSelection("next") // mark snapped past the newline
+        whenKeys("z")
+        // probed: meow-next-thing cancelled the line selection first, so z
+        // pops the null placeholder — no region, caret at the chain start
+        thenNoSelection()
+        thenCaretAt(11)
     }
 
     fun `test given w first when e then the word selection extends (meow expand-word rule)`() {
@@ -237,7 +277,7 @@ class SelectionSpec : MeowSpec() {
         whenKeys("w2")
         thenSelection("one two three")
         whenKeys("e") // (select . word) does not match (expand . word): fresh selection
-        thenSelection(" four")
+        thenSelection("four") // bare word — the mark-fix applies to every fresh selection
     }
 
     fun `test given x 2 then x re-selects the current line instead of extending`() {

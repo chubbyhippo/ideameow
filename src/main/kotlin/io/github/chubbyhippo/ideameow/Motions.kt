@@ -176,21 +176,28 @@ internal object Motions {
         val text = editor.document.charsSequence
         val type = wordType(symbol)
         val sm = editor.selectionModel
+        // meow-next-thing: a selection of another type (or none) is cancelled
+        // FIRST — meow--cancel-selection, so the chain history restarts and a
+        // later z pops the null placeholder, not the foreign selection
+        if (!(sm.hasSelection() && st.selType == type)) Selections.cancel(editor, st)
         val extend = st.selExpand && st.selType == type && sm.hasSelection()
         val from = when {
             extend && n < 0 -> sm.selectionStart
             extend -> sm.selectionEnd
             else -> editor.caretModel.offset
         }
-        val anchor = when {
-            extend && n < 0 -> sm.selectionEnd
-            extend -> sm.selectionStart
-            else -> from
-        }
         val target =
             if (n > 0) Words.nextEnd(text, from, n, charPred(symbol))
             else Words.prevStart(text, from, -n, charPred(symbol))
         if (target == from) return
+        val anchor = when {
+            extend && n < 0 -> sm.selectionEnd
+            extend -> sm.selectionStart
+            // meow--fix-thing-selection-mark: a fresh selection snaps its
+            // mark to the word's own bounds — the separators between the old
+            // point and the word stay OUTSIDE (e e e steps bare words)
+            else -> Words.fixSelectionMark(text, target, from, charPred(symbol))
+        }
         Selections.select(editor, st, type, anchor, target, expand = extend)
     }
 
