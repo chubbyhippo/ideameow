@@ -48,6 +48,13 @@ tree keys with `mmap` lines in `~/.ideameowrc`, e.g.
 `q` type into speed search again). Meow commands other than the four
 motions have no tree meaning and are simply inert there.
 
+**Double-ESC leaves any tool window** — a single `ESC` already returns you
+to the editor from most tool windows (the platform's own escape), but the
+terminal and AI-chat windows swallow every `ESC` themselves — a shell or a
+TUI needs the key. Press `ESC` twice quickly (within 500 ms) in the same
+tool window and focus jumps back to the editor; the first press still
+reaches the terminal untouched.
+
 **Windows** — `(windmove-default-keybindings)` from `init.el`, ported
 natively: `Shift+←→↑↓` select the editor window in that direction, measured
 from the caret like windmove — with three stacked splits on the left,

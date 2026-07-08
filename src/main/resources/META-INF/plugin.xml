@@ -24,6 +24,9 @@
         <editorActionHandler action="EditorEscape" implementationClass="io.github.chubbyhippo.ideameow.MeowEscapeHandler"/>
         <editorFactoryListener implementation="io.github.chubbyhippo.ideameow.MeowEditorFactoryListener"/>
         <postStartupActivity implementation="io.github.chubbyhippo.ideameow.TreeMeowStartup"/>
+        <!-- double-ESC in a tool window (terminal, AI chat, anything that
+             swallows single ESC) returns focus to the editor -->
+        <postStartupActivity implementation="io.github.chubbyhippo.ideameow.ToolWindowEscapeStartup"/>
         <statusBarWidgetFactory id="MeowMode" implementation="io.github.chubbyhippo.ideameow.MeowWidgetFactory"/>
         <notificationGroup id="ideameow" displayType="BALLOON"/>
         <!-- shift+arrows collide with the editor's shift-selection actions;
