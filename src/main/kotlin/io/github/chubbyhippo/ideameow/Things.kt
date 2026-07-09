@@ -117,34 +117,59 @@ object Things {
     }
 
     /**
-     * String thing: scan the whole buffer tracking quote state (handles \
-     * escapes); if [offset] is inside a quoted run, return it. Heuristic —
-     * comments containing apostrophes can fool it, like any text-based scan.
+     * String thing (meow `g`): the quoted run at point. meow delegates to the
+     * major-mode syntax table (`bounds-of-thing-at-point 'string` plus
+     * skip-syntax over the `"|` classes, which strips the WHOLE delimiter
+     * run); this port is a text scan instead, so `,g`/`.g` still work in
+     * plain-text and language-agnostic buffers — a deliberate divergence
+     * (see meow-semantics.md). It recognizes single AND triple runs of the
+     * three quote chars `'` `"` `` ` ``, so Python/Kotlin `"""`/`'''`,
+     * Markdown/JS fenced ``` and template-literal `` ` `` all select.
+     * inner() drops the full delimiter run on each side, bounds() keeps it
+     * (mirroring the skip-syntax intent). A single-char run stays on one line;
+     * a triple run spans lines (docstrings/fences). `\` escapes the next char.
+     * Unterminated openers are skipped so a stray apostrophe can't swallow the
+     * rest of the buffer — but, like meow, a text scan can still be fooled by
+     * an odd quote elsewhere on the same line.
      */
     private fun string(
         text: CharSequence,
         offset: Int,
         inner: Boolean,
     ): Bounds? {
+        val n = text.length
         var i = 0
-        var quote = 0.toChar()
-        var start = -1
-        while (i < text.length) {
+        while (i < n) {
             val c = text[i]
-            if (quote != 0.toChar()) {
-                if (c == '\\') {
-                    i += 2
+            if (c == '"' || c == '\'' || c == '`') {
+                val triple = i + 2 < n && text[i + 1] == c && text[i + 2] == c
+                val len = if (triple) 3 else 1
+                val open = i
+                var j = i + len
+                var closeEnd = -1
+                while (j < n) {
+                    val d = text[j]
+                    if (!triple && d == '\n') break // single-char runs stay on one line
+                    if (d == '\\') {
+                        j += 2
+                        continue
+                    }
+                    val closes = if (triple) j + 2 < n && text[j + 1] == c && text[j + 2] == c else true
+                    if (d == c && closes) {
+                        closeEnd = j + len
+                        break
+                    }
+                    j++
+                }
+                if (closeEnd < 0) {
+                    i = open + len // unterminated opener: skip it, keep scanning
                     continue
                 }
-                if (c == quote) {
-                    if (offset in (start + 1)..i || (offset == start)) {
-                        return if (inner) Bounds(start + 1, i) else Bounds(start, i + 1)
-                    }
-                    quote = 0.toChar()
+                if (offset in open until closeEnd) {
+                    return if (inner) Bounds(open + len, closeEnd - len) else Bounds(open, closeEnd)
                 }
-            } else if (c == '"' || c == '\'' || c == '`') {
-                quote = c
-                start = i
+                i = closeEnd
+                continue
             }
             i++
         }
