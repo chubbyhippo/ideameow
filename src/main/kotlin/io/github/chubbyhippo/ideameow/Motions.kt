@@ -17,6 +17,7 @@
 
 package io.github.chubbyhippo.ideameow
 
+import com.intellij.openapi.editor.Caret
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.editor.ScrollType
 import com.intellij.openapi.ui.Messages
@@ -117,14 +118,7 @@ internal object Motions {
         val len = editor.document.textLength
         for (caret in editor.caretModel.allCarets) {
             val target = (caret.offset + dx).coerceIn(0, len)
-            if (extend) {
-                val lead = caret.leadSelectionOffset
-                caret.moveToOffset(target)
-                caret.setSelection(lead, target)
-            } else {
-                caret.moveToOffset(target)
-                caret.removeSelection()
-            }
+            applyCaretMove(caret, target, extend)
         }
         editor.scrollingModel.scrollToCaret(ScrollType.RELATIVE)
     }
@@ -148,16 +142,26 @@ internal object Motions {
                     caret.offset - doc.getLineStartOffset(doc.getLineNumber(caret.offset))
                 }
             val target = movedLineOffset(editor, caret.offset, dy, col)
-            if (extend) {
-                val lead = caret.leadSelectionOffset
-                caret.moveToOffset(target)
-                caret.setSelection(lead, target)
-            } else {
-                caret.moveToOffset(target)
-                caret.removeSelection()
-            }
+            applyCaretMove(caret, target, extend)
         }
         editor.scrollingModel.scrollToCaret(ScrollType.RELATIVE)
+    }
+
+    /** Move [caret] to [target], extending the selection from its lead when
+     *  [extend] (read the lead BEFORE moving), else collapsing it. */
+    private fun applyCaretMove(
+        caret: Caret,
+        target: Int,
+        extend: Boolean,
+    ) {
+        if (extend) {
+            val lead = caret.leadSelectionOffset
+            caret.moveToOffset(target)
+            caret.setSelection(lead, target)
+        } else {
+            caret.moveToOffset(target)
+            caret.removeSelection()
+        }
     }
 
     /** meow-left/right/next/prev-expand: (expand . char) selection through
@@ -186,9 +190,7 @@ internal object Motions {
                         }
                     movedLineOffset(editor, caret.offset, dy, col)
                 }
-            val lead = caret.leadSelectionOffset
-            caret.moveToOffset(target)
-            caret.setSelection(lead, target)
+            applyCaretMove(caret, target, true)
         }
         Selections.recordSelect(
             st,
