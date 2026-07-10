@@ -168,7 +168,7 @@ object Avy {
         val session = Session(gotoLine = true)
         st.avy = session
         val doc = editor.document
-        val (first, last) = visibleLines(editor)
+        val (first, last) = Ide.visibleLines(editor)
         val candidates = (first..last).map { doc.getLineStartOffset(it) }
         toSelecting(editor, st, session, candidates)
     }
@@ -261,7 +261,7 @@ object Avy {
                     null,
                 ) ?: return
             val doc = editor.document
-            val ln = ((input.trim().toIntOrNull() ?: return) - 1).coerceIn(0, doc.lineCount - 1)
+            val ln = parsedLineNumber(input, doc.lineCount) ?: return
             jump(editor, st, doc.getLineStartOffset(ln))
             return
         }
@@ -314,17 +314,6 @@ object Avy {
 
     // ----------------------------------------------------------- candidates
 
-    private fun visibleLines(editor: Editor): Pair<Int, Int> {
-        val doc = editor.document
-        val area = editor.scrollingModel.visibleArea
-        if (doc.textLength == 0) return 0 to 0
-        val last = (doc.lineCount - 1).coerceAtLeast(0)
-        if (area.height <= 0) return 0 to last // headless: the whole buffer
-        val top = editor.xyToLogicalPosition(Point(0, area.y)).line.coerceIn(0, last)
-        val bottom = editor.xyToLogicalPosition(Point(0, area.y + area.height)).line.coerceIn(0, last)
-        return top to bottom
-    }
-
     /** Literal, case-insensitive, non-overlapping matches in the visible
      *  region (avy--read-candidates with regexp-quote + case folding). */
     private fun matches(
@@ -333,7 +322,7 @@ object Avy {
     ): List<Int> {
         if (input.isEmpty()) return emptyList()
         val doc = editor.document
-        val (first, last) = visibleLines(editor)
+        val (first, last) = Ide.visibleLines(editor)
         val from = doc.getLineStartOffset(first)
         val to = doc.getLineEndOffset(last)
         val text = doc.charsSequence

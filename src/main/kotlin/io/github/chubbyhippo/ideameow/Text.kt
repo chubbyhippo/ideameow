@@ -46,6 +46,17 @@ internal fun CharSequence.lastIndexOfChar(
 /** The char class a word or symbol motion scans by. */
 internal fun charPred(symbol: Boolean): (Char) -> Boolean = if (symbol) Things::isSymbolChar else Things::isWordChar
 
+/** A "Goto line:" prompt answer as a clamped 0-based line; null when the
+ *  input is missing or not a number (shared by meow-goto-line and avy's
+ *  digit-seeded line prompt). */
+internal fun parsedLineNumber(
+    input: String?,
+    lineCount: Int,
+): Int? {
+    val n = input?.trim()?.toIntOrNull() ?: return null
+    return (n - 1).coerceIn(0, (lineCount - 1).coerceAtLeast(0))
+}
+
 /**
  * Selection target after the [n]th occurrence of [ch] from [caret] — the scan
  * behind meow-find (selects THROUGH the char) and meow-till (stops short of

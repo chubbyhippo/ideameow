@@ -132,19 +132,23 @@ internal object Motions {
         // meow-next/prev run meow--cancel-selection unconditionally otherwise
         if (!extend) Selections.cancel(editor, st)
         val goal = goalColumn(editor, st)
-        val doc = editor.document
-        val primary = editor.caretModel.primaryCaret
         for (caret in editor.caretModel.allCarets) {
-            val col =
-                if (caret == primary) {
-                    goal
-                } else {
-                    caret.offset - doc.getLineStartOffset(doc.getLineNumber(caret.offset))
-                }
-            val target = movedLineOffset(editor, caret.offset, dy, col)
+            val target = movedLineOffset(editor, caret.offset, dy, columnFor(editor, caret, goal))
             applyCaretMove(caret, target, extend)
         }
         editor.scrollingModel.scrollToCaret(ScrollType.RELATIVE)
+    }
+
+    /** Per-caret goal column: the primary caret keeps the sticky [goal]
+     *  column, every beacon caret its own current column. */
+    private fun columnFor(
+        editor: Editor,
+        caret: Caret,
+        goal: Int,
+    ): Int {
+        if (caret == editor.caretModel.primaryCaret) return goal
+        val doc = editor.document
+        return caret.offset - doc.getLineStartOffset(doc.getLineNumber(caret.offset))
     }
 
     /** Move [caret] to [target], extending the selection from its lead when
@@ -174,21 +178,14 @@ internal object Motions {
     ) {
         val posBefore = editor.caretModel.offset
         val goal = if (dy != 0) goalColumn(editor, st) else 0
-        val doc = editor.document
-        val len = doc.textLength
+        val len = editor.document.textLength
         val primary = editor.caretModel.primaryCaret
         for (caret in editor.caretModel.allCarets) {
             val target =
                 if (dy == 0) {
                     (caret.offset + dx).coerceIn(0, len)
                 } else {
-                    val col =
-                        if (caret == primary) {
-                            goal
-                        } else {
-                            caret.offset - doc.getLineStartOffset(doc.getLineNumber(caret.offset))
-                        }
-                    movedLineOffset(editor, caret.offset, dy, col)
+                    movedLineOffset(editor, caret.offset, dy, columnFor(editor, caret, goal))
                 }
             applyCaretMove(caret, target, true)
         }
@@ -323,7 +320,7 @@ internal object Motions {
         val input = Messages.showInputDialog(editor.project, "Goto line:", "Meow", null) ?: return
         val doc = editor.document
         if (doc.textLength == 0) return
-        val ln = ((input.trim().toIntOrNull() ?: return) - 1).coerceIn(0, doc.lineCount - 1)
+        val ln = parsedLineNumber(input, doc.lineCount) ?: return
         Selections.select(editor, st, SelType.LINE, doc.getLineStartOffset(ln), doc.getLineEndOffset(ln), expand = true)
         editor.scrollingModel.scrollToCaret(ScrollType.CENTER)
     }
@@ -343,7 +340,9 @@ internal object Motions {
             Ide.hint(editor, "char not found: $ch")
             return
         }
-        Selections.select(editor, st, if (till) SelType.TILL else SelType.FIND, caret, target, expand = false)
+        // BEFORE the select: its expand hints preview further occurrences of
+        // THIS char (a stale lastFind painted the previous find's positions)
         st.lastFind = ch
+        Selections.select(editor, st, if (till) SelType.TILL else SelType.FIND, caret, target, expand = false)
     }
 }

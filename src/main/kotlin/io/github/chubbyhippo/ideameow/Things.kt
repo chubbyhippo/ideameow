@@ -196,12 +196,11 @@ object Things {
     }
 
     private fun window(editor: Editor): Bounds {
-        val area = editor.scrollingModel.visibleArea
-        val top = editor.xyToLogicalPosition(java.awt.Point(0, area.y))
-        val bottom = editor.xyToLogicalPosition(java.awt.Point(0, area.y + area.height))
+        // one visible-lines rule with avy's candidate scan (Ide.visibleLines):
+        // this copy had drifted — it lacked the headless and empty-document
+        // guards, collapsing the window thing to line 0 in a zero-height view
+        val (startLine, endLine) = Ide.visibleLines(editor)
         val doc = editor.document
-        val startLine = top.line.coerceIn(0, (doc.lineCount - 1).coerceAtLeast(0))
-        val endLine = bottom.line.coerceIn(0, (doc.lineCount - 1).coerceAtLeast(0))
         return Bounds(doc.getLineStartOffset(startLine), doc.getLineEndOffset(endLine))
     }
 

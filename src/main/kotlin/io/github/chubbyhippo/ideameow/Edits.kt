@@ -122,6 +122,28 @@ internal object Edits {
         Meow.setMode(editor, st, MeowMode.INSERT)
     }
 
+    /** Delete the caret's selection, else one char in the given direction —
+     *  the char fallback takes ANY char, newlines included (meow-change-char /
+     *  delete-forward-char; probed against meow 1.5.0). Shared by change,
+     *  delete and backward-delete so the fallback rule cannot drift. */
+    private fun deleteAtCaret(
+        editor: Editor,
+        caret: Caret,
+        forward: Boolean,
+    ) {
+        if (caret.hasSelection()) {
+            editor.document.deleteString(caret.selectionStart, caret.selectionEnd)
+            caret.removeSelection()
+            return
+        }
+        val o = caret.offset
+        if (forward) {
+            if (o < editor.document.textLength) editor.document.deleteString(o, o + 1)
+        } else if (o > 0) {
+            editor.document.deleteString(o - 1, o)
+        }
+    }
+
     private fun change(
         editor: Editor,
         st: MeowState,
@@ -130,19 +152,7 @@ internal object Edits {
         // fallback meow-change-char at point-max: nothing happens, not even INSERT
         val primary = editor.caretModel.primaryCaret
         if (!primary.hasSelection() && primary.offset >= editor.document.textLength) return
-        editCarets(editor, "Meow Change") { caret ->
-            if (caret.hasSelection()) {
-                editor.document.deleteString(caret.selectionStart, caret.selectionEnd)
-                caret.removeSelection()
-            } else {
-                // fallback meow-change-char: delete-char takes ANY char,
-                // newlines included (probed against meow 1.5.0)
-                val o = caret.offset
-                if (o < editor.document.textLength) {
-                    editor.document.deleteString(o, o + 1)
-                }
-            }
-        }
+        editCarets(editor, "Meow Change") { caret -> deleteAtCaret(editor, caret, forward = true) }
         st.selType = SelType.NONE
         Meow.setMode(editor, st, MeowMode.INSERT)
     }
@@ -152,15 +162,7 @@ internal object Edits {
         st: MeowState,
     ) {
         if (blockedReadOnly(editor)) return
-        editCarets(editor, "Meow Delete") { caret ->
-            if (caret.hasSelection()) {
-                editor.document.deleteString(caret.selectionStart, caret.selectionEnd)
-                caret.removeSelection()
-            } else {
-                val o = caret.offset
-                if (o < editor.document.textLength) editor.document.deleteString(o, o + 1)
-            }
-        }
+        editCarets(editor, "Meow Delete") { caret -> deleteAtCaret(editor, caret, forward = true) }
         st.selType = SelType.NONE
     }
 
@@ -169,15 +171,7 @@ internal object Edits {
         st: MeowState,
     ) {
         if (!allowModify(editor)) return // meow gates backspace silently
-        editCarets(editor, "Meow Backward Delete") { caret ->
-            if (caret.hasSelection()) {
-                editor.document.deleteString(caret.selectionStart, caret.selectionEnd)
-                caret.removeSelection()
-            } else {
-                val o = caret.offset
-                if (o > 0) editor.document.deleteString(o - 1, o)
-            }
-        }
+        editCarets(editor, "Meow Backward Delete") { caret -> deleteAtCaret(editor, caret, forward = false) }
         st.selType = SelType.NONE
     }
 

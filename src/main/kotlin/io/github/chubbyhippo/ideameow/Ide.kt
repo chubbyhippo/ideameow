@@ -24,6 +24,7 @@ import com.intellij.openapi.actionSystem.ex.ActionManagerEx
 import com.intellij.openapi.command.WriteCommandAction
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.ide.CopyPasteManager
+import java.awt.Point
 import java.awt.datatransfer.DataFlavor
 import javax.swing.JComponent
 
@@ -33,6 +34,11 @@ import javax.swing.JComponent
  * depend on this narrow surface instead of the action system's details.
  */
 internal object Ide {
+    /** [ctx] is deliberately unread: tryToExecute derives its own context
+     *  from the content component, but the DataContext stays in the command
+     *  ABI (MeowTypedHandler receives a real one) so a future bridge that
+     *  needs focus-sensitive dispatch doesn't have to re-thread it through
+     *  every command family. */
     fun act(
         editor: Editor,
         @Suppress("UNUSED_PARAMETER") ctx: DataContext?,
@@ -75,6 +81,21 @@ internal object Ide {
     ) {
         // best-effort: hints cannot render in headless (test) mode
         runCatching { HintManager.getInstance().showInformationHint(editor, text) }
+    }
+
+    /** The visible logical line range (first to last) — Emacs' window-start/
+     *  window-end, shared by avy's candidate scan and the `w` window thing.
+     *  A zero-height viewport (headless specs) or an empty document falls
+     *  back to the whole buffer. */
+    fun visibleLines(editor: Editor): Pair<Int, Int> {
+        val doc = editor.document
+        if (doc.textLength == 0) return 0 to 0
+        val last = (doc.lineCount - 1).coerceAtLeast(0)
+        val area = editor.scrollingModel.visibleArea
+        if (area.height <= 0) return 0 to last
+        val top = editor.xyToLogicalPosition(Point(0, area.y)).line.coerceIn(0, last)
+        val bottom = editor.xyToLogicalPosition(Point(0, area.y + area.height)).line.coerceIn(0, last)
+        return top to bottom
     }
 
     fun runWrite(

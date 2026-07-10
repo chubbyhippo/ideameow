@@ -187,6 +187,14 @@ class SelectionSpec : MeowSpec() {
         assertNull(st.hintOverlay)
     }
 
+    fun `test given a find selection when the target char sits at the caret then the first hint marks it`() {
+        // the preview runs the same nthCharTarget scan as the digit expand: a
+        // second X right at the caret is one expand away and must be hinted
+        given("chars", "<caret>aXX")
+        whenKeys("fX")
+        assertNotNull("a digit hint must paint over the X at the caret", st.hintOverlay)
+    }
+
     fun `test given digits after w then the selection expands by that many words`() {
         given("five words", "<caret>one two three four five")
         whenKeys("w2")

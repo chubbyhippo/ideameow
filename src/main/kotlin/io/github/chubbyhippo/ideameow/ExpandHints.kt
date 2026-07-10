@@ -107,12 +107,14 @@ object ExpandHints {
 
             SelType.FIND, SelType.TILL -> {
                 val c = st.lastFind ?: return out
-                var i = caret
-                repeat(count) {
-                    val next = if (backward) text.lastIndexOfChar(c, i - 1) else text.indexOfChar(c, i + 1)
-                    if (next < 0) return@repeat
-                    out.add(if (st.selType == SelType.TILL) next else (next + 1).coerceAtMost(text.length))
-                    i = next
+                // the SAME scan the digit expand runs (nthCharTarget), so the
+                // painted digits can never disagree with where the selection
+                // would land — e.g. a target char sitting right at the caret
+                val till = st.selType == SelType.TILL
+                for (k in 1..count) {
+                    val t = nthCharTarget(text, c, caret, k, backward, till)
+                    if (t < 0) break
+                    out.add(t)
                 }
             }
 

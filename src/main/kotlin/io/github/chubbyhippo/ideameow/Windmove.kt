@@ -242,7 +242,14 @@ internal object Windmove {
         window: EditorWindow,
     ): Rectangle? {
         if (window.selectedComposite == null) return null
-        val c = window.tabbedPane.component
+        return componentRect(frame, window.tabbedPane.component)
+    }
+
+    /** The component's rect in frame coordinates when actually visible. */
+    private fun componentRect(
+        frame: java.awt.Window,
+        c: java.awt.Component,
+    ): Rectangle? {
         if (!c.isShowing || c.width <= 0 || c.height <= 0) return null
         return SwingUtilities.convertRectangle(c.parent, c.bounds, frame)
     }
@@ -270,11 +277,7 @@ internal object Windmove {
     private fun rectIn(
         frame: java.awt.Window,
         editor: Editor,
-    ): Rectangle? {
-        val c = editor.component
-        if (!c.isShowing || c.width <= 0 || c.height <= 0) return null
-        return SwingUtilities.convertRectangle(c.parent, c.bounds, frame)
-    }
+    ): Rectangle? = componentRect(frame, editor.component)
 
     /** The caret in frame coordinates when scrolled into view, else null
      *  (reference() then applies window.el's edge+1 fallback). */

@@ -58,10 +58,14 @@ object Meow {
         val repeat = st.repeatMap
         return when {
             st.mode == MeowMode.KEYPAD -> "MEOW KEYPAD  SPC ${st.keypad.toString().toCharArray().joinToString(" ")}"
+
             beacon && st.mode == MeowMode.INSERT -> "MEOW BEACON-INSERT"
+
             beacon -> "MEOW BEACON"
+
             // repeat-echo-mode-line: the run is live, these keys continue it
             repeat != null -> "MEOW ${st.mode} [repeat ${repeat.keys.joinToString(" ")}]"
+
             else -> "MEOW ${st.mode}"
         }
     }
