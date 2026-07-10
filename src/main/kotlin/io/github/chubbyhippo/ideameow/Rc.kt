@@ -82,6 +82,7 @@ object Rc {
     fun setForTest(c: Config) {
         config = c
         loaded = true
+        RcFileState.resetForTest() // no stale reload-button state across specs
     }
 
     fun rcFile(): File = File(System.getProperty("user.home"), FILE_NAME)
@@ -92,6 +93,7 @@ object Rc {
         loaded = true
         val f = rcFile()
         config = if (f.isFile) parse(f.readLines()) else Config()
+        RcFileState.saveParsed(config) // the floating reload button's "loaded" snapshot
         if (config.errors.isNotEmpty()) {
             notify(
                 "ideameow: problem(s) in ~/$FILE_NAME\n" + config.errors.joinToString("\n"),

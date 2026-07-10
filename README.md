@@ -151,8 +151,13 @@ ideameow reads an `.ideavimrc`-style file from your home directory:
    and overrides apply entry by entry, so deleting a line just falls back to
    the default — bind `ignore` to disable a key — and a pared-down file of
    only your overrides works exactly the same.)
-2. Edit, then reload with `SPC c M`. A balloon tells you how many mappings
-   loaded — and lists any parse problems with their line numbers.
+2. Edit, then reload — either with `SPC c M`, or with the floating
+   **Reload** button that appears in the top-right of the rc file's editor
+   whenever its content differs from the loaded config (comment and
+   formatting edits don't count — the comparison is on the parsed config,
+   IdeaVim-style). Unsaved edits are flushed for you. A balloon tells you
+   how many mappings loaded — and lists any parse problems with their line
+   numbers.
 
 **Syntax reference**
 

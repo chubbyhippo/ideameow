@@ -17,10 +17,14 @@
 
 package io.github.chubbyhippo.ideameow
 
+import com.intellij.openapi.actionSystem.CommonDataKeys
+import com.intellij.openapi.actionSystem.impl.SimpleDataContext
 import com.intellij.openapi.command.WriteCommandAction
+import com.intellij.openapi.editor.EditorFactory
 import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.util.io.FileUtil
 import com.intellij.openapi.vfs.LocalFileSystem
+import com.intellij.testFramework.TestActionEvent
 import java.io.File
 
 /** ~/.ideameowrc parsing, nmap/mmap/map dispatch (including relayouting the
@@ -204,6 +208,88 @@ class RcSpec : MeowSpec() {
             assertFalse("the document was flushed to disk", FileDocumentManager.getInstance().isDocumentUnsaved(doc))
         } finally {
             System.setProperty("user.home", oldHome)
+            home.deleteRecursively()
+        }
+    }
+
+    fun `test given comment-only rc edits then the reload button reports no changes`() {
+        // the floating button compares the PARSED config (IdeaVim's
+        // VimRcFileState hashes the parsed Script the same way) — formatting
+        // and comment edits never demand a reload
+        val home = FileUtil.createTempDirectory("meow-home", null)
+        val oldHome = System.getProperty("user.home")
+        System.setProperty("user.home", home.path)
+        try {
+            Rc.rcFile().writeText("nmap Z ,b\n")
+            Rc.load()
+            val vf = LocalFileSystem.getInstance().refreshAndFindFileByIoFile(Rc.rcFile())!!
+            val doc = FileDocumentManager.getInstance().getDocument(vf)!!
+            WriteCommandAction.runWriteCommandAction(project) { doc.setText("\" just a comment\nnmap Z ,b\n") }
+            assertTrue("comments don't count as changes", RcFileState.equalTo(doc))
+            WriteCommandAction.runWriteCommandAction(project) { doc.setText("nmap Q meow-goto-line\n") }
+            assertFalse("a mapping change does", RcFileState.equalTo(doc))
+        } finally {
+            System.setProperty("user.home", oldHome)
+            Rc.setForTest(Rc.Config())
+            home.deleteRecursively()
+        }
+    }
+
+    fun `test given a non-rc editor then the floating reload action is hidden`() {
+        given("word", "ab<caret>cd")
+        val action = ReloadRcFloatingAction()
+        val e =
+            TestActionEvent.createTestEvent(
+                action,
+                SimpleDataContext
+                    .builder()
+                    .add(CommonDataKeys.EDITOR, myFixture.editor)
+                    .add(CommonDataKeys.VIRTUAL_FILE, myFixture.file.virtualFile)
+                    .build(),
+            )
+        action.update(e)
+        assertFalse(e.presentation.isEnabledAndVisible)
+    }
+
+    fun `test given the rc editor with changes then the floating reload applies them in place`() {
+        val home = FileUtil.createTempDirectory("meow-home", null)
+        val oldHome = System.getProperty("user.home")
+        System.setProperty("user.home", home.path)
+        try {
+            Rc.rcFile().writeText("nmap Z ,b\n")
+            Rc.load()
+            val vf = LocalFileSystem.getInstance().refreshAndFindFileByIoFile(Rc.rcFile())!!
+            val doc = FileDocumentManager.getInstance().getDocument(vf)!!
+            WriteCommandAction.runWriteCommandAction(project) { doc.setText("nmap Q meow-goto-line\n") }
+            val editor = EditorFactory.getInstance().createEditor(doc, project)
+            try {
+                val action = ReloadRcFloatingAction()
+                val e =
+                    TestActionEvent.createTestEvent(
+                        action,
+                        SimpleDataContext
+                            .builder()
+                            .add(CommonDataKeys.EDITOR, editor)
+                            .add(CommonDataKeys.VIRTUAL_FILE, vf)
+                            .build(),
+                    )
+                action.update(e)
+                assertTrue("visible on the rc editor", e.presentation.isEnabledAndVisible)
+                assertEquals("Reload ~/${Rc.FILE_NAME}", e.presentation.text)
+                action.actionPerformed(e)
+                assertEquals(
+                    "the unsaved edit is what got loaded",
+                    "meow-goto-line",
+                    Rc.cfg().normal['Q']?.command,
+                )
+                action.update(e)
+                assertEquals("No Changes in ~/${Rc.FILE_NAME}", e.presentation.text)
+            } finally {
+                EditorFactory.getInstance().releaseEditor(editor)
+            }
+        } finally {
+            System.setProperty("user.home", oldHome)
+            Rc.setForTest(Rc.Config())
             home.deleteRecursively()
         }
     }
