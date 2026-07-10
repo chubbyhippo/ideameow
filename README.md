@@ -134,7 +134,7 @@ swap-grab exchanges the selection and grab texts; `Y` sync-grab re-stashes.
 
 **Keypad.** `SPC x/c/m/w …` mirror the Emacs/meow keypad of the companion
 `.ideavimrc`/`init.el` (GotoFile, SaveAll, splits, font size…); `SPC b` is
-bookmarks (`m` set, `j` jump, `b` recent files). `SPC 1-9` is a
+bookmarks (`m` set, `0-9` numbered slots, `j` jump, `b` recent files). `SPC 1-9` is a
 digit argument, `SPC ?` opens the cheatsheet, `SPC /` describes a key, and
 `SPC c m` / `SPC c M` edit / reload your config.
 

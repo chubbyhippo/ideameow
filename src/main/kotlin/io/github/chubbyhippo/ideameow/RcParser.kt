@@ -38,7 +38,11 @@ package io.github.chubbyhippo.ideameow
  * can be pasted without errors.
  */
 internal object RcParser {
-    private val ACTION_RE = Regex("""(?i)<action>\(([\w.$]+)\)""")
+    // the id is either a bare action id or the shared rc dialect's serialized
+    // *parameterized* command form commandId(paramId=value,...) — some sibling
+    // ports' hosts serialize parameters into the id, and rc lines must keep
+    // pasting between the ports; an id IntelliJ doesn't know just hints
+    private val ACTION_RE = Regex("""(?i)<action>\(([\w.$(),=-]+)\)""")
     private val WHICHKEY_LET_RE = Regex("""^let\s+g:WhichKeyDesc\w*\s*=\s*"(.+)"$""")
 
     fun parse(lines: List<String>): Rc.Config {

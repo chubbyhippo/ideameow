@@ -79,6 +79,18 @@ class RcSpec : MeowSpec() {
         assertEquals("RecentFiles", Rc.keypad()["bb"]!!.action) // bundled defaults beneath
     }
 
+    fun `test given a parameterized action then the whole serialized command is kept`() {
+        // IntelliJ ids are always bare — the commandId(param=value,...) form
+        // exists in the shared rc dialect because some sibling ports' hosts
+        // serialize command parameters into the id. An rc written for one meow
+        // port must keep parsing in the others: the line binds as an action
+        // (an id this IDE doesn't know just hints), never as a keys-replay.
+        val id = "com.example.showView(com.example.viewId=com.example.SomeView,com.example.focus=true)"
+        val c = Rc.parse(listOf("map <leader>bj <action>($id)"))
+        assertEquals(id, c.keypad["bj"]!!.action)
+        assertTrue(c.errors.isEmpty())
+    }
+
     fun `test given the ideavimrc WhichKeyDesc let syntax then descriptions parse`() {
         val c = Rc.parse(listOf("""let g:WhichKeyDesc_leader_x = "<leader>x C-x files/buffers""""))
         assertEquals("C-x files/buffers", c.keypadDesc["x"])
