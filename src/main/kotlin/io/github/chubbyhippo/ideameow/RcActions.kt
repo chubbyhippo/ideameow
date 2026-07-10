@@ -20,6 +20,7 @@ package io.github.chubbyhippo.ideameow
 import com.intellij.notification.NotificationType
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
+import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.fileEditor.OpenFileDescriptor
 import com.intellij.openapi.project.DumbAware
 import com.intellij.openapi.vfs.LocalFileSystem
@@ -30,6 +31,7 @@ class ReloadRcAction :
     AnAction(),
     DumbAware {
     override fun actionPerformed(e: AnActionEvent) {
+        flushUnsavedRc()
         Rc.load()
         TreeMeow.refresh() // a focused tree picks the new mmap keys up now
         val c = Rc.config
@@ -40,6 +42,21 @@ class ReloadRcAction :
                 if (c.errors.isEmpty()) "" else ", ${c.errors.size} problem(s)",
             NotificationType.INFORMATION,
         )
+    }
+
+    companion object {
+        /** The rc is usually edited right here in the IDE (SPC c m), and the
+         *  platform flushes Documents to disk LAZILY — reloading straight
+         *  from disk would re-read the stale file and look dead until a
+         *  restart happens to save everything. IdeaVim's ReloadVimRc guards
+         *  the same way: saveDocumentAsIs before re-executing
+         *  (ui/ReloadVimRc.kt, JetBrains/ideavim, read 2026-07-10). */
+        fun flushUnsavedRc() {
+            val vf = LocalFileSystem.getInstance().findFileByIoFile(Rc.rcFile()) ?: return
+            val fdm = FileDocumentManager.getInstance()
+            val doc = fdm.getCachedDocument(vf) ?: return
+            if (fdm.isDocumentUnsaved(doc)) fdm.saveDocumentAsIs(doc)
+        }
     }
 }
 

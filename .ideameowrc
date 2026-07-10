@@ -280,21 +280,21 @@ desc <leader>w window map (Emacs C-c w)
 " ============================================================================
 
 " --- SPC . — settings / UI ---------------------------------------------------
-desc <leader>. settings / UI
-map <leader>.c <action>(ToggleCompactMode)
-map <leader>.C <action>(CloseProject)
-map <leader>.d <action>(ToggleDistractionFreeMode)
-map <leader>.f <action>(ToggleFullScreen)
-map <leader>.k <action>(ChangeKeymap)
-map <leader>.l <action>(EditorToggleShowLineNumbers)
-map <leader>.m <action>(ExternalSystem.ProjectRefreshAction)
-map <leader>.p <action>(WelcomeScreen.Plugins)
-map <leader>.r <action>(RunConfiguration)
-map <leader>.R <action>(RestartIde)
-map <leader>.s <action>(SettingsEntryPoint)
-map <leader>.t <action>(ChangeLaf)
-map <leader>.T <action>(ViewToolButtons)
-map <leader>.z <action>(ToggleZenMode)
+desc <leader>; settings / UI
+map <leader>;c <action>(ToggleCompactMode)
+map <leader>;C <action>(CloseProject)
+map <leader>;d <action>(ToggleDistractionFreeMode)
+map <leader>;f <action>(ToggleFullScreen)
+map <leader>;k <action>(ChangeKeymap)
+map <leader>;l <action>(EditorToggleShowLineNumbers)
+map <leader>;m <action>(ExternalSystem.ProjectRefreshAction)
+map <leader>;p <action>(WelcomeScreen.Plugins)
+map <leader>;r <action>(RunConfiguration)
+map <leader>;R <action>(RestartIde)
+map <leader>;s <action>(SettingsEntryPoint)
+map <leader>;t <action>(ChangeLaf)
+map <leader>;T <action>(ViewToolButtons)
+map <leader>;z <action>(ToggleZenMode)
 
 " --- SPC a — activate tool windows -------------------------------------------
 desc <leader>a activate tool window
@@ -522,14 +522,14 @@ map <leader>vP <action>(Vcs.Push)
 " ideavimrc used ]c [c ]d [d ]e [e in NORMAL; multi-key NORMAL sequences don't
 " exist here ([ ] are meow's beginning/end-of-thing), so they live on the
 " keypad instead.
-desc <leader>] next (change / diff / error)
-map <leader>]c <action>(VcsShowNextChangeMarker)
-map <leader>]d <action>(NextDiff)
-map <leader>]e <action>(GotoNextError)
-desc <leader>[ previous (change / diff / error)
-map <leader>[c <action>(VcsShowPrevChangeMarker)
-map <leader>[d <action>(PreviousDiff)
-map <leader>[e <action>(GotoPreviousError)
+desc <leader>. next (change / diff / error)
+map <leader>.c <action>(VcsShowNextChangeMarker)
+map <leader>.d <action>(NextDiff)
+map <leader>.e <action>(GotoNextError)
+desc <leader>, previous (change / diff / error)
+map <leader>,c <action>(VcsShowPrevChangeMarker)
+map <leader>,d <action>(PreviousDiff)
+map <leader>,e <action>(GotoPreviousError)
 
 " ============================================================================
 " NOT ported from .ideavimrc, and why

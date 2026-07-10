@@ -17,6 +17,10 @@
 
 package io.github.chubbyhippo.ideameow
 
+import com.intellij.openapi.command.WriteCommandAction
+import com.intellij.openapi.fileEditor.FileDocumentManager
+import com.intellij.openapi.util.io.FileUtil
+import com.intellij.openapi.vfs.LocalFileSystem
 import java.io.File
 
 /** ~/.ideameowrc parsing, nmap/mmap/map dispatch (including relayouting the
@@ -172,6 +176,35 @@ class RcSpec : MeowSpec() {
             assertEquals("nmap Q meow-goto-line\n", f.readText())
         } finally {
             f.delete()
+        }
+    }
+
+    fun `test given unsaved rc edits in the editor then SPC c M flushes and reloads them`() {
+        // the rc is edited right in the IDE (SPC c m) and the platform saves
+        // Documents LAZILY: the reload must flush the unsaved Document first
+        // or it re-reads the stale disk file and looks dead until a restart
+        // happens to save everything (user-reported). IdeaVim's ReloadVimRc
+        // guards identically with saveDocumentAsIs (ui/ReloadVimRc.kt).
+        val home = FileUtil.createTempDirectory("meow-home", null)
+        val oldHome = System.getProperty("user.home")
+        System.setProperty("user.home", home.path)
+        try {
+            Rc.rcFile().writeText("nmap Z ,b\n")
+            val vf = LocalFileSystem.getInstance().refreshAndFindFileByIoFile(Rc.rcFile())!!
+            val doc = FileDocumentManager.getInstance().getDocument(vf)!!
+            WriteCommandAction.runWriteCommandAction(project) { doc.setText("nmap Q meow-goto-line\n") }
+            assertTrue("the edit must start out unsaved", FileDocumentManager.getInstance().isDocumentUnsaved(doc))
+            given("word", "ab<caret>cd")
+            whenKeys(" cM") // bundled default: Ideameow.ReloadRc
+            assertEquals(
+                "the document edit is what got loaded",
+                "meow-goto-line",
+                Rc.cfg().normal['Q']?.command,
+            )
+            assertFalse("the document was flushed to disk", FileDocumentManager.getInstance().isDocumentUnsaved(doc))
+        } finally {
+            System.setProperty("user.home", oldHome)
+            home.deleteRecursively()
         }
     }
 

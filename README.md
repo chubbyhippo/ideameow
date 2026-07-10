@@ -211,13 +211,13 @@ in the same chain refresh the panel instantly. Terminal entries show their
 
 **What the bundled default gives you.** The full meow QWERTY layout, the
 complete keypad table, and a 1:1 port of the companion `.ideavimrc` leader
-scheme: the IntelliJ groups (`SPC .` settings, `SPC a` tool windows,
+scheme: the IntelliJ groups (`SPC ;` settings, `SPC a` tool windows,
 `SPC d/e/f/g/h/i/j/k/l/n/o/p/q/r/s/t/u/v` …) with which-key labels, `S`/`Q`
 as the avy jumps from `init.el` (a native port of avy — no plugin needed:
 type chars, pause, hit a label; `Q` labels visible lines and digits switch to
 a line-number prompt), windmove on `SPC w h/j/k/l` (and `Shift+arrows` on
 the IDE keymap — see above), split resizing on
-`=` `_` `+`, and `SPC ]`/`SPC [` for next/prev change, diff, and error. The
+`=` `_` `+`, and `SPC .`/`SPC ,` for next/prev change, diff, and error. The
 file's footer lists what deliberately *isn't* ported, with reasons. Two
 divergences to know about: `-` keeps meow's negative-argument (this engine has
 real negative counts, so it doesn't need vim's split-resize workaround), and
