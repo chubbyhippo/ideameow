@@ -144,7 +144,7 @@ object Keypad {
                    a caret lands on every match — edit them all, ESC to finish
 
         KEYPAD (SPC)
-          SPC b buffers   SPC x file/buffer/window   SPC c commands   SPC m meta
+          SPC b bookmarks/buffers   SPC x file/buffer/window   SPC c commands   SPC m meta
           SPC w windows   SPC 1-9 count   SPC ? this sheet   SPC / describe key
           SPC c m edit ~/.ideameowrc   SPC c M reload it
           SPC i d track action ids — every performed action shows the id

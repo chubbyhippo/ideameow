@@ -76,7 +76,7 @@ class RcSpec : MeowSpec() {
         assertEquals("goto things", c.keypadDesc["g"])
         Rc.setForTest(c)
         assertEquals("GotoDeclaration", Rc.keypad()["gd"]!!.action)
-        assertEquals("RecentFiles", Rc.keypad()["b"]!!.action) // bundled defaults beneath
+        assertEquals("RecentFiles", Rc.keypad()["bb"]!!.action) // bundled defaults beneath
     }
 
     fun `test given the ideavimrc WhichKeyDesc let syntax then descriptions parse`() {
@@ -136,7 +136,7 @@ class RcSpec : MeowSpec() {
         assertEquals("meow-next", d.motion['j']?.command)
         assertEquals("meow-prev", d.motion['k']?.command)
         // the keypad table lives in the file too — nothing is bound in code
-        assertEquals("RecentFiles", d.keypad["b"]?.action)
+        assertEquals("RecentFiles", d.keypad["bb"]?.action)
         assertEquals("Switcher", d.keypad[" "]?.action)
         assertEquals("Ideameow.EditRc", d.keypad["cm"]?.action)
         assertEquals("Ideameow.ReloadRc", d.keypad["cM"]?.action)
@@ -218,8 +218,8 @@ class RcSpec : MeowSpec() {
 
     fun `test given an rc keypad mapping then it overrides the bundled entry`() {
         given("two words", "on<caret>e two")
-        givenRc("map <leader>b ,b") // bundled-default SPC b = RecentFiles
-        whenKeys(" b")
+        givenRc("map <leader>bb ,b") // bundled-default SPC b b = RecentFiles
+        whenKeys(" bb")
         thenSelection("one two")
     }
 
