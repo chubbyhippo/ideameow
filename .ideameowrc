@@ -532,6 +532,38 @@ map <leader>,d <action>(PreviousDiff)
 map <leader>,e <action>(GotoPreviousError)
 
 " ============================================================================
+" Repeat groups — Emacs repeat-mode, ported (init.el's transient repeat maps)
+" ----------------------------------------------------------------------------
+" After any binding whose TARGET is listed in a group below — membership is
+" the target, not the key, like the repeat-map property on an Emacs command —
+" the next keypress is first looked up in that group: a member key
+" re-dispatches its target and keeps the run alive; any other key (or ESC)
+" ends the run and keeps its normal meaning (Emacs transient-keymap
+" fall-through — nothing is swallowed, and there is no timeout). The entering
+" keypad key needn't be a member: init.el sets repeat-check-key 'no for the
+" same reason. Syntax:
+"   repeat <group> <key> <target>     target grammar = the map-line RHS
+"   repeat <group> <key> ignore       give a bundled group's key back
+" Ported 1:1 from init.el: flymake -> error, diff-hl -> change, text-scale ->
+" zoom, expreg -> expand (winner-mode has no analog — no layout history).
+" So: SPC . e then . . , walks errors; SPC w i then i i i keeps zooming.
+repeat error . <action>(GotoNextError)
+repeat error , <action>(GotoPreviousError)
+repeat change . <action>(VcsShowNextChangeMarker)
+repeat change , <action>(VcsShowPrevChangeMarker)
+repeat zoom i <action>(EditorIncreaseFontSize)
+repeat zoom = <action>(EditorIncreaseFontSize)
+repeat zoom o <action>(EditorDecreaseFontSize)
+repeat zoom - <action>(EditorDecreaseFontSize)
+repeat zoom u <action>(EditorResetFontSize)
+repeat zoom 0 <action>(EditorResetFontSize)
+repeat expand . <action>(EditorSelectWord)
+repeat expand , <action>(EditorUnSelectWord)
+" not a default group (init.el has none for diffs) — add your own like:
+"   repeat diff . <action>(NextDiff)
+"   repeat diff , <action>(PreviousDiff)
+
+" ============================================================================
 " NOT ported from .ideavimrc, and why
 " ----------------------------------------------------------------------------
 " * the whole meow-emulation section (w e b x s d c y r H-L, digits, , . < >,

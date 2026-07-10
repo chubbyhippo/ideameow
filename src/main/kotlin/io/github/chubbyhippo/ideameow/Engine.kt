@@ -37,9 +37,11 @@ fun interface MeowCommand {
  * The key dispatcher. Like meow in Emacs, the engine binds no keys of its
  * own: every command is registered by its meow name in [COMMANDS], and keys
  * resolve through rc bindings only — ~/.ideameowrc over the bundled default
- * .ideameowrc (see [Rc]). Besides dispatch, this object owns the two pieces
- * of behavior that need the whole-keystroke view: the repeat unit (`'`)
- * and rc-binding replay with its noremap/recursion bookkeeping.
+ * .ideameowrc (see [Rc]). Besides dispatch, this object owns the pieces of
+ * behavior that need the whole-keystroke view: the repeat unit (`'`),
+ * rc-binding replay with its noremap/recursion bookkeeping, and the repeat
+ * transient (Emacs repeat-mode: rc `repeat` groups arm a one-shot map whose
+ * member keys re-dispatch — tap `.`/`,` to keep walking errors after SPC . e).
  */
 object Engine {
     /**
@@ -97,11 +99,18 @@ object Engine {
         ExpandHints.clear(st)
 
         val pend = st.pending
+        // the repeat transient: a member key of the armed group re-dispatches
+        // its binding, shadowing the normal map for exactly that keypress
+        // (runBinding re-arms it); any other key ends the run and falls
+        // through to the resolve below — Emacs set-transient-map semantics,
+        // never swallowed. ESC ends the run too (MeowEscapeHandler).
+        val repeatBinding = if (pend == null) st.repeatMap?.get(c) else null
+        if (pend == null && repeatBinding == null) st.repeatMap = null
         // like Emacs: read-only buffers stay in NORMAL with every motion
         // working (the modify commands gate themselves via allow-modify);
         // the motion map applies only to the MOTION state proper
         val motionish = st.mode == MeowMode.MOTION
-        val binding = if (pend == null) resolve(st, c, motionish) else null
+        val binding = if (pend == null) repeatBinding ?: resolve(st, c, motionish) else null
         val cmd = binding?.command
 
         // the repeat unit: everything since the last complete command, so `'`
@@ -191,8 +200,27 @@ object Engine {
 
     /** Run a binding: a named meow command, an IDE action, or meow keys
      *  replayed through the engine (noremap bindings skip user maps while
-     *  replaying). */
+     *  replaying). Afterwards, Emacs repeat-mode's post-command arming: a
+     *  binding whose target sits in an rc repeat group arms that group's
+     *  transient — membership by target identity (the repeat-map symbol
+     *  property), no entered-with-key check (init.el sets repeat-check-key
+     *  'no for every keypad-entered map, and keypad keys are never members). */
     fun runBinding(
+        editor: Editor,
+        st: MeowState,
+        b: Rc.Binding,
+        ctx: DataContext?,
+    ) {
+        dispatch(editor, st, b, ctx)
+        val map = Rc.repeatMapFor(b) ?: return
+        if (st.repeatMap == null) {
+            // repeat-echo-message, once per run: "Repeat with ., ,"
+            Ide.hint(editor, "Repeat with ${map.keys.joinToString(", ")}")
+        }
+        st.repeatMap = map
+    }
+
+    private fun dispatch(
         editor: Editor,
         st: MeowState,
         b: Rc.Binding,

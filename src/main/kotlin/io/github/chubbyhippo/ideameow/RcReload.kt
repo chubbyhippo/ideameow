@@ -57,7 +57,7 @@ internal object RcFileState {
     private val listeners = mutableListOf<() -> Unit>()
 
     private fun hash(c: Rc.Config): Int =
-        listOf(c.normal, c.motion, c.keypad, c.keypadDesc, c.whichKey, c.whichKeyDelayMs).hashCode()
+        listOf(c.normal, c.motion, c.keypad, c.keypadDesc, c.repeat, c.whichKey, c.whichKeyDelayMs).hashCode()
 
     /** Called by [Rc.load] with whatever it just parsed. */
     fun saveParsed(c: Rc.Config) {
@@ -101,7 +101,8 @@ internal object RcReload {
         Rc.notify(
             "Reloaded ~/${Rc.FILE_NAME}: ${c.normal.size} normal map(s), " +
                 "${c.motion.size} motion map(s), " +
-                "${c.keypad.size} keypad map(s), ${c.keypadDesc.size} description(s)" +
+                "${c.keypad.size} keypad map(s), ${c.keypadDesc.size} description(s), " +
+                "${c.repeat.size} repeat group(s)" +
                 if (c.errors.isEmpty()) "" else ", ${c.errors.size} problem(s)",
             NotificationType.INFORMATION,
         )

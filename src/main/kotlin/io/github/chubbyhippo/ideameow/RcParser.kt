@@ -30,6 +30,12 @@ package io.github.chubbyhippo.ideameow
  *   desc <leader>g goto things
  *   let g:WhichKeyDesc_g = "<leader>g goto things"   (ideavimrc-compatible)
  *   set nowhich-key / set timeoutlen=300
+ *   repeat error . <action>(GotoNextError)   repeat group (Emacs repeat-mode):
+ *                                       dispatching any binding with a target
+ *                                       listed in a group arms it — the member
+ *                                       keys then re-dispatch until another key
+ *                                       ends the run (see Engine); `ignore` as
+ *                                       the target gives a default key back
  *
  * A RHS that names a command in Engine.COMMANDS binds the command; a
  * misspelled `meow-*` name is an error; any other RHS is replayed as keys.
@@ -83,6 +89,10 @@ internal object RcParser {
 
                 "map", "noremap", "nmap", "nnoremap", "mmap", "mnoremap" -> {
                     parseMap(c, cmd, rest, ::err)
+                }
+
+                "repeat" -> {
+                    parseRepeat(c, rest, ::err)
                 }
 
                 else -> {
@@ -153,31 +163,7 @@ internal object RcParser {
         val recursive = cmd == "map" || cmd == "nmap" || cmd == "mmap"
         val motion = cmd == "mmap" || cmd == "mnoremap"
 
-        val action = ACTION_RE.matchEntire(rhs)?.groupValues?.get(1)
-        val binding =
-            when {
-                action != null -> {
-                    Rc.Binding(action = action, recursive = recursive)
-                }
-
-                rhs in Engine.COMMANDS -> {
-                    Rc.Binding(command = rhs, recursive = recursive)
-                }
-
-                rhs.startsWith("meow-") -> {
-                    err("unknown meow command '$rhs'")
-                    return
-                }
-
-                else -> {
-                    val keys = parseKeys(rhs.replace(Regex("\\s+"), ""), err) ?: return
-                    if (keys.isEmpty()) {
-                        err("empty target in '$cmd $rest'")
-                        return
-                    }
-                    Rc.Binding(keys = keys, recursive = recursive)
-                }
-            }
+        val binding = parseTarget(rhs, recursive, "$cmd $rest", err) ?: return
 
         if (lhs.startsWith("<leader>")) {
             if (motion) {
@@ -205,6 +191,74 @@ internal object RcParser {
 
             else -> {
                 (if (motion) c.motion else c.normal)[keys[0]] = binding
+            }
+        }
+    }
+
+    /** The shared RHS grammar of map and repeat lines: an <action>(...), a
+     *  named command in Engine.COMMANDS, or replayed meow keys. */
+    private fun parseTarget(
+        rhs: String,
+        recursive: Boolean,
+        errContext: String,
+        err: (String) -> Unit,
+    ): Rc.Binding? {
+        val action = ACTION_RE.matchEntire(rhs)?.groupValues?.get(1)
+        return when {
+            action != null -> {
+                Rc.Binding(action = action, recursive = recursive)
+            }
+
+            rhs in Engine.COMMANDS -> {
+                Rc.Binding(command = rhs, recursive = recursive)
+            }
+
+            rhs.startsWith("meow-") -> {
+                err("unknown meow command '$rhs'")
+                null
+            }
+
+            else -> {
+                val keys = parseKeys(rhs.replace(Regex("\\s+"), ""), err) ?: return null
+                if (keys.isEmpty()) {
+                    err("empty target in '$errContext'")
+                    null
+                } else {
+                    Rc.Binding(keys = keys, recursive = recursive)
+                }
+            }
+        }
+    }
+
+    /** `repeat <group> <key> <target>` — Emacs repeat-mode's transient maps as
+     *  rc lines. Dispatching any binding whose target is listed in a group
+     *  arms it: the member keys re-dispatch their targets (shadowing the
+     *  normal map) until a non-member key falls through and ends the run.
+     *  The entering key needn't be a member — init.el's repeat-check-key 'no. */
+    private fun parseRepeat(
+        c: Rc.Config,
+        rest: String,
+        err: (String) -> Unit,
+    ) {
+        val parts = rest.split(Regex("\\s+"), limit = 3)
+        if (parts.size < 3) {
+            err("repeat needs a group, a member key and a target")
+            return
+        }
+        val (group, keyToken, rhs) = parts
+        val key = parseKeys(keyToken, err) ?: return
+        when {
+            key.length != 1 -> {
+                err("repeat member key must be a single printable key: $keyToken")
+            }
+
+            key == " " -> {
+                err("SPC is the keypad key and cannot be a repeat member")
+            }
+
+            else -> {
+                val binding = parseTarget(rhs.trim(), recursive = true, "repeat $rest", err) ?: return
+                c.repeat.getOrPut(group) { LinkedHashMap() }[key[0]] = binding
             }
         }
     }

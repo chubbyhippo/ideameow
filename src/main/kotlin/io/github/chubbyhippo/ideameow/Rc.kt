@@ -46,6 +46,10 @@ object Rc {
         val motion = mutableMapOf<Char, Binding>()
         val keypad = linkedMapOf<String, Binding>()
         val keypadDesc = mutableMapOf<String, String>()
+
+        /** Repeat groups (Emacs repeat-mode transient maps): group name ->
+         *  member key -> the binding it re-dispatches while the run is live. */
+        val repeat = linkedMapOf<String, LinkedHashMap<Char, Binding>>()
         var whichKey: Boolean? = null
         var whichKeyDelayMs: Int? = null
         val errors = mutableListOf<String>()
@@ -122,6 +126,27 @@ object Rc {
 
     /** Effective which-key labels: bundled defaults with ~/.ideameowrc on top. */
     fun keypadDescs(): Map<String, String> = HashMap(defaults().keypadDesc).apply { putAll(cfg().keypadDesc) }
+
+    /** Effective repeat groups: ~/.ideameowrc lines layer per (group, key)
+     *  over the bundled defaults; a member re-bound to `ignore` gives its key
+     *  back (like `mmap <key> ignore` on trees) and an emptied group is gone. */
+    fun repeatGroups(): Map<String, Map<Char, Binding>> {
+        val merged = LinkedHashMap<String, LinkedHashMap<Char, Binding>>()
+        for ((group, members) in defaults().repeat) merged.getOrPut(group) { LinkedHashMap() }.putAll(members)
+        for ((group, members) in cfg().repeat) merged.getOrPut(group) { LinkedHashMap() }.putAll(members)
+        for (members in merged.values) members.values.removeIf { it.command == "ignore" }
+        merged.values.removeIf { it.isEmpty() }
+        return merged
+    }
+
+    /** The transient map a just-dispatched binding arms — Emacs' repeat-map
+     *  symbol property, ported: membership is the TARGET (action, command or
+     *  keys — not the key that ran it, repeat-check-key 'no style), and the
+     *  first declared group wins. Null when the binding repeats nothing. */
+    fun repeatMapFor(b: Binding): Map<Char, Binding>? =
+        repeatGroups().values.firstOrNull { members ->
+            members.values.any { it.action == b.action && it.command == b.command && it.keys == b.keys }
+        }
 
     fun whichKeyEnabled(): Boolean = cfg().whichKey ?: defaults().whichKey ?: true
 

@@ -47,6 +47,7 @@ class MeowEscapeHandler(
             return
         }
         st.pending = null
+        st.repeatMap = null // ESC always ends a repeat run (a non-member key)
         WhichKey.hide()
         ExpandHints.clear(st)
         when {

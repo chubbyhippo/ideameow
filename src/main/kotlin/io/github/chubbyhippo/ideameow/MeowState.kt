@@ -96,6 +96,11 @@ class MeowState {
     /** An active avy jump (S / Q), consuming keys until it lands or cancels. */
     var avy: Avy.Session? = null
 
+    /** The armed repeat transient (Emacs repeat-mode, see Rc repeat groups):
+     *  member keys re-dispatch their binding, any other key or ESC ends the
+     *  run and falls through to the normal map. */
+    var repeatMap: Map<Char, Rc.Binding>? = null
+
     fun takeCount(default: Int = 1): Int {
         val n = if (pendingCount == 0) default else pendingCount
         val r = if (negative) -n else n
