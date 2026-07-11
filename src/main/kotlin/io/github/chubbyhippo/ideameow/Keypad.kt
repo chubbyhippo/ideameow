@@ -109,7 +109,7 @@ object Keypad {
                 }
         Messages.showInfoMessage(
             editor.project,
-            if (entries.isEmpty()) "SPC $c is undefined" else entries,
+            entries.ifEmpty { "SPC $c is undefined" },
             "Meow Describe: SPC $c",
         )
     }
