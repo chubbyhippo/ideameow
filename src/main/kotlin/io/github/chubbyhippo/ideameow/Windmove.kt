@@ -200,7 +200,15 @@ internal object Windmove {
      *  with the state). The swappable windows here are the editor splits —
      *  the only surface whose content can be exchanged; diff panes and
      *  consoles are fixed in place. The pick and the no-window user-error
-     *  are exactly [move]'s (windmove-swap-states-in-direction reuses both). */
+     *  are exactly [move]'s (windmove-swap-states-in-direction reuses both).
+     *
+     *  The internal-API suppression is deliberate: [FileEditorOpenOptions]
+     *  and the openFile(file, window, options) overload are
+     *  @ApiStatus.Internal, yet they are the platform's only path — the
+     *  public openFileWithProviders(file, focus, window) is deprecated at
+     *  level ERROR with ReplaceWith("openFile(file, window, options)")
+     *  (javap-verified against 2026.1.4). */
+    @Suppress("UnstableApiUsage")
     fun swap(
         editor: Editor,
         dir: Dir,
@@ -299,7 +307,9 @@ internal sealed class WindmoveAction(
     private val dir: Windmove.Dir,
 ) : DumbAwareAction() {
     init {
-        templatePresentation.isEnabledInModalContext = true
+        // AnAction's own setter — Presentation.setEnabledInModalContext is
+        // deprecated @ApiStatus.Internal (2026.1.4) and this delegates to it
+        setEnabledInModalContext(true)
     }
 
     override fun getActionUpdateThread() = ActionUpdateThread.BGT
@@ -354,8 +364,9 @@ internal class WindmoveSwapDownAction : WindmoveSwapAction(Windmove.Dir.DOWN)
  *  `(windmove-default-keybindings)` makes in Emacs, where shift-select
  *  loses too. The actions are editor-gated, so nothing else changes. */
 internal class WindmovePromoter : ActionPromoter {
+    // List in and out, matching promote's @Unmodifiable contract on both
     override fun promote(
-        actions: MutableList<out AnAction>,
+        actions: List<AnAction>,
         context: DataContext,
-    ): MutableList<AnAction> = actions.sortedByDescending { it is WindmoveAction }.toMutableList()
+    ): List<AnAction> = actions.sortedByDescending { it is WindmoveAction }
 }

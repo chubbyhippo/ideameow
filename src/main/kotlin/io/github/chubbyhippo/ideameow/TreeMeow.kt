@@ -118,8 +118,9 @@ object TreeMeow {
     private val dispatcher =
         object : DumbAwareAction() {
             init {
-                // settings-dialog trees and friends live in modal contexts
-                templatePresentation.isEnabledInModalContext = true
+                // settings-dialog trees and friends live in modal contexts;
+                // AnAction's own setter — Presentation's is deprecated internal
+                setEnabledInModalContext(true)
             }
 
             override fun getActionUpdateThread() = ActionUpdateThread.BGT
