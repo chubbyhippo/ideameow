@@ -134,9 +134,9 @@ internal object Windmove {
                 // W is in the direction and covers POSN: nearest edge wins
                 val inDir =
                     when (dir) {
-                        Dir.LEFT, Dir.UP -> lead <= first && lead > bestEdge
-                        Dir.RIGHT -> lead >= last && lead < bestEdge
-                        Dir.DOWN -> lead >= first && lead < bestEdge
+                        Dir.LEFT, Dir.UP -> lead in (bestEdge + 1)..first
+                        Dir.RIGHT -> lead in last..<bestEdge
+                        Dir.DOWN -> lead in first..<bestEdge
                     }
                 if (inDir) {
                     bestEdge = lead
