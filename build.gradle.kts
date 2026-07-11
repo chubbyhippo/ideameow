@@ -4,6 +4,11 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 plugins {
     id("org.jetbrains.kotlin.jvm") version "2.2.20"
     id("org.jetbrains.intellij.platform") version "2.9.0"
+    // lint: ktlint (style/format) + detekt (smells, unused symbols) — both
+    // run via `check`; `ktlintFormat` rewrites, detekt reports to
+    // build/reports/detekt
+    id("org.jlleitschuh.gradle.ktlint") version "14.2.0"
+    id("io.gitlab.arturbosch.detekt") version "1.23.8"
 }
 
 group = "io.github.chubbyhippo"
