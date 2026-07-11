@@ -309,7 +309,7 @@ internal sealed class WindmoveAction(
     init {
         // AnAction's own setter — Presentation.setEnabledInModalContext is
         // deprecated @ApiStatus.Internal (2026.1.4) and this delegates to it
-        setEnabledInModalContext(true)
+        isEnabledInModalContext = true
     }
 
     override fun getActionUpdateThread() = ActionUpdateThread.BGT
