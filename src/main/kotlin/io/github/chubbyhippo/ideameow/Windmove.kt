@@ -63,7 +63,7 @@ import javax.swing.SwingUtilities
  * NOT rc lines (rebind them in Settings > Keymap). They deliberately shadow
  * the editor's shift-selection, the exact tradeoff the Emacs binding makes;
  * [WindmovePromoter] is what wins the conflict. SPC w h/j/k/l dispatch the
- * same actions from the rc, mirroring init.el's C-c w map.
+ * same actions from the rc.
  */
 internal object Windmove {
     enum class Dir(
@@ -333,9 +333,9 @@ internal class WindmoveUpAction : WindmoveAction(Windmove.Dir.UP)
 
 internal class WindmoveDownAction : WindmoveAction(Windmove.Dir.DOWN)
 
-/** The four windmove-swap-states commands — SPC w H/J/K/L only, like
- *  init.el's C-c w map (windmove-swap-states-default-keybindings is never
- *  called there, so no chords here either). */
+/** The four windmove-swap-states commands — SPC w H/J/K/L via the rc only
+ *  (windmove-swap-states-default-keybindings is deliberately not mirrored,
+ *  so no default chords). */
 internal sealed class WindmoveSwapAction(
     private val dir: Windmove.Dir,
 ) : DumbAwareAction() {

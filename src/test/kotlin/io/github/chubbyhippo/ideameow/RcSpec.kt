@@ -88,11 +88,10 @@ class RcSpec : MeowSpec() {
     }
 
     fun `test given a parameterized action then the whole serialized command is kept`() {
-        // IntelliJ ids are always bare — the commandId(param=value,...) form
-        // exists in the shared rc dialect because some sibling ports' hosts
-        // serialize command parameters into the id. An rc written for one meow
-        // port must keep parsing in the others: the line binds as an action
-        // (an id this IDE doesn't know just hints), never as a keys-replay.
+        // IntelliJ ids are always bare, but the rc grammar also accepts the
+        // serialized commandId(param=value,...) form: the line binds as an
+        // action (an id this IDE doesn't know just hints), never as a
+        // keys-replay.
         val id = "com.example.showView(com.example.viewId=com.example.SomeView,com.example.focus=true)"
         val c = Rc.parse(listOf("map <leader>bj <action>($id)"))
         assertEquals(id, c.keypad["bj"]!!.action)
@@ -111,7 +110,7 @@ class RcSpec : MeowSpec() {
                 listOf(
                     "set nowhich-key",
                     "set timeoutlen=400",
-                    "set clipboard+=unnamedplus", // pasted from .ideavimrc: ignored
+                    "set clipboard+=unnamedplus", // a pasted vim option: ignored
                     "let mapleader=\" \"",
                 ),
             )

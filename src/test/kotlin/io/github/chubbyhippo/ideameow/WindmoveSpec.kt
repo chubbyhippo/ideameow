@@ -193,8 +193,8 @@ class WindmoveSpec : MeowSpec() {
     }
 
     fun `test given the swap actions then no default chords are claimed`() {
-        // windmove-swap-states-default-keybindings is never called in
-        // init.el — the swaps live only on the C-c w map, so only on SPC w
+        // windmove-swap-states-default-keybindings is deliberately not
+        // mirrored — the swaps live only on the leader map, so only on SPC w
         for (id in listOf(
             "Ideameow.WindmoveSwapLeft",
             "Ideameow.WindmoveSwapRight",
@@ -216,7 +216,7 @@ class WindmoveSpec : MeowSpec() {
     }
 
     fun `test given the bundled rc then the swaps are on SPC w capitals`() {
-        // init.el: the capitals mirror the h/j/k/l moves
+        // the capitals mirror the h/j/k/l moves
         val d = Rc.defaults().keypad
         assertEquals("Ideameow.WindmoveSwapLeft", d["wH"]?.action)
         assertEquals("Ideameow.WindmoveSwapDown", d["wJ"]?.action)

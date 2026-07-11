@@ -35,12 +35,12 @@ import javax.swing.Timer
 import kotlin.math.ln
 
 /**
- * A native port of avy's two jumps from init.el — no AceJump plugin needed.
+ * A native port of avy's two jumps — no AceJump plugin needed.
  * Every behavior below was read out of avy 0.5.0's source (avy.el), not
  * guessed:
  *
  * - `avy-goto-char-timer`: the first char waits indefinitely; each further
- *   char must arrive within the timeout (init.el sets 0.25 s) and restarts
+ *   char must arrive within the timeout (0.25 s here) and restarts
  *   it; matches highlight live while typing (avy-goto-char-timer-face =
  *   the theme highlight); matching is literal and case-insensitive
  *   (avy-case-fold-search t); zero candidates ends with a message; exactly
@@ -60,7 +60,7 @@ object Avy {
     /** avy-keys default. */
     private const val KEYS = "asdfghjkl"
 
-    /** init.el: (avy-timeout-seconds 0.25). */
+    /** avy-timeout-seconds: 0.25 s. */
     private const val TIMEOUT_MS = 250
 
     /** avy-lead-face: white on amaranth, both themes. */

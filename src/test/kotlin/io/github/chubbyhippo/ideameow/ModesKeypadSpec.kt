@@ -100,7 +100,7 @@ class ModesKeypadSpec : MeowSpec() {
     }
 
     fun `test given INSERT when the keypad action fires then a keypad command returns to INSERT`() {
-        // init.el: M-SPC reaches the leader even from INSERT; meow records
+        // Emacs: M-SPC reaches the leader even from INSERT; meow records
         // meow--keypad-previous-state and every exit path restores it
         given("word", "ab<caret>cd")
         givenRc("map <leader>zz <action>(EditorLeft)")

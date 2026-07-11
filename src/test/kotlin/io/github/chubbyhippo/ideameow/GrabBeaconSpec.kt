@@ -99,7 +99,7 @@ class GrabBeaconSpec : MeowSpec() {
     fun `test given beacon carets when c then every caret lands at its own edit`() {
         // the carets must sit at POST-edit offsets, not at the pre-edit match
         // positions (the platform's caret model shifts them as the document
-        // changes; the sibling cores re-base explicitly in editCarets)
+        // changes)
         given("repeats", "<caret>foo bar foo baz foo")
         whenKeys(",bG")
         givenCaretAt(0)

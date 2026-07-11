@@ -24,10 +24,10 @@
 "   set timeoutlen=300                which-key popup delay in ms
 "   set nowhich-key                   turn the which-key popup off
 "
-" Ported from intellij-community-settings/ideavim/.ideavimrc. Not portable
-" (and why) is listed at the bottom. The meow layout itself needs NO porting —
-" the plugin implements it natively; the layout section right below IS the
-" keymap (like meow-normal-define-key in Emacs), so any key can be rebound.
+" Vim/IdeaVim content with no equivalent here (and why) is listed at the
+" bottom. The meow layout itself needs NO porting — the plugin implements it
+" natively; the layout section right below IS the keymap (like
+" meow-normal-define-key in Emacs), so any key can be rebound.
 " Within this file, a later line for the same key wins.
 " ============================================================================
 
@@ -136,9 +136,9 @@ mmap q <action>(HideActiveWindow)
 " The keypad (SPC) table — every entry an rc line, like the layout above
 " ----------------------------------------------------------------------------
 " In Emacs, SPC x / c / m reach the C-x / C-c / M- keymaps; here the same
-" sequences dispatch IDE actions, mirroring the companion .ideavimrc leader
-" scheme. SPC 0-9 (digit argument), SPC ? (cheatsheet) and SPC / (describe
-" key) are reserved by the keypad itself and cannot be remapped.
+" sequences dispatch IDE actions. SPC 0-9 (digit argument), SPC ? (cheatsheet)
+" and SPC / (describe key) are reserved by the keypad itself and cannot be
+" remapped.
 " Finding an action's id for <action>(...): SPC i d toggles action-id
 " tracking (IdeaVim's "Track Action IDs") — while it is on, every action you
 " perform shows a balloon with its id and a Copy Action Id button.
@@ -182,7 +182,7 @@ map <leader>xpg <action>(FindInPath)
 map <leader>xpr <action>(ReplaceInPath)
 map <leader>xpc <action>(CompileProject)
 
-" SPC x r = C-x r: bookmarks (init.el: C-x r b = consult-bookmark)
+" SPC x r = C-x r: bookmarks (Emacs: C-x r b = consult-bookmark)
 map <leader>xrb <action>(ShowBookmarks)
 
 " SPC c = C-c: personal commands
@@ -227,7 +227,7 @@ map <leader>wD <action>(UnsplitAll)
 map <leader>wm <action>(UnsplitAll)
 map <leader>ww <action>(NextSplitter)
 map <leader>wW <action>(MoveEditorToOppositeTabGroup)
-" h/j/k/l: windmove, ported from init.el — directional focus over editor
+" h/j/k/l: windmove, ported from windmove.el — directional focus over editor
 " splits AND diff panes, from the caret like Emacs. The plugin also binds
 " plain Shift+arrows to these, i.e. (windmove-default-keybindings) — that
 " lives on the IDE keymap (Settings > Keymap > Windmove *), not in this rc,
@@ -250,17 +250,17 @@ map <leader>w- <action>(EditorDecreaseFontSize)
 map <leader>wu <action>(EditorResetFontSize)
 map <leader>w0 <action>(EditorResetFontSize)
 
-" --- avy jumps, mirroring init.el (native port of avy 0.5.0 — no plugin) ----
-" init.el: S = avy-goto-char-timer, Q = avy-goto-line. X still goes-to-line,
+" --- avy jumps (native port of avy 0.5.0 — no AceJump plugin) ---------------
+" S = avy-goto-char-timer, Q = avy-goto-line. X still goes-to-line,
 " so overriding Q costs nothing. Type chars (0.25 s pause labels the
 " matches), then hit a label key; Q labels visible lines, digits switch to
 " a line-number prompt.
 nmap S avy-goto-char-timer
 nmap Q avy-goto-line
 
-" --- split resizing (ideavimrc: - = _ +) ------------------------------------
-" '-' stays meow's negative-argument (the reason ideavimrc used '-' here was
-" that vim lacks negative counts — this plugin doesn't). The other three keys
+" --- split resizing (= _ +) --------------------------------------------------
+" '-' stays meow's negative-argument (vim setups put '-' here only because
+" vim lacks negative counts — this plugin doesn't). The other three keys
 " are free in the meow layout:
 nmap = <action>(StretchSplitToTop)
 nmap _ <action>(StretchSplitToLeft)
@@ -278,7 +278,7 @@ desc <leader>ms M-s · search
 desc <leader>w window map (Emacs C-c w)
 
 " ============================================================================
-" IntelliJ feature groups, ported 1:1 from the .ideavimrc leader
+" IntelliJ feature groups on the SPC leader
 " (b / c / m / w / x live in the keypad table above; digits and ? / are
 " reserved by the keypad)
 " ============================================================================
@@ -496,7 +496,7 @@ map <leader>sp <action>(TextSearchAction)
 map <leader>sr <action>(ReplaceInPath)
 map <leader>st <action>(TextSearchAction)
 map <leader>su <action>(ShowUsages)
-" ideavimrc: SPC s v sourced ~/.ideavimrc — here it reloads ~/.ideameowrc
+" SPC s v: vim's "source the rc" slot — here it reloads ~/.ideameowrc
 map <leader>sv <action>(Ideameow.ReloadRc)
 map <leader>sw <action>(SurroundWith)
 
@@ -524,7 +524,7 @@ map <leader>vp <action>(Git.Pull)
 map <leader>vP <action>(Vcs.Push)
 
 " --- SPC ] / SPC [ — next / prev navigation ------------------------------------------------------
-" ideavimrc used ]c [c ]d [d ]e [e in NORMAL; multi-key NORMAL sequences don't
+" Vim keymaps put ]c [c ]d [d ]e [e in NORMAL; multi-key NORMAL sequences don't
 " exist here ([ ] are meow's beginning/end-of-thing), so they live on the
 " keypad instead.
 desc <leader>. next (change / diff / error)
@@ -537,7 +537,7 @@ map <leader>,d <action>(PreviousDiff)
 map <leader>,e <action>(GotoPreviousError)
 
 " ============================================================================
-" Repeat groups — Emacs repeat-mode, ported (init.el's transient repeat maps)
+" Repeat groups — Emacs repeat-mode, ported (repeat.el's transient maps)
 " ----------------------------------------------------------------------------
 " After any binding whose TARGET is listed in a group below — membership is
 " the target, not the key, like the repeat-map property on an Emacs command —
@@ -545,11 +545,11 @@ map <leader>,e <action>(GotoPreviousError)
 " re-dispatches its target and keeps the run alive; any other key (or ESC)
 " ends the run and keeps its normal meaning (Emacs transient-keymap
 " fall-through — nothing is swallowed, and there is no timeout). The entering
-" keypad key needn't be a member: init.el sets repeat-check-key 'no for the
-" same reason. Syntax:
+" keypad key needn't be a member: Emacs' repeat-check-key 'no behaves the
+" same way. Syntax:
 "   repeat <group> <key> <target>     target grammar = the map-line RHS
 "   repeat <group> <key> ignore       give a bundled group's key back
-" Ported 1:1 from init.el: flymake -> error, diff-hl -> change, text-scale ->
+" Mirroring Emacs' maps 1:1: flymake -> error, diff-hl -> change, text-scale ->
 " zoom, expreg -> expand (winner-mode has no analog — no layout history).
 " So: SPC . e then . . , walks errors; SPC w i then i i i keeps zooming.
 repeat error . <action>(GotoNextError)
@@ -564,19 +564,19 @@ repeat zoom u <action>(EditorResetFontSize)
 repeat zoom 0 <action>(EditorResetFontSize)
 repeat expand . <action>(EditorSelectWord)
 repeat expand , <action>(EditorUnSelectWord)
-" not a default group (init.el has none for diffs) — add your own like:
+" not a default group (the Emacs maps have none for diffs) — add your own like:
 "   repeat diff . <action>(NextDiff)
 "   repeat diff , <action>(PreviousDiff)
 
 " ============================================================================
-" NOT ported from .ideavimrc, and why
+" Vim/IdeaVim content with NO equivalent here, and why
 " ----------------------------------------------------------------------------
-" * the whole meow-emulation section (w e b x s d c y r H-L, digits, , . < >,
+" * vim-side meow emulation (w e b x s d c y r H-L, digits, , . < >,
 "   G/R/Y, m, z, ') — the plugin implements real meow; nothing to emulate.
 "   The layout block at the top of this file is the native keymap itself.
 " * set clipboard/ideajoin/number/relativenumber/sethandler — IdeaVim/vim
 "   options; the IDE and the plugin handle these themselves. Any such lines
-"   are ignored if pasted, so copying your .ideavimrc wholesale is safe.
+"   are ignored if pasted, so copying an IdeaVim rc wholesale is safe.
 " * <A-m> leader alias, C-key routing — only printable keys reach the meow
 "   engine; use the IDE keymap for modifier chords.
 " * SPC / (comment) and SPC ? — reserved by the keypad for describe-key and

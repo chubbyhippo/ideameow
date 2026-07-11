@@ -18,7 +18,7 @@
 package io.github.chubbyhippo.ideameow
 
 /**
- * The .ideameowrc syntax — an .ideavimrc-flavored line format:
+ * The .ideameowrc syntax — an IdeaVim-flavored line format:
  *
  *   " comments start with a double quote (or #)
  *   nmap S <action>(AceAction)          NORMAL key -> IDE action
@@ -28,7 +28,7 @@ package io.github.chubbyhippo.ideameow
  *   mmap j meow-next                    the same, for MOTION (read-only) mode
  *   map <leader>gd <action>(GotoDeclaration)
  *   desc <leader>g goto things
- *   let g:WhichKeyDesc_g = "<leader>g goto things"   (ideavimrc-compatible)
+ *   let g:WhichKeyDesc_g = "<leader>g goto things"   (IdeaVim-compatible)
  *   set nowhich-key / set timeoutlen=300
  *   repeat error . <action>(GotoNextError)   repeat group (Emacs repeat-mode):
  *                                       dispatching any binding with a target
@@ -40,14 +40,13 @@ package io.github.chubbyhippo.ideameow
  * A RHS that names a command in Engine.COMMANDS binds the command; a
  * misspelled `meow-*` name is an error; any other RHS is replayed as keys.
  * Keypad keys 0-9, ? and / are reserved; SPC itself cannot be remapped.
- * Unknown `set` options and `let` lines are ignored so a whole .ideavimrc
+ * Unknown `set` options and `let` lines are ignored so a whole IdeaVim rc
  * can be pasted without errors.
  */
 internal object RcParser {
-    // the id is either a bare action id or the shared rc dialect's serialized
-    // *parameterized* command form commandId(paramId=value,...) — some sibling
-    // ports' hosts serialize parameters into the id, and rc lines must keep
-    // pasting between the ports; an id IntelliJ doesn't know just hints
+    // the id is either a bare action id or the serialized *parameterized*
+    // command form commandId(paramId=value,...); an id IntelliJ doesn't know
+    // just hints
     private val ACTION_RE = Regex("""(?i)<action>\(([\w.$(),=-]+)\)""")
     private val WHICHKEY_LET_RE = Regex("""^let\s+g:WhichKeyDesc\w*\s*=\s*"(.+)"$""")
 
@@ -123,7 +122,7 @@ internal object RcParser {
                 if (n != null && n >= 0) c.whichKeyDelayMs = n
             }
 
-            else -> {} // ignore unknown options so .ideavimrc content pastes cleanly
+            else -> {} // ignore unknown options so IdeaVim rc content pastes cleanly
         }
     }
 
@@ -234,7 +233,7 @@ internal object RcParser {
      *  rc lines. Dispatching any binding whose target is listed in a group
      *  arms it: the member keys re-dispatch their targets (shadowing the
      *  normal map) until a non-member key falls through and ends the run.
-     *  The entering key needn't be a member — init.el's repeat-check-key 'no. */
+     *  The entering key needn't be a member — repeat-check-key 'no. */
     private fun parseRepeat(
         c: Rc.Config,
         rest: String,

@@ -28,7 +28,7 @@ import com.intellij.openapi.util.io.FileUtil
 import com.intellij.openapi.vfs.LocalFileSystem
 
 /**
- * The repeat transient — Emacs repeat-mode, ported (init.el's transient
+ * The repeat transient — Emacs repeat-mode, ported (the transient
  * repeat maps, repeat.el read from Emacs 30.2 source). Rc `repeat` groups
  * make multi-key entries tap-to-continue: dispatching any binding whose
  * TARGET is a group member arms the group (target identity, like the
@@ -118,7 +118,7 @@ class RepeatSpec : MeowSpec() {
     }
 
     fun `test the bundled default ideameowrc declares the init el repeat groups`() {
-        // ported 1:1 from init.el's transient maps: flymake -> error,
+        // mirrors the Emacs transient repeat maps 1:1: flymake -> error,
         // diff-hl -> change, text-scale -> zoom, expreg -> expand
         val d = Rc.defaults().repeat
         assertEquals("GotoNextError", d["error"]!!['.']!!.action)

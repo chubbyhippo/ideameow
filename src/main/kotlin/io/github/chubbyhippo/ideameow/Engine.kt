@@ -210,8 +210,8 @@ object Engine {
      *  replaying). Afterwards, Emacs repeat-mode's post-command arming: a
      *  binding whose target sits in an rc repeat group arms that group's
      *  transient — membership by target identity (the repeat-map symbol
-     *  property), no entered-with-key check (init.el sets repeat-check-key
-     *  'no for every keypad-entered map, and keypad keys are never members). */
+     *  property), no entered-with-key check (repeat-check-key 'no is the
+     *  matching Emacs setting, and keypad keys are never members). */
     fun runBinding(
         editor: Editor,
         st: MeowState,

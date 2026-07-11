@@ -29,10 +29,9 @@ import com.intellij.openapi.ui.Messages
  * KEYPAD state. In Emacs, SPC x/c/m reach the C-x / C-c / M- keymaps; here the
  * same key sequences dispatch IDE actions. Like the NORMAL/MOTION layout, the
  * whole table lives in rc lines: the bundled default .ideameowrc defines it
- * (mirroring the companion .ideavimrc leader scheme) and ~/.ideameowrc
- * `map <leader>...` entries layer on top (see Rc.keypad()). SPC 0-9 = digit
- * argument, SPC ? = cheatsheet, SPC / = describe key. A which-key popup lists
- * continuations of a prefix.
+ * and ~/.ideameowrc `map <leader>...` entries layer on top (see Rc.keypad()).
+ * SPC 0-9 = digit argument, SPC ? = cheatsheet, SPC / = describe key. A
+ * which-key popup lists continuations of a prefix.
  */
 object Keypad {
     fun key(
@@ -167,7 +166,7 @@ object Keypad {
         """.trimIndent()
 }
 
-/** meow-keypad as an IDE action — init.el's "M-SPC reaches the leader even
+/** meow-keypad as an IDE action — Emacs' "M-SPC reaches the leader even
  *  from INSERT" (`keymap-global-set "M-SPC" #'meow-keypad`). meow records
  *  meow--keypad-previous-state on entry and every exit path restores it
  *  (meow-keypad.el / meow--exit-keypad-state, 1.5.0), so a command run from

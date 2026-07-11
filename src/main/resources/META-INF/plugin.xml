@@ -55,7 +55,7 @@
         <action id="Ideameow.TrackActionIds" class="io.github.chubbyhippo.ideameow.TrackActionIdsAction"
                 text="Track Action IDs"
                 description="Show the id of every performed action, for &lt;action&gt;(...) mappings in ~/.ideameowrc"/>
-        <!-- init.el: M-SPC reaches the leader even from INSERT (global
+        <!-- Emacs: M-SPC reaches the leader even from INSERT (global
              meow-keypad). Alt+Space is the Windows system menu, so the
              default chord is Alt+Semicolon (free in $default, verified
              2026.1.4); keypad returns to the state it was entered from. -->
@@ -66,7 +66,7 @@
         </action>
         <!-- Emacs (windmove-default-keybindings): Shift+arrows select the
              window in that direction — editor splits and diff panes alike.
-             Also on SPC w h/j/k/l via the rc, mirroring init.el's C-c w. -->
+             Also on SPC w h/j/k/l via the rc (Emacs C-c w window map). -->
         <action id="Ideameow.WindmoveLeft" class="io.github.chubbyhippo.ideameow.WindmoveLeftAction"
                 text="Windmove Left" description="Select the editor window to the left (Emacs windmove-left)">
             <keyboard-shortcut keymap="$default" first-keystroke="shift LEFT"/>
@@ -85,7 +85,7 @@
         </action>
         <!-- windmove-swap-states: the current split's file and the focus move
              to the neighbour, its file comes back. SPC w H/J/K/L via the rc,
-             like init.el's C-c w map — no default chords. -->
+             like the Emacs C-c w window map — no default chords. -->
         <action id="Ideameow.WindmoveSwapLeft" class="io.github.chubbyhippo.ideameow.WindmoveSwapLeftAction"
                 text="Windmove Swap Left"
                 description="Swap the current editor window with the one to the left (Emacs windmove-swap-states-left)"/>
