@@ -17,6 +17,7 @@
 
 package io.github.chubbyhippo.ideameow
 
+import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.ide.CopyPasteManager
 import com.intellij.openapi.ui.TestDialogManager
 import com.intellij.openapi.ui.TestInputDialog
@@ -38,7 +39,7 @@ import java.awt.datatransfer.StringSelection
 abstract class MeowSpec : BasePlatformTestCase() {
     protected lateinit var st: MeowState
 
-    protected val ed get() = myFixture.editor
+    protected val ed: Editor get() = myFixture.editor
     protected val doc get() = ed.document
 
     override fun setUp() {
