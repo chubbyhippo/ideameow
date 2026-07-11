@@ -1,0 +1,82 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<SmellBaseline>
+  <ManuallySuppressedIssues/>
+  <CurrentIssues>
+    <ID>ComplexCondition:Edits.kt$Edits$before != '\n' &amp;&amp; after != '\n' &amp;&amp; !before.isWhitespace() &amp;&amp; !after.isWhitespace() &amp;&amp; after !in ")]}.,;:" &amp;&amp; before !in "([{"</ID>
+    <ID>ComplexCondition:Structures.kt$Structures$o &lt; s &amp;&amp; i + 1 >= e &amp;&amp; (best == null || i - o &lt; best.close - best.open)</ID>
+    <ID>ComplexCondition:Things.kt$Things$c in enders || (c == '\n' &amp;&amp; s > 1 &amp;&amp; text[s - 2] == '\n')</ID>
+    <ID>ComplexCondition:Things.kt$Things$e &lt; text.length &amp;&amp; text[e] !in enders &amp;&amp; !(text[e] == '\n' &amp;&amp; e + 1 &lt; text.length &amp;&amp; text[e + 1] == '\n')</ID>
+    <ID>ComplexCondition:Things.kt$Things$t.contains("METHOD") || t.contains("FUNCTION") || t.startsWith("FUN") || t.contains("LAMBDA")</ID>
+    <ID>CyclomaticComplexMethod:Engine.kt$Engine$fun handleChar( editor: Editor, c: Char, ctx: DataContext?, ): Boolean</ID>
+    <ID>CyclomaticComplexMethod:ExpandHints.kt$ExpandHints$private fun positions( editor: Editor, st: MeowState, count: Int, ): List&lt;Int></ID>
+    <ID>CyclomaticComplexMethod:Grab.kt$Grab$fun beacon( editor: Editor, st: MeowState, )</ID>
+    <ID>CyclomaticComplexMethod:Motions.kt$Motions$private fun wordMotion( editor: Editor, st: MeowState, symbol: Boolean, n: Int, )</ID>
+    <ID>CyclomaticComplexMethod:RcParser.kt$RcParser$fun parse(lines: List&lt;String>): Rc.Config</ID>
+    <ID>CyclomaticComplexMethod:RcParser.kt$RcParser$private fun parseMap( c: Rc.Config, cmd: String, rest: String, err: (String) -> Unit, )</ID>
+    <ID>CyclomaticComplexMethod:Structures.kt$Structures$private fun enclosingPair( text: CharSequence, s: Int, e: Int, ): PairRange?</ID>
+    <ID>CyclomaticComplexMethod:Things.kt$Things$fun pair( text: CharSequence, offset: Int, open: Char, close: Char, inner: Boolean, ): Bounds?</ID>
+    <ID>CyclomaticComplexMethod:Things.kt$Things$private fun sentence( text: CharSequence, offset: Int, inner: Boolean, ): Bounds?</ID>
+    <ID>CyclomaticComplexMethod:Things.kt$Things$private fun string( text: CharSequence, offset: Int, inner: Boolean, ): Bounds?</ID>
+    <ID>CyclomaticComplexMethod:Windmove.kt$Windmove$fun &lt;T> pick( dir: Dir, current: Rectangle, posn: Int, frame: Dimension, candidates: List&lt;Pair&lt;T, Rectangle>>, ): T?</ID>
+    <ID>EmptyFunctionBlock:AvySpec.kt$AvySpec.&lt;no name provided>${}</ID>
+    <ID>EmptyFunctionBlock:MeowWidgetFactory.kt$MeowWidget${}</ID>
+    <ID>EmptyFunctionBlock:ModesKeypadSpec.kt$ModesKeypadSpec.&lt;no name provided>${}</ID>
+    <ID>EmptyFunctionBlock:RepeatSpec.kt$RepeatSpec.&lt;no name provided>${}</ID>
+    <ID>LongParameterList:Selections.kt$Selections$( editor: Editor, st: MeowState, type: SelType, mark: Int, point: Int, expand: Boolean, push: Boolean = true, )</ID>
+    <ID>LongParameterList:Selections.kt$Selections$( st: MeowState, type: SelType, expand: Boolean, anchor: Int, active: Int, posBefore: Int, )</ID>
+    <ID>LongParameterList:Text.kt$( text: CharSequence, ch: Char, caret: Int, n: Int, backward: Boolean, till: Boolean, )</ID>
+    <ID>LoopWithTooManyJumpStatements:Grab.kt$Grab$for</ID>
+    <ID>LoopWithTooManyJumpStatements:RcParser.kt$RcParser$for</ID>
+    <ID>LoopWithTooManyJumpStatements:Things.kt$Things$while</ID>
+    <ID>MaxLineLength:AttachSpec.kt$AttachSpec$private fun thenMeowStaysAway(editor: Editor)</ID>
+    <ID>MaxLineLength:MeowSpec.kt$MeowSpec$protected fun thenSelection(expected: String)</ID>
+    <ID>MaxLineLength:Motions.kt$Motions$Selections.select(editor, st, SelType.LINE, Selections.mark(editor), doc.getLineEndOffset(ln), expand = true)</ID>
+    <ID>MaxLineLength:Motions.kt$Motions$Selections.select(editor, st, SelType.LINE, Selections.mark(editor), doc.getLineStartOffset(ln), expand = true)</ID>
+    <ID>MaxLineLength:Motions.kt$Motions$Selections.select(editor, st, SelType.LINE, doc.getLineEndOffset(ln), doc.getLineStartOffset(startLn), expand = true)</ID>
+    <ID>MaxLineLength:Motions.kt$Motions$Selections.select(editor, st, SelType.LINE, doc.getLineStartOffset(ln), doc.getLineEndOffset(endLn), expand = true)</ID>
+    <ID>MaxLineLength:Motions.kt$Motions$put("meow-back-symbol", MeowCommand { ed, st, _ -> wordMotion(ed, st, symbol = true, n = -st.takeCount(1)) })</ID>
+    <ID>MaxLineLength:RcParser.kt$RcParser$err("unsupported key token ${s.substring(i, close + 1)} (only printable keys reach the meow engine)")</ID>
+    <ID>MaxLineLength:Things.kt$Things$while (e &lt; text.length &amp;&amp; text[e] !in enders &amp;&amp; !(text[e] == '\n' &amp;&amp; e + 1 &lt; text.length &amp;&amp; text[e + 1] == '\n')) e++</ID>
+    <ID>MaxLineLength:ThingsSpec.kt$ThingsSpec$fun</ID>
+    <ID>MemberNameEqualsClassName:Grab.kt$Grab$private fun grab( editor: Editor, st: MeowState, )</ID>
+    <ID>MemberNameEqualsClassName:Search.kt$Search$private fun search( editor: Editor, st: MeowState, )</ID>
+    <ID>NestedBlockDepth:Structures.kt$Structures$private fun enclosingPair( text: CharSequence, s: Int, e: Int, ): PairRange?</ID>
+    <ID>NestedBlockDepth:Things.kt$Things$private fun defun( editor: Editor, offset: Int, ): Bounds?</ID>
+    <ID>NestedBlockDepth:Things.kt$Things$private fun string( text: CharSequence, offset: Int, inner: Boolean, ): Bounds?</ID>
+    <ID>ReturnCount:Avy.kt$Avy$private fun select( editor: Editor, st: MeowState, session: Session, c: Char, )</ID>
+    <ID>ReturnCount:Edits.kt$Edits$private fun kill( editor: Editor, st: MeowState, ctx: DataContext?, )</ID>
+    <ID>ReturnCount:Edits.kt$Edits$private fun replace( editor: Editor, st: MeowState, )</ID>
+    <ID>ReturnCount:Engine.kt$Engine$fun handleChar( editor: Editor, c: Char, ctx: DataContext?, ): Boolean</ID>
+    <ID>ReturnCount:Engine.kt$Engine$private fun dispatch( editor: Editor, st: MeowState, b: Rc.Binding, ctx: DataContext?, )</ID>
+    <ID>ReturnCount:Engine.kt$Engine$private fun resolve( st: MeowState, c: Char, motion: Boolean, ): Rc.Binding?</ID>
+    <ID>ReturnCount:Grab.kt$Grab$fun beacon( editor: Editor, st: MeowState, )</ID>
+    <ID>ReturnCount:Grab.kt$Grab$fun pop( editor: Editor, st: MeowState, ): Boolean</ID>
+    <ID>ReturnCount:Grab.kt$Grab$private fun swap( editor: Editor, st: MeowState, )</ID>
+    <ID>ReturnCount:Ide.kt$Ide$fun visibleLines(editor: Editor): Pair&lt;Int, Int></ID>
+    <ID>ReturnCount:Keypad.kt$Keypad$fun key( editor: Editor, st: MeowState, c: Char, ctx: DataContext?, )</ID>
+    <ID>ReturnCount:Meow.kt$Meow$fun statusText(project: Project): String</ID>
+    <ID>ReturnCount:Motions.kt$Motions$private fun gotoLine( editor: Editor, st: MeowState, )</ID>
+    <ID>ReturnCount:RcParser.kt$RcParser$private fun parseDescBody( c: Rc.Config, body: String, err: (String) -> Unit, )</ID>
+    <ID>ReturnCount:RcParser.kt$RcParser$private fun parseMap( c: Rc.Config, cmd: String, rest: String, err: (String) -> Unit, )</ID>
+    <ID>ReturnCount:RcParser.kt$RcParser$private fun parseRepeat( c: Rc.Config, rest: String, err: (String) -> Unit, )</ID>
+    <ID>ReturnCount:Selections.kt$Selections$private fun expand( editor: Editor, st: MeowState, n: Int, )</ID>
+    <ID>ReturnCount:Structures.kt$Structures$private fun join( editor: Editor, st: MeowState, )</ID>
+    <ID>ReturnCount:Text.kt$internal fun nthCharTarget( text: CharSequence, ch: Char, caret: Int, n: Int, backward: Boolean, till: Boolean, ): Int</ID>
+    <ID>ReturnCount:Things.kt$Things$fun pair( text: CharSequence, offset: Int, open: Char, close: Char, inner: Boolean, ): Bounds?</ID>
+    <ID>ReturnCount:Things.kt$Things$private fun defun( editor: Editor, offset: Int, ): Bounds?</ID>
+    <ID>ReturnCount:Things.kt$Things$private fun paragraph( editor: Editor, offset: Int, inner: Boolean, ): Bounds?</ID>
+    <ID>ReturnCount:Things.kt$Things$private fun sentence( text: CharSequence, offset: Int, inner: Boolean, ): Bounds?</ID>
+    <ID>ReturnCount:ToolWindowEscape.kt$ToolWindowEscape$private fun dispatch(e: AWTEvent): Boolean</ID>
+    <ID>ReturnCount:TreeMeow.kt$TreeMeow$fun dispatch( tree: JTree, c: Char, noremap: Boolean = false, depth: Int = 0, )</ID>
+    <ID>ReturnCount:TreeMeow.kt$TreeMeow.&lt;no name provided>$override fun actionPerformed(e: AnActionEvent)</ID>
+    <ID>ReturnCount:Windmove.kt$Windmove$@Suppress("UnstableApiUsage") fun swap( editor: Editor, dir: Dir, )</ID>
+    <ID>ReturnCount:Windmove.kt$Windmove$fun move( editor: Editor, dir: Dir, )</ID>
+    <ID>SpreadOperator:TreeMeow.kt$TreeMeow$(*shortcuts.toTypedArray())</ID>
+    <ID>TooManyFunctions:Avy.kt$Avy</ID>
+    <ID>TooManyFunctions:Edits.kt$Edits</ID>
+    <ID>TooManyFunctions:Motions.kt$Motions</ID>
+    <ID>TooManyFunctions:Rc.kt$Rc</ID>
+    <ID>TooManyFunctions:Selections.kt$Selections</ID>
+    <ID>TooManyFunctions:Things.kt$Things</ID>
+  </CurrentIssues>
+</SmellBaseline>

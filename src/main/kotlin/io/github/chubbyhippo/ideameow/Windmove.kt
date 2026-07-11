@@ -153,13 +153,14 @@ internal object Windmove {
                 val diff2 = // window--in-direction-2: distance from posn to the band
                     if (bandLead > posn) bandLead - posn else posn - bandLead - bandSize
                 val better =
-                    diff2 < bestDiff2 || (
-                        diff2 == bestDiff2 &&
-                            when (dir) {
-                                Dir.LEFT, Dir.UP -> lead > bestEdge2
-                                Dir.RIGHT, Dir.DOWN -> lead < bestEdge2
-                            }
-                    )
+                    diff2 < bestDiff2 ||
+                        (
+                            diff2 == bestDiff2 &&
+                                when (dir) {
+                                    Dir.LEFT, Dir.UP -> lead > bestEdge2
+                                    Dir.RIGHT, Dir.DOWN -> lead < bestEdge2
+                                }
+                        )
                 if (better) {
                     bestEdge2 = lead
                     bestDiff2 = diff2

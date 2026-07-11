@@ -51,9 +51,7 @@ class MeowEditorFactoryListener : EditorFactoryListener {
                 )
             }
 
-            else -> {
-                Unit
-            }
+            else -> {}
         }
     }
 

@@ -52,6 +52,14 @@ tasks.processResources {
     from(layout.projectDirectory.file(".ideameowrc"))
 }
 
+detekt {
+    // defaults + detekt.yml overrides; detekt-baseline.xml freezes the
+    // adoption-day findings so only NEW issues fail `check`
+    buildUponDefaultConfig = true
+    config.setFrom(files("detekt.yml"))
+    baseline = file("detekt-baseline.xml")
+}
+
 kotlin {
     // JDK 21 toolchain: every current IDE (through 2026.1) runs on JBR 21,
     // so 21 is the highest classfile version a plugin may ship. Bump only
@@ -60,5 +68,8 @@ kotlin {
     compilerOptions {
         // pinned so a toolchain bump can't silently raise the bytecode version
         jvmTarget = JvmTarget.JVM_21
+        // -Wextra: unused-parameter, var-never-written, unused-expression...
+        // keep compiles warning-clean
+        extraWarnings = true
     }
 }

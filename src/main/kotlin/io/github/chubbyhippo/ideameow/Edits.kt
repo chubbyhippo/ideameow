@@ -241,8 +241,12 @@ internal object Edits {
             val text = editor.document.charsSequence
             val before = if (s > 0) text[s - 1] else '\n'
             val after = if (s < text.length) text[s] else '\n'
-            if (before != '\n' && after != '\n' && !before.isWhitespace() && !after.isWhitespace() &&
-                after !in ")]}.,;:" && before !in "([{"
+            if (before != '\n' &&
+                after != '\n' &&
+                !before.isWhitespace() &&
+                !after.isWhitespace() &&
+                after !in ")]}.,;:" &&
+                before !in "([{"
             ) {
                 editor.document.insertString(s, " ")
             }
