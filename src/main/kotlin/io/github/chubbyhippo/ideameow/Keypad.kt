@@ -30,7 +30,7 @@ import com.intellij.openapi.ui.Messages
  * same key sequences dispatch IDE actions. Like the NORMAL/MOTION layout, the
  * whole table lives in rc lines: the bundled default .ideameowrc defines it
  * (mirroring the companion .ideavimrc leader scheme) and ~/.ideameowrc
- * `map <leader>...` entries layer on top (see Rc.keypad()). SPC 1-9 = digit
+ * `map <leader>...` entries layer on top (see Rc.keypad()). SPC 0-9 = digit
  * argument, SPC ? = cheatsheet, SPC / = describe key. A which-key popup lists
  * continuations of a prefix.
  */
@@ -150,7 +150,7 @@ object Keypad {
 
         KEYPAD (SPC — or Alt+; from ANY state, INSERT included; returns there)
           SPC b bookmarks/buffers   SPC x file/buffer/window   SPC c commands   SPC m meta
-          SPC w windows   SPC 1-9 count   SPC ? this sheet   SPC / describe key
+          SPC w windows   SPC 0-9 count   SPC ? this sheet   SPC / describe key
           SPC c m edit ~/.ideameowrc   SPC c M reload it
           SPC i d track action ids — every performed action shows the id
                   to use in <action>(...) mappings

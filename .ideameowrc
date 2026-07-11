@@ -137,7 +137,7 @@ mmap q <action>(HideActiveWindow)
 " ----------------------------------------------------------------------------
 " In Emacs, SPC x / c / m reach the C-x / C-c / M- keymaps; here the same
 " sequences dispatch IDE actions, mirroring the companion .ideavimrc leader
-" scheme. SPC 1-9 (digit argument), SPC ? (cheatsheet) and SPC / (describe
+" scheme. SPC 0-9 (digit argument), SPC ? (cheatsheet) and SPC / (describe
 " key) are reserved by the keypad itself and cannot be remapped.
 " Finding an action's id for <action>(...): SPC i d toggles action-id
 " tracking (IdeaVim's "Track Action IDs") — while it is on, every action you
@@ -182,6 +182,9 @@ map <leader>xpg <action>(FindInPath)
 map <leader>xpr <action>(ReplaceInPath)
 map <leader>xpc <action>(CompileProject)
 
+" SPC x r = C-x r: bookmarks (init.el: C-x r b = consult-bookmark)
+map <leader>xrb <action>(ShowBookmarks)
+
 " SPC c = C-c: personal commands
 map <leader>cf <action>(GotoFile)
 map <leader>cs <action>(SaveAll)
@@ -209,7 +212,7 @@ map <leader>mr <action>(EditorSelectWord)
 map <leader>mR <action>(EditorUnSelectWord)
 map <leader>my <action>(PasteMultiple)
 map <leader>m. <action>(GotoDeclaration)
-map <leader>mg <action>(GotoLine)
+map <leader>mg avy-goto-line
 map <leader>msr <action>(FindInPath)
 map <leader>msl <action>(Find)
 map <leader>mss <action>(Find)
@@ -267,6 +270,7 @@ nmap + <action>(StretchSplitToRight)
 desc <leader>b bookmark (m set / 0-9 slots / j jump) · b buffers
 desc <leader>x C-x · file / buffer / window
 desc <leader>xp C-x p · project
+desc <leader>xr C-x r · bookmarks
 desc <leader>c C-c · commands (= M-m)
 desc <leader>cj C-c j · avy jump
 desc <leader>m M- · meta
@@ -454,6 +458,7 @@ map <leader>rc <action>(RunCoverage)
 map <leader>rd <action>(DebugClass)
 map <leader>re <action>(Refactorings.QuickListPopupAction)
 map <leader>rf <action>(RecentFiles)
+map <leader>rh <action>(VcsShowCurrentChangeMarker)
 map <leader>ri <action>(RevealIn)
 map <leader>rl <action>(RecentLocations)
 map <leader>rm <action>(RunMenu)
