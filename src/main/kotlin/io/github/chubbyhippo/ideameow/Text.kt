@@ -78,6 +78,34 @@ internal fun nthCharTarget(
     }
 }
 
+internal fun nextSentenceEnd(
+    text: CharSequence,
+    from: Int,
+    n: Int,
+): Int {
+    var i = from.coerceIn(0, text.length)
+    repeat(n) {
+        while (i < text.length && text[i] !in SENTENCE_ENDERS) i++
+        while (i < text.length && text[i] in SENTENCE_ENDERS) i++
+        while (i < text.length && text[i].isWhitespace()) i++
+    }
+    return i
+}
+
+internal fun prevSentenceStart(
+    text: CharSequence,
+    from: Int,
+    n: Int,
+): Int {
+    fun isGap(c: Char) = c.isWhitespace() || c in SENTENCE_ENDERS
+    var i = from.coerceIn(0, text.length)
+    repeat(n) {
+        while (i > 0 && isGap(text[i - 1])) i--
+        while (i > 0 && !isGap(text[i - 1])) i--
+    }
+    return i
+}
+
 object Words {
     fun nextEnd(
         text: CharSequence,

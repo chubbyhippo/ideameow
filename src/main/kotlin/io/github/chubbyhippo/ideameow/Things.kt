@@ -268,17 +268,20 @@ object Things {
         inner: Boolean,
     ): Bounds? {
         if (text.isEmpty()) return null
-        val enders = ".!?"
+
+        fun blankLineBefore(pos: Int) = pos > 1 && text[pos - 1] == '\n' && text[pos - 2] == '\n'
+
+        fun blankLineAt(pos: Int) = text[pos] == '\n' && pos + 1 < text.length && text[pos + 1] == '\n'
+
         var s = offset.coerceIn(0, text.length - 1)
         while (s > 0) {
-            val c = text[s - 1]
-            if (c in enders || (c == '\n' && s > 1 && text[s - 2] == '\n')) break
+            if (text[s - 1] in SENTENCE_ENDERS || blankLineBefore(s)) break
             s--
         }
         while (s < text.length && text[s].isWhitespace()) s++
         var e = offset.coerceIn(0, text.length)
-        while (e < text.length && text[e] !in enders && !(text[e] == '\n' && e + 1 < text.length && text[e + 1] == '\n')) e++
-        if (e < text.length && text[e] in enders) e++
+        while (e < text.length && text[e] !in SENTENCE_ENDERS && !blankLineAt(e)) e++
+        if (e < text.length && text[e] in SENTENCE_ENDERS) e++
         if (e <= s) return null
         if (inner) return Bounds(s, e)
         var be = e
@@ -286,3 +289,5 @@ object Things {
         return Bounds(s, be)
     }
 }
+
+internal const val SENTENCE_ENDERS = ".!?"

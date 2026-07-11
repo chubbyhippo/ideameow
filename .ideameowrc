@@ -564,24 +564,3 @@ repeat zoom u <action>(EditorResetFontSize)
 repeat zoom 0 <action>(EditorResetFontSize)
 repeat expand . <action>(EditorSelectWord)
 repeat expand , <action>(EditorUnSelectWord)
-" not a default group (the Emacs maps have none for diffs) — add your own like:
-"   repeat diff . <action>(NextDiff)
-"   repeat diff , <action>(PreviousDiff)
-
-" ============================================================================
-" Vim/IdeaVim content with NO equivalent here, and why
-" ----------------------------------------------------------------------------
-" * vim-side meow emulation (w e b x s d c y r H-L, digits, , . < >,
-"   G/R/Y, m, z, ') — the plugin implements real meow; nothing to emulate.
-"   The layout block at the top of this file is the native keymap itself.
-" * set clipboard/ideajoin/number/relativenumber/sethandler — IdeaVim/vim
-"   options; the IDE and the plugin handle these themselves. Any such lines
-"   are ignored if pasted, so copying an IdeaVim rc wholesale is safe.
-" * <A-m> leader alias, C-key routing — only printable keys reach the meow
-"   engine; use the IDE keymap for modifier chords.
-" * SPC / (comment) and SPC ? — reserved by the keypad for describe-key and
-"   the cheatsheet. Comment-line is on the IDE's usual Ctrl-/ chord.
-" * :tabm / :delmarks / :set number! ex-commands — no ex layer here.
-" * SPC <CR> (intentions): Enter can't be a keypad key; use Alt-Enter or
-"   SPC s I (ShowIntentionActions).
-" ============================================================================

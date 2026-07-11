@@ -73,6 +73,23 @@ shadow shift-selection in editors, the exact tradeoff the Emacs binding
 makes (select with meow instead; trees and dialogs keep native
 shift-selection, since the actions only enable on editors).
 
+**Emacs motion chords** — `Ctrl+f/b/n/p/a/e` and `Alt+f/b/a/e` are the real
+Emacs point motions (`forward/backward-char`, `next/previous-line`,
+`move-beginning/end-of-line`, `forward/backward-word`,
+`backward/forward-sentence`), not meow commands: meow itself never rebinds
+these chords, so in real Emacs they simply move point — and, since a meow
+selection is an active Emacs mark, that same point motion stretches an
+already-active selection for free, with no special-casing. ideameow ports
+that: with no selection the chord just moves the caret, and with one active
+it extends it, anchored exactly like meow's own `H J K L` char/line expand —
+so `w` then `Ctrl+f Ctrl+f` grows the marked word one character at a time,
+and `;` (reverse) flips which end subsequent chords grow from. `Alt+n` /
+`Alt+p` are deliberately left unbound: stock Emacs has no default binding
+for them either (only the unrelated `M-g n` / `M-g p` error-navigation
+prefix exists) — verified against the GNU Emacs manual, not guessed. Like
+Windmove's Shift+arrows above, these sit on the IDE keymap (modifier chords
+never reach the modal engine) — rebind under *Settings → Keymap*.
+
 And one idea borrowed straight from meow itself: **the plugin binds no keys in
 code.** The entire keymap — the NORMAL/MOTION layout *and* the whole `SPC`
 keypad table — lives in an `.ideameowrc` file bundled inside the plugin, and a
@@ -201,7 +218,8 @@ mention keeps its bundled binding.
 - `repeat` is itself a bindable command, so even `'` can be reassigned.
 - Reserved: keypad `0-9` (digit argument), `?` (cheatsheet), `/` (describe
   key); `SPC` is always the keypad key. Only printable keys reach the modal
-  engine — `<CR>`, `<Esc>`, and modifier chords belong on the IDE keymap.
+  engine — `<CR>`, `<Esc>`, and modifier chords belong on the IDE keymap
+  (that's where the bundled Emacs motion chords live too — see above).
 - Unknown `set` options and `let` lines are ignored, so pasting your whole
   `.ideavimrc` won't error; only the lines ideameow understands take effect.
 
@@ -263,7 +281,7 @@ under its meow name, and keys only ever resolve through rc bindings.
 | Where | What |
 |---|---|
 | `Engine.kt` | the dispatcher: key → binding → command; repeat (`'`) and rc-replay bookkeeping; the `COMMANDS` registry |
-| `Motions.kt` | movement and the selections it creates: hjkl, words, lines, find/till |
+| `Motions.kt` | movement and the selections it creates: hjkl, words, lines, find/till, plus the Ctrl/Alt Emacs motion chords (IDE-keymap actions, region-expanding) |
 | `Selections.kt` | the selection primitive (meow's expand/select model), reverse/cancel/pop, digit expand |
 | `Search.kt` | meow-search / meow-visit and the shared regexp ring |
 | `Structures.kt` | the char-thing table dispatch, blocks, join |

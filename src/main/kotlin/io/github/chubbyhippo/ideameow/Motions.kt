@@ -16,9 +16,16 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package io.github.chubbyhippo.ideameow
 
+import com.intellij.openapi.actionSystem.ActionPromoter
+import com.intellij.openapi.actionSystem.ActionUpdateThread
+import com.intellij.openapi.actionSystem.AnAction
+import com.intellij.openapi.actionSystem.AnActionEvent
+import com.intellij.openapi.actionSystem.CommonDataKeys
+import com.intellij.openapi.actionSystem.DataContext
 import com.intellij.openapi.editor.Caret
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.editor.ScrollType
+import com.intellij.openapi.project.DumbAwareAction
 import com.intellij.openapi.ui.Messages
 import kotlin.math.abs
 
@@ -43,6 +50,19 @@ internal object Motions {
             put("meow-goto-line", MeowCommand { ed, st, _ -> gotoLine(ed, st) })
             put("meow-find", MeowCommand { _, st, _ -> st.pending = Pending.FIND })
             put("meow-till", MeowCommand { _, st, _ -> st.pending = Pending.TILL })
+            put("forward-char", MeowCommand { ed, st, _ -> charOrExpand(ed, st, st.takeCount(1)) })
+            put("backward-char", MeowCommand { ed, st, _ -> charOrExpand(ed, st, -st.takeCount(1)) })
+            put("next-line", MeowCommand { ed, st, _ -> lineOrExpand(ed, st, st.takeCount(1)) })
+            put("previous-line", MeowCommand { ed, st, _ -> lineOrExpand(ed, st, -st.takeCount(1)) })
+            put(
+                "move-beginning-of-line",
+                MeowCommand { ed, st, _ -> moveToOrExpand(ed, st, SelType.CHAR, ::lineStartOffset) },
+            )
+            put("move-end-of-line", MeowCommand { ed, st, _ -> moveToOrExpand(ed, st, SelType.CHAR, ::lineEndOffset) })
+            put("forward-word", MeowCommand { ed, st, _ -> wordOrExpand(ed, st, st.takeCount(1)) })
+            put("backward-word", MeowCommand { ed, st, _ -> wordOrExpand(ed, st, -st.takeCount(1)) })
+            put("forward-sentence", MeowCommand { ed, st, _ -> sentenceOrExpand(ed, st, st.takeCount(1)) })
+            put("backward-sentence", MeowCommand { ed, st, _ -> sentenceOrExpand(ed, st, -st.takeCount(1)) })
         }
 
     private fun wordType(symbol: Boolean) = if (symbol) SelType.SYMBOL else SelType.WORD
@@ -179,6 +199,82 @@ internal object Motions {
         editor.scrollingModel.scrollToCaret(ScrollType.RELATIVE)
     }
 
+    private fun charOrExpand(
+        editor: Editor,
+        st: MeowState,
+        dx: Int,
+    ) {
+        if (editor.selectionModel.hasSelection()) moveExpand(editor, st, dx, 0) else moveChar(editor, st, dx)
+    }
+
+    private fun lineOrExpand(
+        editor: Editor,
+        st: MeowState,
+        dy: Int,
+    ) {
+        if (editor.selectionModel.hasSelection()) moveExpand(editor, st, 0, dy) else moveLine(editor, st, dy)
+    }
+
+    private fun lineStartOffset(
+        editor: Editor,
+        offset: Int,
+    ): Int {
+        val doc = editor.document
+        return doc.getLineStartOffset(doc.getLineNumber(offset.coerceIn(0, doc.textLength)))
+    }
+
+    private fun lineEndOffset(
+        editor: Editor,
+        offset: Int,
+    ): Int {
+        val doc = editor.document
+        return doc.getLineEndOffset(doc.getLineNumber(offset.coerceIn(0, doc.textLength)))
+    }
+
+    private fun moveToOrExpand(
+        editor: Editor,
+        st: MeowState,
+        type: SelType,
+        target: (Editor, Int) -> Int,
+    ) {
+        val extend = editor.selectionModel.hasSelection()
+        val posBefore = editor.caretModel.offset
+        val primary = editor.caretModel.primaryCaret
+        for (caret in editor.caretModel.allCarets) {
+            applyCaretMove(caret, target(editor, caret.offset), extend)
+        }
+        if (extend) {
+            Selections.recordSelect(st, type, true, primary.leadSelectionOffset, primary.offset, posBefore)
+            st.selType = type
+            st.selExpand = true
+            Grab.beacon(editor, st)
+        }
+        editor.scrollingModel.scrollToCaret(ScrollType.RELATIVE)
+    }
+
+    private fun wordOrExpand(
+        editor: Editor,
+        st: MeowState,
+        n: Int,
+    ) {
+        val text = editor.document.charsSequence
+        val pred = charPred(symbol = false)
+        moveToOrExpand(editor, st, SelType.WORD) { _, offset ->
+            if (n >= 0) Words.nextEnd(text, offset, n, pred) else Words.prevStart(text, offset, -n, pred)
+        }
+    }
+
+    private fun sentenceOrExpand(
+        editor: Editor,
+        st: MeowState,
+        n: Int,
+    ) {
+        val text = editor.document.charsSequence
+        moveToOrExpand(editor, st, SelType.CHAR) { _, offset ->
+            if (n >= 0) nextSentenceEnd(text, offset, n) else prevSentenceStart(text, offset, -n)
+        }
+    }
+
     private fun wordMotion(
         editor: Editor,
         st: MeowState,
@@ -296,4 +392,53 @@ internal object Motions {
         st.lastFind = ch
         Selections.select(editor, st, if (till) SelType.TILL else SelType.FIND, caret, target, expand = false)
     }
+}
+
+internal sealed class EmacsMotionAction(
+    private val command: String,
+) : DumbAwareAction() {
+    init {
+        isEnabledInModalContext = true
+    }
+
+    override fun getActionUpdateThread() = ActionUpdateThread.BGT
+
+    override fun update(e: AnActionEvent) {
+        val editor = e.getData(CommonDataKeys.EDITOR)
+        e.presentation.isEnabled = editor != null && Meow.state(editor)?.mode == MeowMode.NORMAL
+    }
+
+    override fun actionPerformed(e: AnActionEvent) {
+        val editor = e.getData(CommonDataKeys.EDITOR) ?: return
+        val st = Meow.state(editor) ?: return
+        Engine.COMMANDS[command]?.invoke(editor, st, e.dataContext)
+        Meow.updateWidgets()
+    }
+}
+
+internal class EmacsForwardCharAction : EmacsMotionAction("forward-char")
+
+internal class EmacsBackwardCharAction : EmacsMotionAction("backward-char")
+
+internal class EmacsNextLineAction : EmacsMotionAction("next-line")
+
+internal class EmacsPreviousLineAction : EmacsMotionAction("previous-line")
+
+internal class EmacsBeginningOfLineAction : EmacsMotionAction("move-beginning-of-line")
+
+internal class EmacsEndOfLineAction : EmacsMotionAction("move-end-of-line")
+
+internal class EmacsForwardWordAction : EmacsMotionAction("forward-word")
+
+internal class EmacsBackwardWordAction : EmacsMotionAction("backward-word")
+
+internal class EmacsBackwardSentenceAction : EmacsMotionAction("backward-sentence")
+
+internal class EmacsForwardSentenceAction : EmacsMotionAction("forward-sentence")
+
+internal class EmacsMotionPromoter : ActionPromoter {
+    override fun promote(
+        actions: List<AnAction>,
+        context: DataContext,
+    ): List<AnAction> = actions.sortedByDescending { it is EmacsMotionAction }
 }
