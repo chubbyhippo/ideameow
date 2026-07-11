@@ -77,7 +77,7 @@ abstract class MeowSpec : BasePlatformTestCase() {
     }
 
     protected fun givenMinibufferAnswers(answer: String) {
-        TestDialogManager.setTestInputDialog(TestInputDialog { answer })
+        TestDialogManager.setTestInputDialog { answer }
     }
 
     protected fun givenCaretAt(offset: Int) {
@@ -110,7 +110,7 @@ abstract class MeowSpec : BasePlatformTestCase() {
         assertEquals(
             "clipboard",
             expected,
-            CopyPasteManager.getInstance().getContents<String>(DataFlavor.stringFlavor),
+            CopyPasteManager.getInstance().getContents(DataFlavor.stringFlavor),
         )
 
     protected fun thenCaretCount(expected: Int) = assertEquals("caret count", expected, ed.caretModel.caretCount)
