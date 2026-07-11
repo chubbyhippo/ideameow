@@ -14,25 +14,16 @@
 // with this program. If not, see <https://www.gnu.org/licenses/>.
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
-
 package io.github.chubbyhippo.ideameow
 
 import com.intellij.notification.NotificationGroupManager
 import com.intellij.notification.NotificationType
 import java.io.File
 
-/**
- * The two rc layers and their layering rules. Like meow in Emacs, the engine
- * binds NO keys — the whole keymap (NORMAL/MOTION layout AND the SPC keypad
- * table) is rc lines. The repo's .ideameowrc ships inside the plugin jar as
- * the DEFAULTS layer ([defaults]); an optional ~/.ideameowrc ([cfg])
- * overrides it entry by entry, and `nnoremap`/`mnoremap` replays resolve
- * through the defaults alone. Syntax lives in [RcParser].
- */
 object Rc {
     const val FILE_NAME = ".ideameowrc"
+    private const val DEFAULT_WHICH_KEY_DELAY_MS = 250
 
-    /** One key's target: an IDE action, replayed keys, or a named command. */
     data class Binding(
         val action: String? = null,
         val keys: String? = null,
@@ -40,15 +31,12 @@ object Rc {
         val recursive: Boolean = true,
     )
 
-    /** Everything one rc file declares. */
     class Config {
         val normal = mutableMapOf<Char, Binding>()
         val motion = mutableMapOf<Char, Binding>()
         val keypad = linkedMapOf<String, Binding>()
         val keypadDesc = mutableMapOf<String, String>()
 
-        /** Repeat groups (Emacs repeat-mode transient maps): group name ->
-         *  member key -> the binding it re-dispatches while the run is live. */
         val repeat = linkedMapOf<String, LinkedHashMap<Char, Binding>>()
         var whichKey: Boolean? = null
         var whichKeyDelayMs: Int? = null
@@ -73,20 +61,17 @@ object Rc {
         return config
     }
 
-    /** The bundled .ideameowrc — the default layer beneath ~/.ideameowrc. */
     fun defaults(): Config {
         if (!defaultsLoaded) loadDefaults()
         return defaultConfig
     }
 
-    /** The bundled .ideameowrc verbatim — what a first ~/.ideameowrc is
-     *  seeded from (SPC c m), so the whole default keymap is there to edit. */
     fun defaultsText(): String? = javaClass.getResourceAsStream("/$FILE_NAME")?.bufferedReader()?.use { it.readText() }
 
     fun setForTest(c: Config) {
         config = c
         loaded = true
-        RcFileState.resetForTest() // no stale reload-button state across specs
+        RcFileState.resetForTest()
     }
 
     fun rcFile(): File = File(System.getProperty("user.home"), FILE_NAME)
@@ -97,7 +82,7 @@ object Rc {
         loaded = true
         val f = rcFile()
         config = if (f.isFile) parse(f.readLines()) else Config()
-        RcFileState.saveParsed(config) // the floating reload button's "loaded" snapshot
+        RcFileState.saveParsed(config)
         if (config.errors.isNotEmpty()) {
             notify(
                 "ideameow: problem(s) in ~/$FILE_NAME\n" + config.errors.joinToString("\n"),
@@ -119,17 +104,10 @@ object Rc {
         }
     }
 
-    // -------------------------------------------------------- effective views
-
-    /** Effective keypad table: bundled defaults with ~/.ideameowrc on top. */
     fun keypad(): Map<String, Binding> = LinkedHashMap(defaults().keypad).apply { putAll(cfg().keypad) }
 
-    /** Effective which-key labels: bundled defaults with ~/.ideameowrc on top. */
     fun keypadDescs(): Map<String, String> = HashMap(defaults().keypadDesc).apply { putAll(cfg().keypadDesc) }
 
-    /** Effective repeat groups: ~/.ideameowrc lines layer per (group, key)
-     *  over the bundled defaults; a member re-bound to `ignore` gives its key
-     *  back (like `mmap <key> ignore` on trees) and an emptied group is gone. */
     fun repeatGroups(): Map<String, Map<Char, Binding>> {
         val merged = LinkedHashMap<String, LinkedHashMap<Char, Binding>>()
         for ((group, members) in defaults().repeat) merged.getOrPut(group) { LinkedHashMap() }.putAll(members)
@@ -139,10 +117,6 @@ object Rc {
         return merged
     }
 
-    /** The transient map a just-dispatched binding arms — Emacs' repeat-map
-     *  symbol property, ported: membership is the TARGET (action, command or
-     *  keys — not the key that ran it, repeat-check-key 'no style), and the
-     *  first declared group wins. Null when the binding repeats nothing. */
     fun repeatMapFor(b: Binding): Map<Char, Binding>? =
         repeatGroups().values.firstOrNull { members ->
             members.values.any { it.action == b.action && it.command == b.command && it.keys == b.keys }
@@ -150,7 +124,7 @@ object Rc {
 
     fun whichKeyEnabled(): Boolean = cfg().whichKey ?: defaults().whichKey ?: true
 
-    fun whichKeyDelayMs(): Int = cfg().whichKeyDelayMs ?: defaults().whichKeyDelayMs ?: 250
+    fun whichKeyDelayMs(): Int = cfg().whichKeyDelayMs ?: defaults().whichKeyDelayMs ?: DEFAULT_WHICH_KEY_DELAY_MS
 
     fun notify(
         text: String,

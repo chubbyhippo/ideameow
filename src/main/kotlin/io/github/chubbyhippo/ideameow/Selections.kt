@@ -14,21 +14,14 @@
 // with this program. If not, see <https://www.gnu.org/licenses/>.
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
-
 package io.github.chubbyhippo.ideameow
 
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.editor.ScrollType
 
-/**
- * The selection primitive, and the commands that act on the selection itself
- * (reverse, cancel, pop, digit expand). Every selecting command funnels
- * through [select], which mirrors meow's (expand|select . type) model: it
- * records the type and expand flag, pushes the replaced region to the history
- * (meow-pop-selection), lets the beacon react (a selection inside a grab
- * spawns carets), and paints the expand hints.
- */
 internal object Selections {
+    private const val SELECTION_HISTORY_MAX = 200
+
     val commands: Map<String, MeowCommand> =
         buildMap {
             for (n in 0..9) put("meow-expand-$n", MeowCommand { ed, st, _ -> expandOrCount(ed, st, n) })
@@ -37,7 +30,6 @@ internal object Selections {
             put("meow-pop-selection", MeowCommand { ed, st, _ -> pop(ed, st) })
         }
 
-    /** The types digit expand can grow; anything else makes digits a count. */
     private val EXPANDABLE =
         setOf(
             SelType.CHAR,
@@ -48,22 +40,17 @@ internal object Selections {
             SelType.TILL,
         )
 
-    /** Is the selection reversed (caret at its start), meow--direction-backward-p. */
     fun backwardP(editor: Editor): Boolean {
         val sm = editor.selectionModel
         return sm.hasSelection() && editor.caretModel.offset <= sm.selectionStart
     }
 
-    /** The anchor a same-direction re-selection keeps, meow's mark. */
     fun mark(editor: Editor): Int {
         val sm = editor.selectionModel
         if (!sm.hasSelection()) return editor.caretModel.offset
         return if (backwardP(editor)) sm.selectionEnd else sm.selectionStart
     }
 
-    /** meow--select's history bookkeeping: push the previous meow--selection —
-     *  or a null placeholder at [posBefore] when there was none — then
-     *  remember the new one. */
     fun recordSelect(
         st: MeowState,
         type: SelType,
@@ -74,7 +61,7 @@ internal object Selections {
     ) {
         val prev = st.lastSelection ?: SavedSelection(null, false, posBefore, posBefore)
         if (st.selectionHistory.lastOrNull() != prev) st.selectionHistory.addLast(prev)
-        while (st.selectionHistory.size > 200) st.selectionHistory.removeFirst()
+        while (st.selectionHistory.size > SELECTION_HISTORY_MAX) st.selectionHistory.removeFirst()
         st.lastSelection = SavedSelection(type, expand, anchor, active)
     }
 
@@ -105,15 +92,11 @@ internal object Selections {
         ExpandHints.show(editor, st)
     }
 
-    /** Forget the selection chain — the history-clearing half of
-     *  meow--cancel-selection. */
     fun resetSelectionMemory(st: MeowState) {
         st.selectionHistory.clear()
         st.lastSelection = null
     }
 
-    /** Collapse the selection WITHOUT touching the history — for edits that
-     *  kill the region as a side effect (meow never cancels there). */
     fun collapse(
         editor: Editor,
         st: MeowState,
@@ -123,7 +106,6 @@ internal object Selections {
         st.selExpand = false
     }
 
-    /** meow--cancel-selection: collapse AND clear the selection history. */
     fun cancel(
         editor: Editor,
         st: MeowState,
@@ -151,15 +133,12 @@ internal object Selections {
         editor.scrollingModel.scrollToCaret(ScrollType.RELATIVE)
     }
 
-    /** meow-pop-selection: with an active region, pop the history (a typed
-     *  entry restores type AND direction; the null placeholder returns the
-     *  caret to where the chain started and cancels); else pop the grab. */
     private fun pop(
         editor: Editor,
         st: MeowState,
     ) {
         if (editor.selectionModel.hasSelection()) {
-            val entry = st.selectionHistory.removeLastOrNull() ?: return // meow is silent here
+            val entry = st.selectionHistory.removeLastOrNull() ?: return
             if (entry.type == null) {
                 editor.caretModel.moveToOffset(entry.active)
                 cancel(editor, st)
@@ -172,8 +151,6 @@ internal object Selections {
         }
     }
 
-    /** meow-expand-N (0 = 10); without an expandable selection it falls back
-     *  to meow-digit-argument (meow-selection-command-fallback). */
     private fun expandOrCount(
         editor: Editor,
         st: MeowState,
@@ -226,9 +203,6 @@ internal object Selections {
                     return
                 }
             }
-        // meow-expand-selection-type defaults to 'select: the expanded
-        // selection is demoted, so follow-up word motions re-mark and `x`
-        // re-selects its line instead of extending
         select(editor, st, st.selType, mark(editor), target, expand = false)
     }
 }

@@ -14,7 +14,6 @@
 // with this program. If not, see <https://www.gnu.org/licenses/>.
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
-
 package io.github.chubbyhippo.ideameow
 
 import com.intellij.openapi.editor.CaretState
@@ -26,13 +25,9 @@ import com.intellij.ui.JBColor
 import java.awt.Color
 import java.awt.Font
 
-/**
- * meow-grab / swap-grab / sync-grab — the secondary-selection stand-in — plus
- * the BEACON approximation: while a grab is active, a selection created
- * inside it drops a caret on every similar range, so native multiple carets
- * do the job of meow's kmacro replay.
- */
 internal object Grab {
+    private const val MAX_BEACON_CARETS = 500
+
     private val BG = JBColor(Color(0xCD, 0xE8, 0xCD), Color(0x2F, 0x47, 0x2F))
 
     val commands: Map<String, MeowCommand> =
@@ -72,8 +67,6 @@ internal object Grab {
         }
     }
 
-    /** meow-grab: region -> secondary selection; with NO region the grab is
-     *  cancelled instead (meow 1.5.0 body, despite its docstring). */
     private fun grab(
         editor: Editor,
         st: MeowState,
@@ -84,7 +77,6 @@ internal object Grab {
         Selections.cancel(editor, st)
     }
 
-    /** meow-sync-grab: secondary := region; selection cancelled. */
     private fun sync(
         editor: Editor,
         st: MeowState,
@@ -99,13 +91,11 @@ internal object Grab {
         Selections.cancel(editor, st)
     }
 
-    /** meow-swap-grab: exchange region and secondary text; the secondary stays
-     *  at its location holding the swapped-in text. */
     private fun swap(
         editor: Editor,
         st: MeowState,
     ) {
-        if (Edits.blockedReadOnly(editor)) return // swap-grab edits both regions
+        if (Edits.blockedReadOnly(editor)) return
         val g = st.grab
         val sm = editor.selectionModel
         if (g == null || !g.isValid) {
@@ -147,7 +137,6 @@ internal object Grab {
         }
     }
 
-    /** meow-pop-grab, the pop-selection fallback: grab becomes the selection. */
     fun pop(
         editor: Editor,
         st: MeowState,
@@ -161,11 +150,6 @@ internal object Grab {
         return true
     }
 
-    /**
-     * BEACON: with a grab active, creating a selection inside it drops a
-     * caret+selection on every similar range in the grab. Invoked from the
-     * selection primitive, so every selecting command participates.
-     */
     fun beacon(
         editor: Editor,
         st: MeowState,
@@ -207,7 +191,7 @@ internal object Grab {
                     val e0 = g.startOffset + m.range.last + 1
                     if (s0 == ss) continue
                     add(s0, e0)
-                    if (++added >= 500) break
+                    if (++added >= MAX_BEACON_CARETS) break
                 }
                 if (states.isEmpty()) return
                 add(ss, se)

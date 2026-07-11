@@ -14,7 +14,6 @@
 // with this program. If not, see <https://www.gnu.org/licenses/>.
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
-
 package io.github.chubbyhippo.ideameow
 
 import com.intellij.openapi.editor.Editor
@@ -34,36 +33,11 @@ import javax.swing.JComponent
 import javax.swing.Timer
 import kotlin.math.ln
 
-/**
- * A native port of avy's two jumps — no AceJump plugin needed.
- * Every behavior below was read out of avy 0.5.0's source (avy.el), not
- * guessed:
- *
- * - `avy-goto-char-timer`: the first char waits indefinitely; each further
- *   char must arrive within the timeout (0.25 s here) and restarts
- *   it; matches highlight live while typing (avy-goto-char-timer-face =
- *   the theme highlight); matching is literal and case-insensitive
- *   (avy-case-fold-search t); zero candidates ends with a message; exactly
- *   one jumps immediately (avy-single-candidate-jump t).
- * - Labeling uses avy-tree/avy-subdiv over avy-keys (a s d f g h j k l):
- *   with more candidates than keys the FIRST keys stay single-char and the
- *   last keys host subtrees; picking a branch key relabels with the shorter
- *   remaining paths (avy-style 'at-full: the full remaining label is painted
- *   OVER the text at the candidate). An unknown key just messages
- *   "No such candidate" and stays; ESC exits.
- * - `avy-goto-line`: labels every visible line beginning; typing a DIGIT
- *   switches to a "Goto line: " number prompt seeded with that digit.
- * - The jump is avy-action-goto = plain goto-char: an active selection
- *   extends to the target, a bare caret just moves.
- */
 object Avy {
-    /** avy-keys default. */
     private const val KEYS = "asdfghjkl"
 
-    /** avy-timeout-seconds: 0.25 s. */
     private const val TIMEOUT_MS = 250
 
-    /** avy-lead-face: white on amaranth, both themes. */
     private val LEAD_FG = JBColor(Color.WHITE, Color.WHITE)
     private val LEAD_BG = JBColor(Color(0xE5, 0x2B, 0x50), Color(0xE5, 0x2B, 0x50))
 
@@ -86,8 +60,6 @@ object Avy {
         val matchHighlights = mutableListOf<RangeHighlighter>()
     }
 
-    // ------------------------------------------------------------- the tree
-
     sealed class Node
 
     class Leaf(
@@ -98,7 +70,6 @@ object Avy {
         val children: List<Pair<Char, Node>>,
     ) : Node()
 
-    /** avy-subdiv: distribute N candidates over B keys in a balanced way. */
     fun subdiv(
         n: Int,
         b: Int,
@@ -113,8 +84,6 @@ object Avy {
         return List(n1) { x1 } + listOf(n - n1 * x1 - n2 * x2) + List(n2) { x2 }
     }
 
-    /** avy-tree: fewer candidates than keys pair up 1:1; otherwise the
-     *  subdiv sizes decide which keys are leaves and which host subtrees. */
     fun tree(
         candidates: List<Int>,
         keys: String = KEYS,
@@ -132,7 +101,6 @@ object Avy {
         return Branch(children)
     }
 
-    /** Every leaf with its remaining label path from [node]. */
     fun labels(node: Branch): List<Pair<Int, String>> {
         val out = mutableListOf<Pair<Int, String>>()
 
@@ -148,8 +116,6 @@ object Avy {
         walk(node, "")
         return out
     }
-
-    // ------------------------------------------------------------- sessions
 
     private fun startCharTimer(
         editor: Editor,
@@ -172,7 +138,6 @@ object Avy {
         toSelecting(editor, session, candidates)
     }
 
-    /** One key of an active session; printable keys only reach us. */
     fun key(
         editor: Editor,
         st: MeowState,
@@ -201,7 +166,6 @@ object Avy {
         highlightMatches(editor, session)
     }
 
-    /** The avy-timeout-seconds pause ended: label (or jump, or give up). */
     fun finishInput(
         editor: Editor,
         st: MeowState,
@@ -218,7 +182,6 @@ object Avy {
             }
 
             candidates.size == 1 -> {
-                // avy-single-candidate-jump
                 cancel(editor, st)
                 jump(editor, candidates[0])
             }
@@ -246,7 +209,6 @@ object Avy {
         session: Session,
         c: Char,
     ) {
-        // avy-goto-line: a digit switches to plain goto-line by number
         if (session.gotoLine && c.isDigit()) {
             cancel(editor, st)
             val input =
@@ -277,11 +239,10 @@ object Avy {
 
             null -> {
                 Ide.hint(editor, "No such candidate: $c")
-            } // avy-handler-default: stay
+            }
         }
     }
 
-    /** avy-action-goto: plain goto-char — an active selection extends. */
     private fun jump(
         editor: Editor,
         offset: Int,
@@ -309,10 +270,6 @@ object Avy {
         st.avy = null
     }
 
-    // ----------------------------------------------------------- candidates
-
-    /** Literal, case-insensitive, non-overlapping matches in the visible
-     *  region (avy--read-candidates with regexp-quote + case folding). */
     private fun matches(
         editor: Editor,
         input: String,
@@ -328,15 +285,13 @@ object Avy {
         while (i <= to - input.length) {
             if (text.regionMatches(i, input, 0, input.length, ignoreCase = true)) {
                 out.add(i)
-                i += input.length // re-search-forward: non-overlapping
+                i += input.length
             } else {
                 i++
             }
         }
         return out
     }
-
-    // -------------------------------------------------------------- visuals
 
     private fun highlightMatches(
         editor: Editor,
@@ -388,9 +343,6 @@ object Avy {
         session.matchHighlights.clear()
     }
 
-    /** avy-style 'at-full: the remaining label path painted OVER the text at
-     *  the candidate, covering one char cell per label char (clamped at the
-     *  line end) — same paint-over technique as the expand hints. */
     private class LabelsCanvas(
         private val editor: Editor,
         private val labels: List<Pair<Int, String>>,
@@ -405,7 +357,6 @@ object Avy {
             g2.font = font
             for ((offset, label) in labels) {
                 val p = editor.offsetToXY(offset, true, false)
-                // cover up to label-length chars, but never past the line end
                 var covered = 0
                 var end = offset
                 while (covered < label.length && end < text.length && text[end] != '\n') {

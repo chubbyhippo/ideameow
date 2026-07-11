@@ -14,17 +14,14 @@
 // with this program. If not, see <https://www.gnu.org/licenses/>.
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
-
 package io.github.chubbyhippo.ideameow
 
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.ui.Messages
 
-/**
- * meow-search / meow-visit and the regexp ring they share. Mark-word pushes
- * into the same ring (see Motions), which is why `n` works right after `w`.
- */
 internal object Search {
+    private const val SEARCH_RING_MAX = 50
+
     val commands: Map<String, MeowCommand> =
         mapOf(
             "meow-search" to MeowCommand { ed, st, _ -> search(ed, st) },
@@ -37,12 +34,9 @@ internal object Search {
     ) {
         st.searchHistory.removeAll { it.pattern == re.pattern }
         st.searchHistory.addLast(re)
-        while (st.searchHistory.size > 50) st.searchHistory.removeFirst()
+        while (st.searchHistory.size > SEARCH_RING_MAX) st.searchHistory.removeFirst()
     }
 
-    /** meow-search: car of the ring; a region that doesn't match the pattern
-     *  becomes the new pattern (regexp-quoted); wraps at buffer edges; a
-     *  reversed selection searches backward. */
     private fun search(
         editor: Editor,
         st: MeowState,
@@ -66,7 +60,6 @@ internal object Search {
         searchWith(editor, st, re, backward = st.takeCount(1) < 0 || Selections.backwardP(editor))
     }
 
-    /** meow-visit: read a regexp, push it to the ring, select the match. */
     private fun visit(
         editor: Editor,
         st: MeowState,
@@ -102,7 +95,7 @@ internal object Search {
                     last = cur
                     cur = cur.next()
                 }
-                if (last == null) { // wrap to the end of the buffer
+                if (last == null) {
                     var tail: MatchResult? = cur
                     while (true) {
                         val nx = tail?.next() ?: break

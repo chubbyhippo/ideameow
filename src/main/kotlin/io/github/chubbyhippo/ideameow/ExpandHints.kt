@@ -14,7 +14,6 @@
 // with this program. If not, see <https://www.gnu.org/licenses/>.
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
-
 package io.github.chubbyhippo.ideameow
 
 import com.intellij.openapi.editor.Editor
@@ -28,16 +27,9 @@ import java.awt.RenderingHints
 import javax.swing.JComponent
 import javax.swing.Timer
 
-/**
- * meow's expand hints: after an expandable selection (word/symbol/line/
- * find/till), digit labels mark where 1-9 and 0 (=10) would take the
- * selection. Like meow's overlays (meow-visual.el: an overlay over ONE char
- * whose 'display property replaces it with the digit), the labels are
- * PAINTED OVER the text on a transparent canvas — AceJump style — so the
- * text never shifts. Removed on the next key or after
- * meow-expand-hint-remove-delay (1 second), whichever comes first.
- */
 object ExpandHints {
+    private const val HINT_TIMEOUT_MS = 1000
+
     private val HINT_COLOR = JBColor(Color(0xD0, 0x5C, 0x0A), Color(0xFF, 0xB0, 0x50))
 
     fun show(
@@ -57,7 +49,7 @@ object ExpandHints {
         host.repaint()
         st.hintOverlay = canvas
         st.hintTimer =
-            Timer(1000) { clear(st) }.apply {
+            Timer(HINT_TIMEOUT_MS) { clear(st) }.apply {
                 isRepeats = false
                 start()
             }
@@ -107,9 +99,6 @@ object ExpandHints {
 
             SelType.FIND, SelType.TILL -> {
                 val c = st.lastFind ?: return out
-                // the SAME scan the digit expand runs (nthCharTarget), so the
-                // painted digits can never disagree with where the selection
-                // would land — e.g. a target char sitting right at the caret
                 val till = st.selType == SelType.TILL
                 for (k in 1..count) {
                     val t = nthCharTarget(text, c, caret, k, backward, till)
@@ -123,14 +112,6 @@ object ExpandHints {
         return out.distinct()
     }
 
-    /**
-     * A transparent child of the editor's content component: children paint
-     * above the editor's own painting and live in content coordinates, so the
-     * labels track scrolling for free and never affect layout. Each label
-     * covers its character's exact cell (editor background underneath), the
-     * paint-over equivalent of meow's 'display replacement — tabs and wide
-     * chars keep their width because the cell is measured, not assumed.
-     */
     private class HintsCanvas(
         private val editor: Editor,
         private val hints: List<Pair<Int, String>>,
@@ -146,8 +127,6 @@ object ExpandHints {
             g2.font = font
             for ((offset, label) in hints) {
                 val p = editor.offsetToXY(offset, true, false)
-                // the covered char's real cell width (handles tabs and
-                // full-width chars); past eol/eof there is nothing to cover
                 val next =
                     if (offset < text.length && text[offset] != '\n') {
                         editor.offsetToXY(offset + 1, true, false)

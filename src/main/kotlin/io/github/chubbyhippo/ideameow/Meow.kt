@@ -14,7 +14,6 @@
 // with this program. If not, see <https://www.gnu.org/licenses/>.
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
-
 package io.github.chubbyhippo.ideameow
 
 import com.intellij.openapi.editor.Editor
@@ -24,10 +23,6 @@ import com.intellij.openapi.project.ProjectManager
 import com.intellij.openapi.util.Key
 import com.intellij.openapi.wm.WindowManager
 
-/**
- * Per-editor state access and the mode lifecycle: which editor has meow, what
- * mode it is in, and what the status-bar widget should say about it.
- */
 object Meow {
     val KEY: Key<MeowState> = Key.create("meow.state")
 
@@ -50,7 +45,6 @@ object Meow {
         }
     }
 
-    /** Status text for the widget, derived from the focused editor. */
     fun statusText(project: Project): String {
         val editor = FileEditorManager.getInstance(project).selectedTextEditor ?: return ""
         val st = state(editor) ?: return ""
@@ -63,7 +57,6 @@ object Meow {
 
             beacon -> "MEOW BEACON"
 
-            // repeat-echo-mode-line: the run is live, these keys continue it
             repeat != null -> "MEOW ${st.mode} [repeat ${repeat.keys.joinToString(" ")}]"
 
             else -> "MEOW ${st.mode}"

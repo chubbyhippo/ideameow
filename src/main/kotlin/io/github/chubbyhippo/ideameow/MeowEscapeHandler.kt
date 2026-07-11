@@ -14,7 +14,6 @@
 // with this program. If not, see <https://www.gnu.org/licenses/>.
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
-
 package io.github.chubbyhippo.ideameow
 
 import com.intellij.codeInsight.lookup.LookupManager
@@ -23,11 +22,6 @@ import com.intellij.openapi.editor.Caret
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.editor.actionSystem.EditorActionHandler
 
-/**
- * EditorEscape override: INSERT -> NORMAL, cancels KEYPAD and pending keys,
- * collapses beacon carets; delegates when a completion popup is up or the
- * editor has no meow state.
- */
 class MeowEscapeHandler(
     private val original: EditorActionHandler,
 ) : EditorActionHandler() {
@@ -47,7 +41,7 @@ class MeowEscapeHandler(
             return
         }
         st.pending = null
-        st.repeatMap = null // ESC always ends a repeat run (a non-member key)
+        st.repeatMap = null
         WhichKey.hide()
         ExpandHints.clear(st)
         when {
@@ -56,7 +50,6 @@ class MeowEscapeHandler(
             }
 
             st.mode == MeowMode.KEYPAD -> {
-                // meow-keypad-quit: back to the state keypad was entered from
                 Keypad.exit(editor, st)
             }
 

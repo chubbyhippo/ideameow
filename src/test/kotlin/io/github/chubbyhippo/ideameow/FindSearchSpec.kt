@@ -14,10 +14,8 @@
 // with this program. If not, see <https://www.gnu.org/licenses/>.
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
-
 package io.github.chubbyhippo.ideameow
 
-/** meow-find, meow-till (+expand), meow-visit, meow-search. */
 class FindSearchSpec : MeowSpec() {
     fun `test given f X then selects from point through the char inclusive`() {
         given("marker text", "<caret>abcXdef")
@@ -39,8 +37,6 @@ class FindSearchSpec : MeowSpec() {
         whenKeys("w")
         thenSelection("word1")
         whenKeys("f3")
-        // probed (meow 1.5.0): find REPLACES the word selection with
-        // (select . find) from the old point — region [6,19)
         thenSelection(", word2 word3")
         thenSelType(SelType.FIND)
         thenCaretAtSelectionEnd()
@@ -49,7 +45,7 @@ class FindSearchSpec : MeowSpec() {
     fun `test given w then t X then the till selection stops before the char`() {
         given("comma separated", "w<caret>ord1, word2 word3")
         whenKeys("wt3")
-        thenSelection(", word2 word") // probed: region [6,18)
+        thenSelection(", word2 word")
         thenSelType(SelType.TILL)
     }
 
@@ -83,7 +79,7 @@ class FindSearchSpec : MeowSpec() {
 
     fun `test given w then n repeats the pushed word search forward (meow-search)`() {
         given("repeats", "<caret>foo bar foo baz foo")
-        whenKeys("w") // marks foo, pushes \bfoo\b
+        whenKeys("w")
         whenKeys("n")
         thenSelection("foo")
         assertEquals(8, ed.selectionModel.selectionStart)
@@ -91,15 +87,15 @@ class FindSearchSpec : MeowSpec() {
 
     fun `test given repeated n then the search wraps at the end of the buffer`() {
         given("repeats", "<caret>foo bar foo")
-        whenKeys("wnn") // second n has no match ahead -> wraps to the first foo
+        whenKeys("wnn")
         assertEquals(0, ed.selectionModel.selectionStart)
         thenSelection("foo")
     }
 
     fun `test given a reversed selection when n then the search goes backward`() {
         given("repeats", "foo bar <caret>foo bar foo")
-        whenKeys("w") // marks middle foo
-        whenKeys(";") // reverse: direction now backward
+        whenKeys("w")
+        whenKeys(";")
         whenKeys("n")
         assertEquals(0, ed.selectionModel.selectionStart)
         thenSelection("foo")
@@ -109,8 +105,8 @@ class FindSearchSpec : MeowSpec() {
     fun `test given a selection that does not match the pattern when n then the selection text becomes the pattern`() {
         given("repeats", "foo <caret>bar foo bar")
         st.searchHistory.addLast(Regex("zzz"))
-        whenKeys(",e") // transient symbol selection "bar" — doesn't match zzz
-        whenKeys("n") // meow-search adopts the region as the new pattern
+        whenKeys(",e")
+        whenKeys("n")
         thenSelection("bar")
         assertEquals(12, ed.selectionModel.selectionStart)
     }

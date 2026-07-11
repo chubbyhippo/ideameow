@@ -14,13 +14,8 @@
 // with this program. If not, see <https://www.gnu.org/licenses/>.
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
-
 package io.github.chubbyhippo.ideameow
 
-/**
- * meow-mark-word/symbol, next/back word/symbol, meow-line, goto-line,
- * meow-expand digits, meow-reverse, meow-pop-selection.
- */
 class SelectionSpec : MeowSpec() {
     fun `test given caret on a word when w then the word is marked and caret sits at its end`() {
         given("two words", "<caret>hello world")
@@ -31,7 +26,7 @@ class SelectionSpec : MeowSpec() {
     }
 
     fun `test given caret between words when w then the next word is marked`() {
-        given("gap between words", "hello <caret> world") // caret between two spaces
+        given("gap between words", "hello <caret> world")
         whenKeys("w")
         thenSelection("world")
     }
@@ -54,15 +49,13 @@ class SelectionSpec : MeowSpec() {
         whenKeys("e")
         thenSelection("one")
         whenKeys("e")
-        // meow--fix-thing-selection-mark: the mark snaps past the separator,
-        // a fresh selection is the bare word (batch-probed, meow 1.5.0)
         thenSelection("two")
     }
 
     fun `test given words separated by punctuation when e e e then each selection is one bare word`() {
         given("comma separated", "<caret>word1, word2 word3")
         whenKeys("ee")
-        thenSelection("word2") // probed: [8,13), the ", " stays outside
+        thenSelection("word2")
         whenKeys("e")
         thenSelection("word3")
         thenCaretAtSelectionEnd()
@@ -74,13 +67,13 @@ class SelectionSpec : MeowSpec() {
         thenSelection("word3")
         thenCaretAtSelectionStart()
         whenKeys("bb")
-        thenSelection("word1") // probed: [1,6), separators never included
+        thenSelection("word1")
     }
 
     fun `test given e then b then the same word is re-selected backward`() {
         given("comma separated", "<caret>word1, word2 word3")
         whenKeys("eb")
-        thenSelection("word1") // probed: [1,6) point 1 — b flips onto the word
+        thenSelection("word1")
         thenCaretAtSelectionStart()
     }
 
@@ -89,10 +82,8 @@ class SelectionSpec : MeowSpec() {
         whenKeys("x")
         thenSelection("hello world")
         whenKeys("e")
-        thenSelection("next") // mark snapped past the newline
+        thenSelection("next")
         whenKeys("z")
-        // probed: meow-next-thing cancelled the line selection first, so z
-        // pops the null placeholder — no region, caret at the chain start
         thenNoSelection()
         thenCaretAt(11)
     }
@@ -173,8 +164,6 @@ class SelectionSpec : MeowSpec() {
     }
 
     fun `test given a selection then expand hints overlay the text without inserting inlays`() {
-        // meow paints the digits over the chars (overlay 'display) — the text
-        // must never shift, so no inline inlays are allowed (regression)
         given("three words", "<caret>hello world again")
         whenKeys("w")
         assertTrue(
@@ -183,13 +172,11 @@ class SelectionSpec : MeowSpec() {
         )
         assertNotNull("hint canvas is painted above the editor", st.hintOverlay)
         assertSame(ed.contentComponent, st.hintOverlay!!.parent)
-        whenKeys("g") // next key removes the hints
+        whenKeys("g")
         assertNull(st.hintOverlay)
     }
 
     fun `test given a find selection when the target char sits at the caret then the first hint marks it`() {
-        // the preview runs the same nthCharTarget scan as the digit expand: a
-        // second X right at the caret is one expand away and must be hinted
         given("chars", "<caret>aXX")
         whenKeys("fX")
         assertNotNull("a digit hint must paint over the X at the caret", st.hintOverlay)
@@ -239,8 +226,6 @@ class SelectionSpec : MeowSpec() {
     }
 
     fun `test given Q then goto-line as well (QWERTY binds both Q and X)`() {
-        // the bundled defaults override Q to the native avy line jump; a
-        // home-rc line brings meow's own Q binding back — pin that layering
         given("three lines", "<caret>one\ntwo\nthree")
         givenRc("nmap Q meow-goto-line")
         givenMinibufferAnswers("3")
@@ -248,15 +233,10 @@ class SelectionSpec : MeowSpec() {
         thenSelection("three")
     }
 
-    // The pop-selection behaviors below were probed against meow 1.5.0
-    // itself (batch Emacs, 2026-07-06): every select pushes the previous
-    // selection (or a null placeholder recording the chain's start), pop
-    // restores type AND direction, and meow--cancel-selection clears it all.
-
     fun `test given a selection history when z then the previous selection is restored with its type`() {
         given("two words", "<caret>hello world")
-        whenKeys("w") // selection 1: hello
-        whenKeys("x") // selection 2: whole line, pushes selection 1
+        whenKeys("w")
+        whenKeys("x")
         whenKeys("z")
         thenSelection("hello")
         thenSelType(SelType.WORD)
@@ -275,7 +255,7 @@ class SelectionSpec : MeowSpec() {
     fun `test given g then the selection history is cleared (meow--cancel-selection)`() {
         given("two words", "<caret>hello world")
         whenKeys("wxg")
-        whenKeys("z") // no region, no grab, cleared history: nothing to pop
+        whenKeys("z")
         thenNoSelection()
     }
 
@@ -283,8 +263,8 @@ class SelectionSpec : MeowSpec() {
         given("five words", "<caret>one two three four five")
         whenKeys("w2")
         thenSelection("one two three")
-        whenKeys("e") // (select . word) does not match (expand . word): fresh selection
-        thenSelection("four") // bare word — the mark-fix applies to every fresh selection
+        whenKeys("e")
+        thenSelection("four")
     }
 
     fun `test given x 2 then x re-selects the current line instead of extending`() {
@@ -297,7 +277,7 @@ class SelectionSpec : MeowSpec() {
 
     fun `test given no history but a grab when z then the grab becomes the selection (meow-pop-grab fallback)`() {
         given("two words", "<caret>hello world")
-        whenKeys("wG") // grab "hello", no selection, empty history after grab
+        whenKeys("wG")
         st.selectionHistory.clear()
         whenKeys("z")
         thenSelection("hello")

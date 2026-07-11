@@ -14,13 +14,8 @@
 // with this program. If not, see <https://www.gnu.org/licenses/>.
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
-
 package io.github.chubbyhippo.ideameow
 
-/**
- * meow-insert/append/open, change, delete/backward-delete, kill (+ the
- * kill-line and join fallbacks), save, yank, replace, undo, repeat.
- */
 class EditingSpec : MeowSpec() {
     fun `test given a selection when i then INSERT starts at the selection beginning`() {
         given("word", "<caret>hello world")
@@ -102,7 +97,7 @@ class EditingSpec : MeowSpec() {
     fun `test given U without a selection then nothing happens (undo-in-selection is region-gated)`() {
         given("chars", "<caret>abc")
         whenKeys("dU")
-        thenText("bc") // U undid nothing
+        thenText("bc")
     }
 
     fun `test given a selection when d then it is deleted without touching the clipboard`() {
@@ -159,11 +154,6 @@ class EditingSpec : MeowSpec() {
         whenKeys("ms")
         thenText("f(x)")
     }
-
-    // Every kill/save behavior below was probed against meow 1.5.0 itself
-    // (batch Emacs, 2026-07-06): kill-ring-save deactivates the mark, and
-    // meow--prepare-region-for-kill extends FORWARD line selections by the
-    // trailing newline before both kill and save.
 
     fun `test given y then the selection is copied and cancelled (kill-ring-save deactivates the mark)`() {
         given("word", "<caret>hello world")
@@ -245,9 +235,6 @@ class EditingSpec : MeowSpec() {
     }
 
     fun `test given x x then repeated u past the undo stack then nothing blows up`() {
-        // regression: Ide.act must update-check actions like the keymap does —
-        // performing a disabled UndoAction fails UndoManagerImpl's
-        // isUndoAvailable assertion once the stack is exhausted
         given("three lines", "<caret>one\ntwo\nthree")
         whenKeys("xx")
         whenKeys("uuuuuu")
@@ -272,8 +259,6 @@ class EditingSpec : MeowSpec() {
     }
 
     fun `test given quote after finding a quote char then the find repeats`() {
-        // a quote as a pending argument is part of the repeat unit; only the
-        // repeat *command* is excluded from it
         given("quotes", "<caret>a'b'c")
         whenKeys("f'")
         thenSelection("a'")

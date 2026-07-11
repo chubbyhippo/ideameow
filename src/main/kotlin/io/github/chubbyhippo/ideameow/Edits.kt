@@ -14,7 +14,6 @@
 // with this program. If not, see <https://www.gnu.org/licenses/>.
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
-
 package io.github.chubbyhippo.ideameow
 
 import com.intellij.openapi.actionSystem.DataContext
@@ -22,13 +21,6 @@ import com.intellij.openapi.actionSystem.IdeActions
 import com.intellij.openapi.editor.Caret
 import com.intellij.openapi.editor.Editor
 
-/**
- * Text-mutating commands: entering INSERT (insert/append/open above/below),
- * change, delete, kill with meow's kill-line and join fallbacks, save / yank /
- * replace against the clipboard kill-ring, and undo. Multi-caret edits walk
- * the carets in descending offset order so beacon editing never invalidates
- * the offsets still to come.
- */
 internal object Edits {
     val commands: Map<String, MeowCommand> =
         buildMap {
@@ -47,7 +39,6 @@ internal object Edits {
             put("meow-undo-in-selection", MeowCommand { ed, _, ctx -> undoInSelection(ed, ctx) })
         }
 
-    /** One write command over every caret, highest offset first. */
     private inline fun editCarets(
         editor: Editor,
         commandName: String,
@@ -58,16 +49,8 @@ internal object Edits {
         }
     }
 
-    /**
-     * meow--allow-modify-p (meow-util.el): read-only buffers keep the full
-     * NORMAL layout, but the text-changing commands are inert. meow gates
-     * kill/change/backspace/replace into SILENT no-ops; delete/yank/open
-     * (and swap-grab) instead fail with Emacs' "Buffer is read-only" error —
-     * surfaced here as an editor hint.
-     */
     internal fun allowModify(editor: Editor): Boolean = editor.document.isWritable && !editor.isViewer
 
-    /** @return true when the edit must be blocked — telling the user why. */
     internal fun blockedReadOnly(editor: Editor): Boolean {
         if (allowModify(editor)) return false
         Ide.hint(editor, "Buffer is read-only")
@@ -83,7 +66,7 @@ internal object Edits {
             caret.removeSelection()
         }
         st.selType = SelType.NONE
-        Selections.resetSelectionMemory(st) // meow-insert runs meow--cancel-selection
+        Selections.resetSelectionMemory(st)
         Meow.setMode(editor, st, MeowMode.INSERT)
     }
 
@@ -96,7 +79,7 @@ internal object Edits {
             caret.removeSelection()
         }
         st.selType = SelType.NONE
-        Selections.resetSelectionMemory(st) // meow-append runs meow--cancel-selection
+        Selections.resetSelectionMemory(st)
         Meow.setMode(editor, st, MeowMode.INSERT)
     }
 
@@ -106,7 +89,7 @@ internal object Edits {
         ctx: DataContext?,
     ) {
         if (blockedReadOnly(editor)) return
-        Selections.collapse(editor, st) // meow-open-below never cancels; RET just deactivates
+        Selections.collapse(editor, st)
         Ide.act(editor, ctx, "EditorStartNewLine")
         Meow.setMode(editor, st, MeowMode.INSERT)
     }
@@ -117,15 +100,11 @@ internal object Edits {
         ctx: DataContext?,
     ) {
         if (blockedReadOnly(editor)) return
-        Selections.collapse(editor, st) // as in openBelow: no history clearing
+        Selections.collapse(editor, st)
         Ide.act(editor, ctx, "EditorStartNewLineBefore")
         Meow.setMode(editor, st, MeowMode.INSERT)
     }
 
-    /** Delete the caret's selection, else one char in the given direction —
-     *  the char fallback takes ANY char, newlines included (meow-change-char /
-     *  delete-forward-char; probed against meow 1.5.0). Shared by change,
-     *  delete and backward-delete so the fallback rule cannot drift. */
     private fun deleteAtCaret(
         editor: Editor,
         caret: Caret,
@@ -148,8 +127,7 @@ internal object Edits {
         editor: Editor,
         st: MeowState,
     ) {
-        if (!allowModify(editor)) return // meow gates change silently
-        // fallback meow-change-char at point-max: nothing happens, not even INSERT
+        if (!allowModify(editor)) return
         val primary = editor.caretModel.primaryCaret
         if (!primary.hasSelection() && primary.offset >= editor.document.textLength) return
         editCarets(editor, "Meow Change") { caret -> deleteAtCaret(editor, caret, forward = true) }
@@ -170,17 +148,11 @@ internal object Edits {
         editor: Editor,
         st: MeowState,
     ) {
-        if (!allowModify(editor)) return // meow gates backspace silently
+        if (!allowModify(editor)) return
         editCarets(editor, "Meow Backward Delete") { caret -> deleteAtCaret(editor, caret, forward = false) }
         st.selType = SelType.NONE
     }
 
-    /**
-     * meow--prepare-region-for-kill (meow-util.el): a FORWARD line-type
-     * selection takes its trailing newline with it before a kill or save —
-     * and meow's point (the caret) moves past that newline too. Backward
-     * selections and the last line are killed as-is.
-     */
     private fun prepareLineSelectionsForKill(
         editor: Editor,
         st: MeowState,
@@ -203,7 +175,7 @@ internal object Edits {
         st: MeowState,
         ctx: DataContext?,
     ) {
-        if (!allowModify(editor)) return // meow gates kill silently
+        if (!allowModify(editor)) return
         val sm = editor.selectionModel
         if (st.selType == SelType.JOIN && sm.hasSelection()) {
             joinKill(editor, st)
@@ -215,7 +187,6 @@ internal object Edits {
             st.selType = SelType.NONE
             return
         }
-        // fallback meow-C-k: kill to end of line, or the newline when at eol
         val doc = editor.document
         val caret = editor.caretModel.offset
         if (doc.textLength == 0) return
@@ -227,8 +198,6 @@ internal object Edits {
         }
     }
 
-    /** Killing a join selection = delete-indentation: single space, none at
-     *  line edges or against brackets (Emacs' fixup-whitespace). */
     private fun joinKill(
         editor: Editor,
         st: MeowState,
@@ -252,12 +221,9 @@ internal object Edits {
             }
             editor.caretModel.moveToOffset(s)
         }
-        Selections.collapse(editor, st) // an edit, not a cancel: history survives
+        Selections.collapse(editor, st)
     }
 
-    /** meow-save: copy — with kill-ring-save's mark deactivation: the
-     *  selection is cancelled afterwards and the caret stays at point
-     *  (past the newline for a forward line selection). */
     private fun save(
         editor: Editor,
         st: MeowState,
@@ -271,7 +237,6 @@ internal object Edits {
         st.selExpand = false
     }
 
-    /** meow-yank: insert the clipboard at every caret, caret lands after it. */
     private fun yank(editor: Editor) {
         if (blockedReadOnly(editor)) return
         val clip = Ide.clipboard() ?: return
@@ -282,12 +247,11 @@ internal object Edits {
         }
     }
 
-    /** meow-replace: selection := clipboard; the clipboard stays intact. */
     private fun replace(
         editor: Editor,
         st: MeowState,
     ) {
-        if (!allowModify(editor)) return // meow gates replace silently
+        if (!allowModify(editor)) return
         if (!editor.selectionModel.hasSelection()) return
         val clip = (Ide.clipboard() ?: return).trimEnd('\n')
         editCarets(editor, "Meow Replace") { caret ->
@@ -301,8 +265,6 @@ internal object Edits {
         st.selType = SelType.NONE
     }
 
-    /** meow-undo cancels the selection (with its history) BEFORE undoing —
-     *  but only when a region is active. */
     private fun undo(
         editor: Editor,
         st: MeowState,
@@ -312,8 +274,6 @@ internal object Edits {
         Ide.act(editor, ctx, IdeActions.ACTION_UNDO)
     }
 
-    /** meow-undo-in-selection only acts with an active region; region-scoped
-     *  undo has no IDE analog, so it is a plain undo (see README). */
     private fun undoInSelection(
         editor: Editor,
         ctx: DataContext?,

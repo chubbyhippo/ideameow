@@ -14,19 +14,12 @@
 // with this program. If not, see <https://www.gnu.org/licenses/>.
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
-
 package io.github.chubbyhippo.ideameow
 
 import com.intellij.openapi.actionSystem.DataContext
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.editor.actionSystem.TypedActionHandler
 
-/**
- * Raw typed handler (registered via com.intellij.rawEditorTypedHandler):
- * intercepts printable keys before any write command starts, dispatches them
- * as meow commands in NORMAL/MOTION/KEYPAD, and delegates in INSERT or in
- * editors that have no meow state (consoles, injected fragments, ...).
- */
 class MeowTypedHandler(
     private val original: TypedActionHandler,
 ) : TypedActionHandler {

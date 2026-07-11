@@ -14,17 +14,11 @@
 // with this program. If not, see <https://www.gnu.org/licenses/>.
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
-
 package io.github.chubbyhippo.ideameow
 
 import com.intellij.openapi.actionSystem.DataContext
 import com.intellij.openapi.editor.Editor
 
-/**
- * A named, bindable meow command — the unit every rc binding resolves to.
- * Each command family (Motions, Selections, Search, Structures, Grab, Edits)
- * contributes its commands to [Engine.COMMANDS] under their meow names.
- */
 fun interface MeowCommand {
     operator fun invoke(
         editor: Editor,
@@ -33,22 +27,7 @@ fun interface MeowCommand {
     )
 }
 
-/**
- * The key dispatcher. Like meow in Emacs, the engine binds no keys of its
- * own: every command is registered by its meow name in [COMMANDS], and keys
- * resolve through rc bindings only — ~/.ideameowrc over the bundled default
- * .ideameowrc (see [Rc]). Besides dispatch, this object owns the pieces of
- * behavior that need the whole-keystroke view: the repeat unit (`'`),
- * rc-binding replay with its noremap/recursion bookkeeping, and the repeat
- * transient (Emacs repeat-mode: rc `repeat` groups arm a one-shot map whose
- * member keys re-dispatch — tap `.`/`,` to keep walking errors after SPC . e).
- */
 object Engine {
-    /**
-     * Every command under its meow name (plus Emacs' `repeat` and `ignore`,
-     * exactly as meow's suggested layout spells them) — the targets a
-     * ~/.ideameowrc line can bind a key to.
-     */
     val COMMANDS: Map<String, MeowCommand> =
         buildMap {
             putAll(Motions.commands)
@@ -57,8 +36,7 @@ object Engine {
             putAll(Structures.commands)
             putAll(Grab.commands)
             putAll(Edits.commands)
-            putAll(Avy.commands) // native avy-goto-char-timer / avy-goto-line
-            // dispatcher-level commands: counts, the keypad, repeat, quit, no-op
+            putAll(Avy.commands)
             put("meow-negative-argument", MeowCommand { _, st, _ -> st.negative = true })
             put("meow-quit", MeowCommand { ed, _, ctx -> Ide.act(ed, ctx, "CloseContent") })
             put("meow-keypad", MeowCommand { ed, st, _ -> enterKeypad(ed, st) })
@@ -68,10 +46,6 @@ object Engine {
 
     private val KEYPAD_BINDING = Rc.Binding(command = "meow-keypad")
 
-    /** meow-keypad (meow-keypad.el): record meow--keypad-previous-state,
-     *  then switch — Keypad.exit restores it, so SPC round-trips to NORMAL
-     *  and the Alt+; action returns to INSERT. Shared by the rc-dispatched
-     *  command and [KeypadAction]. */
     fun enterKeypad(
         editor: Editor,
         st: MeowState,
@@ -81,7 +55,6 @@ object Engine {
         WhichKey.scheduleKeypad(editor, "")
     }
 
-    /** @return true when the key was consumed (typed handler skips insertion). */
     fun handleChar(
         editor: Editor,
         c: Char,
@@ -106,22 +79,12 @@ object Engine {
         ExpandHints.clear(st)
 
         val pend = st.pending
-        // the repeat transient: a member key of the armed group re-dispatches
-        // its binding, shadowing the normal map for exactly that keypress
-        // (runBinding re-arms it); any other key ends the run and falls
-        // through to the resolve below — Emacs set-transient-map semantics,
-        // never swallowed. ESC ends the run too (MeowEscapeHandler).
         val repeatBinding = if (pend == null) st.repeatMap?.get(c) else null
         if (pend == null && repeatBinding == null) st.repeatMap = null
-        // like Emacs: read-only buffers stay in NORMAL with every motion
-        // working (the modify commands gate themselves via allow-modify);
-        // the motion map applies only to the MOTION state proper
         val motionish = st.mode == MeowMode.MOTION
         val binding = if (pend == null) repeatBinding ?: resolve(st, c, motionish) else null
         val cmd = binding?.command
 
-        // the repeat unit: everything since the last complete command, so `'`
-        // can replay counts and pending args (2fa) as one stroke
         if (!st.replaying && cmd != "repeat") {
             if (pend == null && st.pendingCount == 0 && !st.negative) st.unit.clear()
             st.unit.add(c)
@@ -133,13 +96,10 @@ object Engine {
             st.lastCommand = "pending"
         } else if (binding != null) {
             runBinding(editor, st, binding, ctx)
-            // the this-command/last-command handoff: vertical-motion chains
-            // keep their goal column only while uninterrupted (see Motions);
-            // a keys-replay binding keeps the innermost replayed command
             st.lastCommand = binding.command ?: binding.action ?: st.lastCommand
         } else {
             st.lastCommand = null
-        } // undefined key: swallow, never self-insert
+        }
 
         val prefixy =
             st.pending != null ||
@@ -152,8 +112,6 @@ object Engine {
         return true
     }
 
-    /** SPC = keypad (reserved), then ~/.ideameowrc maps (skipped inside a
-     *  noremap replay), then the bundled default rc; null = undefined key. */
     private fun resolve(
         st: MeowState,
         c: Char,
@@ -168,7 +126,6 @@ object Engine {
         return if (motion) d.motion[c] else d.normal[c]
     }
 
-    /** Commands that read one more key: find/till chars and the thing table. */
     private fun resolvePending(
         editor: Editor,
         st: MeowState,
@@ -205,13 +162,6 @@ object Engine {
         }
     }
 
-    /** Run a binding: a named meow command, an IDE action, or meow keys
-     *  replayed through the engine (noremap bindings skip user maps while
-     *  replaying). Afterwards, Emacs repeat-mode's post-command arming: a
-     *  binding whose target sits in an rc repeat group arms that group's
-     *  transient — membership by target identity (the repeat-map symbol
-     *  property), no entered-with-key check (repeat-check-key 'no is the
-     *  matching Emacs setting, and keypad keys are never members). */
     fun runBinding(
         editor: Editor,
         st: MeowState,
@@ -221,7 +171,6 @@ object Engine {
         dispatch(editor, st, b, ctx)
         val map = Rc.repeatMapFor(b) ?: return
         if (st.repeatMap == null) {
-            // repeat-echo-message, once per run: "Repeat with ., ,"
             Ide.hint(editor, "Repeat with ${map.keys.joinToString(", ")}")
         }
         st.repeatMap = map
@@ -250,7 +199,7 @@ object Engine {
             return
         }
         val savedReplaying = st.replaying
-        st.replaying = true // inner keys must not clobber the ' (repeat) unit
+        st.replaying = true
         st.replayDepth++
         if (!b.recursive) st.noremapDepth++
         try {

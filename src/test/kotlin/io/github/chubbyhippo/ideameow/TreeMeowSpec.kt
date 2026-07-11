@@ -14,7 +14,6 @@
 // with this program. If not, see <https://www.gnu.org/licenses/>.
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
-
 package io.github.chubbyhippo.ideameow
 
 import com.intellij.openapi.actionSystem.ActionManager
@@ -25,23 +24,7 @@ import javax.swing.JTree
 import javax.swing.tree.DefaultMutableTreeNode
 import javax.swing.tree.DefaultTreeModel
 
-/**
- * The tree surface: MOTION-map dispatch on tool-window trees (TreeMeow).
- * Platform-specific — there is no meow/Emacs source of truth for JTrees;
- * what IS pinned against meow is the resolution order (user maps over
- * bundled defaults, noremap replays skipping user maps), which must behave
- * exactly like Engine's, and the translation of the four motion commands
- * to the tree's native arrow-key Swing actions (IdeaVim's NERDTree
- * navigates through the same ActionMap names).
- */
 class TreeMeowSpec : MeowSpec() {
-    /**
-     * root
-     * ├── a
-     * │   ├── a1
-     * │   └── a2
-     * └── b
-     */
     private fun givenTree(): JTree {
         val root = DefaultMutableTreeNode("root")
         val a = DefaultMutableTreeNode("a")
@@ -50,14 +33,12 @@ class TreeMeowSpec : MeowSpec() {
         root.add(a)
         root.add(DefaultMutableTreeNode("b"))
         return JTree(DefaultTreeModel(root)).apply {
-            expandRow(0) // root visible+expanded: rows are root(0) a(1) b(2)
+            expandRow(0)
             setSelectionRow(0)
         }
     }
 
     private fun JTree.selectedText() = (lastSelectedPathComponent as? DefaultMutableTreeNode)?.userObject as String?
-
-    // ------------------------------------------------- the Swing contract
 
     fun `test given a JTree then its ActionMap provides the arrow key actions`() {
         val tree = givenTree()
@@ -75,8 +56,6 @@ class TreeMeowSpec : MeowSpec() {
         assertEquals("HideActiveWindow", d['q']?.action)
     }
 
-    // ------------------------------------------------------- j k h l keys
-
     fun `test given a tree when j and k then the selection moves like the arrow keys`() {
         val tree = givenTree()
         TreeMeow.dispatch(tree, 'j')
@@ -89,7 +68,7 @@ class TreeMeowSpec : MeowSpec() {
 
     fun `test given a collapsed node when l then it expands, and l again enters it`() {
         val tree = givenTree()
-        tree.setSelectionRow(1) // "a", collapsed
+        tree.setSelectionRow(1)
         TreeMeow.dispatch(tree, 'l')
         assertTrue("l on a collapsed node expands it", tree.isExpanded(1))
         assertEquals("a", tree.selectedText())
@@ -99,8 +78,8 @@ class TreeMeowSpec : MeowSpec() {
 
     fun `test given an expanded node when h then it collapses, then goes to the parent`() {
         val tree = givenTree()
-        tree.expandRow(1) // open "a"
-        tree.setSelectionRow(2) // "a1"
+        tree.expandRow(1)
+        tree.setSelectionRow(2)
         TreeMeow.dispatch(tree, 'h')
         assertEquals("a", tree.selectedText())
         TreeMeow.dispatch(tree, 'h')
@@ -109,8 +88,6 @@ class TreeMeowSpec : MeowSpec() {
         TreeMeow.dispatch(tree, 'h')
         assertEquals("root", tree.selectedText())
     }
-
-    // --------------------------------------------------- resolution rules
 
     fun `test given an editor-only command in the mmap then it is inert on trees`() {
         givenRc("mmap w meow-next-word")

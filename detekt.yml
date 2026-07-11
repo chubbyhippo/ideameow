@@ -1,7 +1,3 @@
-# Project overrides on top of detekt's default config (buildUponDefaultConfig).
-# MagicNumber is off wholesale: this codebase is a verbatim port of Emacs
-# algorithms (avy subdiv arithmetic, window geometry, timer values) whose
-# numbers ARE the spec — naming them would obscure the source they mirror.
 style:
   MagicNumber:
     active: false

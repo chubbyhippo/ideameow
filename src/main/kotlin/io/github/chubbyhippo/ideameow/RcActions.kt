@@ -14,7 +14,6 @@
 // with this program. If not, see <https://www.gnu.org/licenses/>.
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
-
 package io.github.chubbyhippo.ideameow
 
 import com.intellij.openapi.actionSystem.AnAction
@@ -24,15 +23,12 @@ import com.intellij.openapi.project.DumbAware
 import com.intellij.openapi.vfs.LocalFileSystem
 import java.io.File
 
-/** Reload ~/.ideameowrc (keypad: SPC c M; the floating rc-editor button in
- *  RcReload.kt shares the same routine). */
 class ReloadRcAction :
     AnAction(),
     DumbAware {
     override fun actionPerformed(e: AnActionEvent) = RcReload.perform()
 }
 
-/** Open (creating if needed) ~/.ideameowrc in the editor (keypad: SPC c m). */
 class EditRcAction :
     AnAction(),
     DumbAware {
@@ -45,15 +41,10 @@ class EditRcAction :
     }
 
     companion object {
-        /** A first ~/.ideameowrc starts as a full copy of the bundled
-         *  defaults — the complete layout and keypad table, ready to edit —
-         *  never touching an existing file. */
         fun seedIfMissing(f: File) {
             if (f.exists()) return
             f.writeText(
                 Rc.defaultsText()
-                    // a missing bundled rc is a plugin bug (Rc reports it);
-                    // leave a minimal self-describing file so SPC c m still works
                     ?: (
                         "\" ~/${Rc.FILE_NAME} — ideameow configuration\n" +
                             "\" the bundled defaults (full meow layout + keypad table) stay\n" +

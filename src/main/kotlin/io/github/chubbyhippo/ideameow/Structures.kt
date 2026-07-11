@@ -14,17 +14,10 @@
 // with this program. If not, see <https://www.gnu.org/licenses/>.
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
-
 package io.github.chubbyhippo.ideameow
 
 import com.intellij.openapi.editor.Editor
 
-/**
- * Structural selections: the char-thing table behind `, . [ ]` (see Things),
- * bracket blocks (meow-block / meow-to-block), and the join region
- * (meow-join). The thing commands park a [Pending] key and let the dispatcher
- * hand the thing char to [thingSelect].
- */
 internal object Structures {
     val commands: Map<String, MeowCommand> =
         mapOf(
@@ -46,7 +39,6 @@ internal object Structures {
         WhichKey.scheduleThings(editor)
     }
 
-    /** The second half of the thing commands, once the thing char arrives. */
     fun thingSelect(
         editor: Editor,
         st: MeowState,
@@ -67,8 +59,6 @@ internal object Structures {
                 Selections.select(editor, st, SelType.TRANSIENT, b.start, b.end, expand = false)
             }
 
-            // meow-thing-selection-directions: bounds select BACKWARD (caret
-            // at the opening delimiter), inner forward — verified by probe
             Pending.BOUNDS -> {
                 Selections.select(editor, st, SelType.TRANSIENT, b.end, b.start, expand = false)
             }
@@ -85,17 +75,11 @@ internal object Structures {
         }
     }
 
-    // ---------------------------------------------------------------- blocks
-
     private data class PairRange(
         val open: Int,
         val close: Int,
     )
 
-    /**
-     * Smallest bracket pair strictly enclosing [s, e). Same-line quoted runs
-     * are skipped — a text approximation of syntax-ppss.
-     */
     private fun enclosingPair(
         text: CharSequence,
         s: Int,
@@ -142,16 +126,13 @@ internal object Structures {
         return best
     }
 
-    /** meow-block: innermost pair INCLUDING delimiters; with an active block
-     *  selection it expands to the parent. Backward (caret at the opening
-     *  delimiter) when the region is reversed XOR a negative argument. */
     private fun block(
         editor: Editor,
         st: MeowState,
     ) {
         val sm = editor.selectionModel
         val text = editor.document.charsSequence
-        val back = Selections.backwardP(editor) != (st.takeCount(1) < 0) // xor, like meow-block
+        val back = Selections.backwardP(editor) != (st.takeCount(1) < 0)
         val (s, e) =
             if (st.selType == SelType.BLOCK && sm.hasSelection()) {
                 sm.selectionStart to sm.selectionEnd
@@ -170,9 +151,6 @@ internal object Structures {
         }
     }
 
-    /** meow-to-block: from point to the closing delimiter of the enclosing
-     *  block (to the opening one when the block selection is reversed or the
-     *  argument is negative). */
     private fun toBlock(
         editor: Editor,
         st: MeowState,
@@ -188,11 +166,6 @@ internal object Structures {
         Selections.select(editor, st, SelType.BLOCK, caret, if (back) p.open else p.close + 1, expand = true)
     }
 
-    // ------------------------------------------------------------------ join
-
-    /** meow-join: select (expand . join) — end of the previous non-empty line
-     *  through this line's indentation (forward variant with a negative arg);
-     *  killing that selection is delete-indentation (see Edits.joinKill). */
     private fun join(
         editor: Editor,
         st: MeowState,

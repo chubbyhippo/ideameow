@@ -14,7 +14,6 @@
 // with this program. If not, see <https://www.gnu.org/licenses/>.
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
-
 package io.github.chubbyhippo.ideameow
 
 import com.intellij.openapi.editor.Editor
@@ -22,13 +21,6 @@ import com.intellij.openapi.editor.VisualPosition
 import com.intellij.psi.PsiDocumentManager
 import com.intellij.psi.PsiFile
 
-/**
- * meow-char-thing-table:
- *   r round  s square  c curly  g string  e symbol  w window  b buffer
- *   p paragraph  l line  v visual-line  d defun  . sentence
- * inner() excludes delimiters, bounds() includes them; both return
- * (startOffset, endOffset) or null when the thing doesn't exist at point.
- */
 object Things {
     data class Bounds(
         val start: Int,
@@ -71,7 +63,6 @@ object Things {
         }
     }
 
-    /** Innermost pair of [open]/[close] containing [offset], nesting-aware. */
     fun pair(
         text: CharSequence,
         offset: Int,
@@ -116,22 +107,6 @@ object Things {
         return if (inner) Bounds(start + 1, end) else Bounds(start, end + 1)
     }
 
-    /**
-     * String thing (meow `g`): the quoted run at point. meow delegates to the
-     * major-mode syntax table (`bounds-of-thing-at-point 'string` plus
-     * skip-syntax over the `"|` classes, which strips the WHOLE delimiter
-     * run); this port is a text scan instead, so `,g`/`.g` still work in
-     * plain-text and language-agnostic buffers — a deliberate divergence
-     * (see meow-semantics.md). It recognizes single AND triple runs of the
-     * three quote chars `'` `"` `` ` ``, so Python/Kotlin `"""`/`'''`,
-     * Markdown/JS fenced ``` and template-literal `` ` `` all select.
-     * inner() drops the full delimiter run on each side, bounds() keeps it
-     * (mirroring the skip-syntax intent). A single-char run stays on one line;
-     * a triple run spans lines (docstrings/fences). `\` escapes the next char.
-     * Unterminated openers are skipped so a stray apostrophe can't swallow the
-     * rest of the buffer — but, like meow, a text scan can still be fooled by
-     * an odd quote elsewhere on the same line.
-     */
     private fun string(
         text: CharSequence,
         offset: Int,
@@ -149,7 +124,7 @@ object Things {
                 var closeEnd = -1
                 while (j < n) {
                     val d = text[j]
-                    if (!triple && d == '\n') break // single-char runs stay on one line
+                    if (!triple && d == '\n') break
                     if (d == '\\') {
                         j += 2
                         continue
@@ -162,7 +137,7 @@ object Things {
                     j++
                 }
                 if (closeEnd < 0) {
-                    i = open + len // unterminated opener: skip it, keep scanning
+                    i = open + len
                     continue
                 }
                 if (offset in open until closeEnd) {
@@ -196,9 +171,6 @@ object Things {
     }
 
     private fun window(editor: Editor): Bounds {
-        // one visible-lines rule with avy's candidate scan (Ide.visibleLines):
-        // this copy had drifted — it lacked the headless and empty-document
-        // guards, collapsing the window thing to line 0 in a zero-height view
         val (startLine, endLine) = Ide.visibleLines(editor)
         val doc = editor.document
         return Bounds(doc.getLineStartOffset(startLine), doc.getLineEndOffset(endLine))
@@ -221,7 +193,6 @@ object Things {
         while (last < doc.lineCount - 1 && !blank(last + 1)) last++
         val start = doc.getLineStartOffset(first)
         if (inner) return Bounds(start, doc.getLineEndOffset(last))
-        // bounds include the trailing blank lines (emacs forward-paragraph)
         var stop = last
         while (stop < doc.lineCount - 1 && blank(stop + 1)) stop++
         val end = if (stop < doc.lineCount - 1) doc.getLineStartOffset(stop + 1) else doc.getLineEndOffset(stop)
@@ -258,10 +229,6 @@ object Things {
         return Bounds(start, end)
     }
 
-    /**
-     * defun: nearest PSI ancestor that looks like a function/method; falls
-     * back to the outermost curly block around point for plain text.
-     */
     private fun defun(
         editor: Editor,
         offset: Int,

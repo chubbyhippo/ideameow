@@ -14,39 +14,9 @@
 // with this program. If not, see <https://www.gnu.org/licenses/>.
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
-
 package io.github.chubbyhippo.ideameow
 
-/**
- * The .ideameowrc syntax — an IdeaVim-flavored line format:
- *
- *   " comments start with a double quote (or #)
- *   nmap S <action>(AceAction)          NORMAL key -> IDE action
- *   nmap n meow-mark-word               NORMAL key -> a named meow command
- *   nmap Z ,b                           NORMAL key -> meow keys (recursive)
- *   nnoremap Z ,b                       same, but the RHS ignores user maps
- *   mmap j meow-next                    the same, for MOTION (read-only) mode
- *   map <leader>gd <action>(GotoDeclaration)
- *   desc <leader>g goto things
- *   let g:WhichKeyDesc_g = "<leader>g goto things"   (IdeaVim-compatible)
- *   set nowhich-key / set timeoutlen=300
- *   repeat error . <action>(GotoNextError)   repeat group (Emacs repeat-mode):
- *                                       dispatching any binding with a target
- *                                       listed in a group arms it — the member
- *                                       keys then re-dispatch until another key
- *                                       ends the run (see Engine); `ignore` as
- *                                       the target gives a default key back
- *
- * A RHS that names a command in Engine.COMMANDS binds the command; a
- * misspelled `meow-*` name is an error; any other RHS is replayed as keys.
- * Keypad keys 0-9, ? and / are reserved; SPC itself cannot be remapped.
- * Unknown `set` options and `let` lines are ignored so a whole IdeaVim rc
- * can be pasted without errors.
- */
 internal object RcParser {
-    // the id is either a bare action id or the serialized *parameterized*
-    // command form commandId(paramId=value,...); an id IntelliJ doesn't know
-    // just hints
     private val ACTION_RE = Regex("""(?i)<action>\(([\w.$(),=-]+)\)""")
     private val WHICHKEY_LET_RE = Regex("""^let\s+g:WhichKeyDesc\w*\s*=\s*"(.+)"$""")
 
@@ -65,8 +35,6 @@ internal object RcParser {
                 continue
             }
 
-            // trailing `" comment` (checked after the let-line above, whose
-            // quoted value would otherwise be truncated)
             val cut = Regex("\\s\"").find(line)?.range?.first
             if (cut != null) line = line.substring(0, cut).trimEnd()
             if (line.isEmpty()) continue
@@ -77,7 +45,6 @@ internal object RcParser {
             when (cmd) {
                 "let" -> {}
 
-                // mapleader and friends: accepted, nothing to do
                 "set" -> {
                     parseSet(c, rest)
                 }
@@ -122,7 +89,7 @@ internal object RcParser {
                 if (n != null && n >= 0) c.whichKeyDelayMs = n
             }
 
-            else -> {} // ignore unknown options so IdeaVim rc content pastes cleanly
+            else -> {}
         }
     }
 
@@ -194,8 +161,6 @@ internal object RcParser {
         }
     }
 
-    /** The shared RHS grammar of map and repeat lines: an <action>(...), a
-     *  named command in Engine.COMMANDS, or replayed meow keys. */
     private fun parseTarget(
         rhs: String,
         recursive: Boolean,
@@ -229,11 +194,6 @@ internal object RcParser {
         }
     }
 
-    /** `repeat <group> <key> <target>` — Emacs repeat-mode's transient maps as
-     *  rc lines. Dispatching any binding whose target is listed in a group
-     *  arms it: the member keys re-dispatch their targets (shadowing the
-     *  normal map) until a non-member key falls through and ends the run.
-     *  The entering key needn't be a member — repeat-check-key 'no. */
     private fun parseRepeat(
         c: Rc.Config,
         rest: String,
@@ -262,7 +222,6 @@ internal object RcParser {
         }
     }
 
-    /** `<Space>` and `<lt>` tokens plus plain printable chars; null on error. */
     private fun parseKeys(
         s: String,
         err: (String) -> Unit,

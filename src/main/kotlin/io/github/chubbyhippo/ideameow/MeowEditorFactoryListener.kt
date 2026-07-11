@@ -14,7 +14,6 @@
 // with this program. If not, see <https://www.gnu.org/licenses/>.
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
-
 package io.github.chubbyhippo.ideameow
 
 import com.intellij.openapi.application.ApplicationManager
@@ -24,18 +23,6 @@ import com.intellij.openapi.editor.EditorKind
 import com.intellij.openapi.editor.event.EditorFactoryEvent
 import com.intellij.openapi.editor.event.EditorFactoryListener
 
-/**
- * Attaches meow state to every main file editor and every diff editor —
- * always in NORMAL, like Emacs: a read-only buffer (a file viewer, a diff's
- * revision side) keeps the full meow layout for motions, selections, search
- * and avy, and the modify commands gate themselves (meow--allow-modify-p,
- * see Edits). Dialog / tool-window fields (EditorKind.UNTYPED — the commit
- * message box, ...) attach when they are multi-line and writable, mirroring
- * IdeaVim's default `ideavimsupport=dialog`. EditorTextField switches on
- * one-line mode only after the editor is created, so the UNTYPED decision is
- * deferred until the current EDT event finishes; ModalityState.any() keeps it
- * working for editors born inside modal dialogs.
- */
 class MeowEditorFactoryListener : EditorFactoryListener {
     override fun editorCreated(event: EditorFactoryEvent) {
         val editor = event.editor
@@ -58,7 +45,7 @@ class MeowEditorFactoryListener : EditorFactoryListener {
     override fun editorReleased(event: EditorFactoryEvent) {
         val editor = event.editor
         val st = Meow.state(editor) ?: return
-        Avy.cancel(editor, st) // else the 250 ms timer fires on a disposed editor
+        Avy.cancel(editor, st)
         WhichKey.hide()
         ExpandHints.clear(st)
         Grab.clear(editor, st)
@@ -75,8 +62,6 @@ class MeowEditorFactoryListener : EditorFactoryListener {
     }
 
     companion object {
-        /** One-line fields (Evaluate Expression, ...), viewers, and read-only
-         * documents keep native editing; the commit message box qualifies. */
         fun shouldAttachUntyped(editor: Editor): Boolean =
             !editor.isDisposed &&
                 !editor.isOneLineMode &&

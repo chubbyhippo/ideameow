@@ -14,17 +14,8 @@
 // with this program. If not, see <https://www.gnu.org/licenses/>.
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
-
 package io.github.chubbyhippo.ideameow
 
-/**
- * Double-ESC in a tool window (ToolWindowEscape). Platform-specific — no
- * meow/Emacs source of truth: single ESC already leaves most tool windows
- * natively, and this covers the ones that swallow it (terminal, AI chat).
- * What IS pinned here is the pairing state machine the AWT dispatcher
- * feeds: same tool window twice within the timeout jumps, everything else
- * re-arms or breaks the pair.
- */
 class ToolWindowEscapeSpec : MeowSpec() {
     override fun setUp() {
         super.setUp()

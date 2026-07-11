@@ -14,7 +14,6 @@
 // with this program. If not, see <https://www.gnu.org/licenses/>.
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
-
 package io.github.chubbyhippo.ideameow
 
 import com.intellij.openapi.actionSystem.DataContext
@@ -27,20 +26,7 @@ import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.util.io.FileUtil
 import com.intellij.openapi.vfs.LocalFileSystem
 
-/**
- * The repeat transient — Emacs repeat-mode, ported (the transient
- * repeat maps, repeat.el read from Emacs 30.2 source). Rc `repeat` groups
- * make multi-key entries tap-to-continue: dispatching any binding whose
- * TARGET is a group member arms the group (target identity, like the
- * repeat-map symbol property; the entering key needn't be a member —
- * repeat-check-key 'no), then member keys re-dispatch their targets and any
- * other key or ESC ends the run and keeps its normal meaning
- * (set-transient-map fall-through — never swallowed, no timeout).
- */
 class RepeatSpec : MeowSpec() {
-    /** A keypad nav entry plus a repeat group over the same targets; the
-     *  members deliberately sit on `.`/`,` — meow's bounds/inner-of-thing —
-     *  to pin that a live run shadows them and a finished run gives them back. */
     private val navRc =
         """
         map <leader>tn meow-next
@@ -62,8 +48,6 @@ class RepeatSpec : MeowSpec() {
         MeowEscapeHandler(noop).execute(ed, null, (ed as EditorEx).dataContext)
     }
 
-    // ------------------------------------------------------------- parsing
-
     fun `test given repeat lines then named groups parse with their member targets`() {
         val c =
             Rc.parse(
@@ -83,8 +67,8 @@ class RepeatSpec : MeowSpec() {
         val c =
             Rc.parse(
                 listOf(
-                    "repeat nav . meow-frobnicate", // misspelled command
-                    "repeat nav", // group and key but no target
+                    "repeat nav . meow-frobnicate",
+                    "repeat nav",
                 ),
             )
         assertEquals(2, c.errors.size)
@@ -95,8 +79,8 @@ class RepeatSpec : MeowSpec() {
         val c =
             Rc.parse(
                 listOf(
-                    "repeat nav ab meow-next", // two keys
-                    "repeat nav <Space> meow-next", // SPC is the keypad key
+                    "repeat nav ab meow-next",
+                    "repeat nav <Space> meow-next",
                 ),
             )
         assertEquals(2, c.errors.size)
@@ -105,21 +89,19 @@ class RepeatSpec : MeowSpec() {
     fun `test given home rc repeat lines then they layer per key over the bundled group`() {
         givenRc("repeat error , meow-prev\nrepeat error e <action>(ShowErrorDescription)")
         val g = Rc.repeatGroups()["error"]!!
-        assertEquals("GotoNextError", g['.']!!.action) // bundled default beneath
-        assertEquals("meow-prev", g[',']!!.command) // the user override
-        assertEquals("ShowErrorDescription", g['e']!!.action) // the user extension
+        assertEquals("GotoNextError", g['.']!!.action)
+        assertEquals("meow-prev", g[',']!!.command)
+        assertEquals("ShowErrorDescription", g['e']!!.action)
     }
 
     fun `test given a repeat member bound to ignore then the key is given back`() {
         givenRc("repeat zoom 0 ignore")
         val g = Rc.repeatGroups()["zoom"]!!
         assertFalse(g.containsKey('0'))
-        assertEquals("EditorIncreaseFontSize", g['i']!!.action) // the rest stays
+        assertEquals("EditorIncreaseFontSize", g['i']!!.action)
     }
 
     fun `test the bundled default ideameowrc declares the init el repeat groups`() {
-        // mirrors the Emacs transient repeat maps 1:1: flymake -> error,
-        // diff-hl -> change, text-scale -> zoom, expreg -> expand
         val d = Rc.defaults().repeat
         assertEquals("GotoNextError", d["error"]!!['.']!!.action)
         assertEquals("GotoPreviousError", d["error"]!![',']!!.action)
@@ -131,8 +113,6 @@ class RepeatSpec : MeowSpec() {
     }
 
     fun `test given a repeat line edit then the reload button sees a change`() {
-        // the floating button hashes the PARSED config — repeat groups are
-        // part of it, so editing one must light the button up
         val home = FileUtil.createTempDirectory("meow-home", null)
         val oldHome = System.getProperty("user.home")
         System.setProperty("user.home", home.path)
@@ -152,28 +132,24 @@ class RepeatSpec : MeowSpec() {
         }
     }
 
-    // ------------------------------------------------------------ dispatch
-
     fun `test given a keypad nav entry in a repeat group then tapping the members keeps walking`() {
         given("four lines", "<caret>one\ntwo\nthree\nfour")
         givenRc(navRc)
-        whenKeys(" tn") // SPC t n -> meow-next, arms the nav group
+        whenKeys(" tn")
         assertEquals(1, caretLine())
-        whenKeys(".") // member: re-dispatches meow-next, re-arms
+        whenKeys(".")
         assertEquals(2, caretLine())
         whenKeys(".")
         assertEquals(3, caretLine())
-        whenKeys(",") // the other member walks back
+        whenKeys(",")
         assertEquals(2, caretLine())
         thenMode(MeowMode.NORMAL)
     }
 
     fun `test given a normal key bound to a member target then it arms the same run`() {
-        // membership is the TARGET, not the key that ran it — Emacs puts
-        // repeat-map on the command symbol, so every binding of it arms
         given("four lines", "<caret>one\ntwo\nthree\nfour")
         givenRc(navRc)
-        whenKeys("j") // bundled-default j = meow-next, a nav member by identity
+        whenKeys("j")
         assertEquals(1, caretLine())
         whenKeys(".")
         assertEquals(2, caretLine())
@@ -184,7 +160,7 @@ class RepeatSpec : MeowSpec() {
         givenRc(navRc)
         whenKeys(" tn")
         assertNotNull(st.repeatMap)
-        whenKeys("w") // not a member: falls through to meow-mark-word
+        whenKeys("w")
         thenSelection("two")
         assertNull(st.repeatMap)
     }
@@ -193,11 +169,11 @@ class RepeatSpec : MeowSpec() {
         given("four lines", "<caret>one\ntwo\nthree\nfour")
         givenRc(navRc)
         whenKeys(" tn")
-        whenKeys("x") // ends the run (meow-line)
+        whenKeys("x")
         thenSelection("two")
-        whenKeys(".") // meow-bounds-of-thing again, waiting for its thing key
+        whenKeys(".")
         assertEquals(Pending.BOUNDS, st.pending)
-        assertEquals(1, caretLine()) // and no nav happened
+        assertEquals(1, caretLine())
     }
 
     fun `test given escape then the run ends`() {
@@ -216,7 +192,7 @@ class RepeatSpec : MeowSpec() {
         given("four lines", "<caret>one\ntwo\nthree\nfour")
         givenRc(navRc)
         whenKeys(" tn")
-        whenKeys(" tn") // SPC is not a member: run ends, keypad works as ever
+        whenKeys(" tn")
         assertEquals(2, caretLine())
         thenMode(MeowMode.NORMAL)
     }
@@ -226,7 +202,7 @@ class RepeatSpec : MeowSpec() {
         givenRc(navRc)
         whenKeys(" tn")
         assertEquals(1, caretLine())
-        whenKeys("2j") // 2 ends the run and counts the next command
+        whenKeys("2j")
         assertEquals(3, caretLine())
     }
 

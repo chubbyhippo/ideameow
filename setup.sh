@@ -45,14 +45,10 @@ done
 info()  { printf '\033[1;32m==>\033[0m %s\n' "$*"; }
 warn()  { printf '\033[1;33mwarn:\033[0m %s\n' "$*" >&2; }
 
-# targets are handled as one path per line (paths may contain spaces, e.g.
-# "Application Support", but never newlines)
 nl='
 '
 
-# ---------------------------------------------------------------- detection
-
-ver_ok() { # accepts a directory name like IntelliJIdea2026.1
+ver_ok() {
     v=$(printf '%s' "$1" | sed -n 's/.*\(20[0-9][0-9]\.[0-9][0-9]*\).*/\1/p')
     [ -n "$v" ] || return 1
     major=${v%%.*}
@@ -62,17 +58,14 @@ ver_ok() { # accepts a directory name like IntelliJIdea2026.1
 }
 
 detect_plugin_dirs() {
-    # Linux: plugins live directly under the product directory
     for d in "$HOME"/.local/share/JetBrains/*/; do
         [ -d "$d" ] || continue
         ver_ok "$(basename "$d")" && printf '%s\n' "${d%/}"
     done
-    # macOS
     for d in "$HOME/Library/Application Support/JetBrains"/*/; do
         [ -d "$d" ] || continue
         ver_ok "$(basename "$d")" && printf '%s\n' "${d%/}/plugins"
     done
-    # WSL -> Windows IDEs
     if grep -qi microsoft /proc/version 2>/dev/null; then
         for d in /mnt/c/Users/*/AppData/Roaming/JetBrains/*/; do
             [ -d "$d" ] || continue
@@ -82,7 +75,6 @@ detect_plugin_dirs() {
     return 0
 }
 
-# Windows user profiles that own a detected IDE (for the Windows-side rc)
 detect_windows_homes() {
     grep -qi microsoft /proc/version 2>/dev/null || return 0
     for d in /mnt/c/Users/*/AppData/Roaming/JetBrains/*/; do
@@ -108,14 +100,10 @@ if [ "$list_only" -eq 1 ]; then
     exit 0
 fi
 
-# ------------------------------------------------------------------- build
-
-# The build's toolchain needs the exact java major pinned in mise.toml; a
-# different PATH java runs the wrapper but then fails toolchain resolution.
 req_java=$(sed -n 's/^java *= *"\([0-9][0-9]*\).*/\1/p' mise.toml 2>/dev/null || true)
 req_java=${req_java:-21}
 
-java_ok() { # a java that runs (macOS ships a /usr/bin/java stub that doesn't) AND matches the pin
+java_ok() {
     jv=$(java -version 2>&1 | sed -n '1s/.*version "\([0-9][0-9]*\).*/\1/p')
     [ -n "$jv" ] && [ "$jv" -eq "$req_java" ]
 }
@@ -154,16 +142,12 @@ if [ "$do_plugin" -eq 1 ]; then
     info "installing $(basename "$zip")"
 fi
 
-# ----------------------------------------------------------------- install
-
 installed=0
 if [ "$do_plugin" -eq 1 ]; then
     if [ -z "$targets" ]; then
         warn "no IDE plugin directory (>= ${MIN_MAJOR}.${MIN_MINOR}) detected."
         warn "install manually: Settings > Plugins > Install Plugin from Disk > $zip"
     fi
-    # split $targets on newlines only, no globbing (both happen once, at the
-    # `for` expansion; every path in the body is quoted)
     old_ifs=$IFS
     IFS=$nl
     set -f
@@ -177,8 +161,6 @@ if [ "$do_plugin" -eq 1 ]; then
     set +f
     IFS=$old_ifs
 fi
-
-# --------------------------------------------------------------------- rc
 
 install_rc() {
     if [ -f "$1" ] && [ "$force_rc" -eq 0 ]; then
@@ -197,8 +179,6 @@ if [ "$do_rc" -eq 1 ]; then
         fi
     done
 fi
-
-# ------------------------------------------------------------------- done
 
 echo
 info "done."

@@ -14,14 +14,8 @@
 // with this program. If not, see <https://www.gnu.org/licenses/>.
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
-
 package io.github.chubbyhippo.ideameow
 
-/**
- * meow-inner/bounds/beginning/end-of-thing with the char table, meow-block,
- * meow-to-block, meow-join (the selection half; the kill half is in
- * EditingSpec).
- */
 class ThingsSpec : MeowSpec() {
     fun `test given caret inside parens when comma r then inner round is selected forward`() {
         given("round pair", "foo (b<caret>ar baz) qux")
@@ -35,7 +29,6 @@ class ThingsSpec : MeowSpec() {
         given("round pair", "foo (b<caret>ar baz) qux")
         whenKeys(".r")
         thenSelection("(bar baz)")
-        // meow-thing-selection-directions: bounds -> backward (probed on 1.5.0)
         thenCaretAtSelectionStart()
     }
 

@@ -14,7 +14,6 @@
 // with this program. If not, see <https://www.gnu.org/licenses/>.
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
-
 package io.github.chubbyhippo.ideameow
 
 import com.intellij.icons.AllIcons
@@ -35,19 +34,6 @@ import com.intellij.openapi.util.io.FileUtil
 import com.intellij.openapi.vfs.LocalFileSystem
 import java.io.File
 
-/*
- * The IdeaVim-style rc reload: a small floating "Reload" button in the
- * top-right of the ~/.ideameowrc editor that lights up when the buffer's
- * PARSED config differs from what the engine has loaded — comment and
- * formatting edits don't count — and reloads in place. A port of IdeaVim's
- * ui/ReloadVimRc.kt (VimRcFileState + ReloadVimRc + ReloadFloatingToolbar;
- * JetBrains/ideavim, source-read 2026-07-10). SPC c M stays the keyboard
- * path; both funnel through [RcReload.perform].
- */
-
-/** Snapshot of the last-LOADED rc, as a hash of the parsed config (IdeaVim
- *  hashes the parsed Script for the same reason: comment-only edits must not
- *  demand a reload), plus a Document modificationStamp fast path. */
 internal object RcFileState {
     @Volatile
     private var state: Int? = null
@@ -59,7 +45,6 @@ internal object RcFileState {
     private fun hash(c: Rc.Config): Int =
         listOf(c.normal, c.motion, c.keypad, c.keypadDesc, c.repeat, c.whichKey, c.whichKeyDelayMs).hashCode()
 
-    /** Called by [Rc.load] with whatever it just parsed. */
     fun saveParsed(c: Rc.Config) {
         state = hash(c)
         val snapshot = synchronized(listeners) { listeners.toList() }
@@ -68,7 +53,6 @@ internal object RcFileState {
 
     fun loaded(): Boolean = state != null
 
-    /** Does DOCUMENT parse to the same config the engine is running? */
     fun equalTo(document: Document): Boolean {
         val stamp = document.modificationStamp
         if (stamp == modificationStamp) return true
@@ -91,12 +75,11 @@ internal object RcFileState {
     }
 }
 
-/** The one reload routine, shared by SPC c M and the floating button. */
 internal object RcReload {
     fun perform() {
         flushUnsavedRc()
         Rc.load()
-        TreeMeow.refresh() // a focused tree picks the new mmap keys up now
+        TreeMeow.refresh()
         val c = Rc.config
         Rc.notify(
             "Reloaded ~/${Rc.FILE_NAME}: ${c.normal.size} normal map(s), " +
@@ -108,11 +91,6 @@ internal object RcReload {
         )
     }
 
-    /** The rc is usually edited right here in the IDE (SPC c m), and the
-     *  platform flushes Documents to disk LAZILY — reloading straight from
-     *  disk would re-read the stale file and look dead until a restart
-     *  happens to save everything. IdeaVim's ReloadVimRc guards the same
-     *  way: saveDocumentAsIs before re-executing (ui/ReloadVimRc.kt). */
     fun flushUnsavedRc() {
         val vf = LocalFileSystem.getInstance().findFileByIoFile(Rc.rcFile()) ?: return
         val fdm = FileDocumentManager.getInstance()
@@ -121,8 +99,6 @@ internal object RcReload {
     }
 }
 
-/** The floating-toolbar action: only on the rc file's editor, icon and text
- *  flip between "no changes" and "reload" from the parse-hash comparison. */
 internal class ReloadRcFloatingAction : DumbAwareAction() {
     override fun getActionUpdateThread() = ActionUpdateThread.BGT
 
@@ -142,15 +118,12 @@ internal class ReloadRcFloatingAction : DumbAwareAction() {
     override fun actionPerformed(e: AnActionEvent) = RcReload.perform()
 }
 
-/** plugin.xml binds the floating toolbar to this group. */
 internal class ReloadRcFloatingActionGroup : DefaultActionGroup() {
     companion object {
         const val ID = "Ideameow.ReloadRcFloating.group"
     }
 }
 
-/** Shows the toolbar over the rc editor; re-shows whenever a load lands so
- *  the "no changes" state repaints (IdeaVim's ReloadFloatingToolbar). */
 internal class RcReloadFloatingToolbar : AbstractFloatingToolbarProvider(ReloadRcFloatingActionGroup.ID) {
     override val autoHideable: Boolean = false
 

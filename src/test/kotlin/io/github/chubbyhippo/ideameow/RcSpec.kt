@@ -14,7 +14,6 @@
 // with this program. If not, see <https://www.gnu.org/licenses/>.
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
-
 package io.github.chubbyhippo.ideameow
 
 import com.intellij.openapi.actionSystem.CommonDataKeys
@@ -27,11 +26,7 @@ import com.intellij.openapi.vfs.LocalFileSystem
 import com.intellij.testFramework.TestActionEvent
 import java.io.File
 
-/** ~/.ideameowrc parsing, nmap/mmap/map dispatch (including relayouting the
- *  meow keys themselves), and which-key rows. */
 class RcSpec : MeowSpec() {
-    // ------------------------------------------------------------- parsing
-
     fun `test given an action mapping then it parses into a normal override`() {
         val c = Rc.parse(listOf("nmap S <action>(AceAction)"))
         assertEquals("AceAction", c.normal['S']!!.action)
@@ -84,14 +79,10 @@ class RcSpec : MeowSpec() {
         assertEquals("goto things", c.keypadDesc["g"])
         Rc.setForTest(c)
         assertEquals("GotoDeclaration", Rc.keypad()["gd"]!!.action)
-        assertEquals("RecentFiles", Rc.keypad()["bb"]!!.action) // bundled defaults beneath
+        assertEquals("RecentFiles", Rc.keypad()["bb"]!!.action)
     }
 
     fun `test given a parameterized action then the whole serialized command is kept`() {
-        // IntelliJ ids are always bare, but the rc grammar also accepts the
-        // serialized commandId(param=value,...) form: the line binds as an
-        // action (an id this IDE doesn't know just hints), never as a
-        // keys-replay.
         val id = "com.example.showView(com.example.viewId=com.example.SomeView,com.example.focus=true)"
         val c = Rc.parse(listOf("map <leader>bj <action>($id)"))
         assertEquals(id, c.keypad["bj"]!!.action)
@@ -110,7 +101,7 @@ class RcSpec : MeowSpec() {
                 listOf(
                     "set nowhich-key",
                     "set timeoutlen=400",
-                    "set clipboard+=unnamedplus", // a pasted vim option: ignored
+                    "set clipboard+=unnamedplus",
                     "let mapleader=\" \"",
                 ),
             )
@@ -120,7 +111,6 @@ class RcSpec : MeowSpec() {
     }
 
     fun `test which-key settings layer user over bundled defaults`() {
-        // empty user config: the bundled file's `set which-key` / timeoutlen=300
         assertTrue(Rc.whichKeyEnabled())
         assertEquals(300, Rc.whichKeyDelayMs())
         givenRc("set nowhich-key\nset timeoutlen=150")
@@ -144,8 +134,6 @@ class RcSpec : MeowSpec() {
     fun `test the bundled default ideameowrc defines the whole keymap`() {
         val d = Rc.defaults()
         assertTrue("bundled default must parse clean, got: ${d.errors}", d.errors.isEmpty())
-        // the layout block must define meow's full QWERTY layout (Q is the
-        // deliberate avy override further down the file)
         for ((key, cmd) in QWERTY) {
             if (key == 'Q') continue
             assertEquals("bundled layout line for '$key'", cmd, d.normal[key]?.command)
@@ -154,7 +142,6 @@ class RcSpec : MeowSpec() {
         assertEquals("avy-goto-char-timer", d.normal['S']?.command)
         assertEquals("meow-next", d.motion['j']?.command)
         assertEquals("meow-prev", d.motion['k']?.command)
-        // the keypad table lives in the file too — nothing is bound in code
         assertEquals("RecentFiles", d.keypad["bb"]?.action)
         assertEquals("Switcher", d.keypad[" "]?.action)
         assertEquals("Ideameow.EditRc", d.keypad["cm"]?.action)
@@ -173,7 +160,6 @@ class RcSpec : MeowSpec() {
             assertEquals("the whole layout is in the copy", "meow-append", seeded.normal['a']?.command)
             assertEquals("avy-goto-line", seeded.normal['Q']?.command)
             assertTrue("the whole keypad table is in the copy", seeded.keypad.size > 150)
-            // a later press must never clobber the user's edits
             f.writeText("nmap Q meow-goto-line\n")
             EditRcAction.seedIfMissing(f)
             assertEquals("nmap Q meow-goto-line\n", f.readText())
@@ -183,11 +169,6 @@ class RcSpec : MeowSpec() {
     }
 
     fun `test given unsaved rc edits in the editor then SPC c M flushes and reloads them`() {
-        // the rc is edited right in the IDE (SPC c m) and the platform saves
-        // Documents LAZILY: the reload must flush the unsaved Document first
-        // or it re-reads the stale disk file and looks dead until a restart
-        // happens to save everything (user-reported). IdeaVim's ReloadVimRc
-        // guards identically with saveDocumentAsIs (ui/ReloadVimRc.kt).
         val home = FileUtil.createTempDirectory("meow-home", null)
         val oldHome = System.getProperty("user.home")
         System.setProperty("user.home", home.path)
@@ -198,7 +179,7 @@ class RcSpec : MeowSpec() {
             WriteCommandAction.runWriteCommandAction(project) { doc.setText("nmap Q meow-goto-line\n") }
             assertTrue("the edit must start out unsaved", FileDocumentManager.getInstance().isDocumentUnsaved(doc))
             given("word", "ab<caret>cd")
-            whenKeys(" cM") // bundled default: Ideameow.ReloadRc
+            whenKeys(" cM")
             assertEquals(
                 "the document edit is what got loaded",
                 "meow-goto-line",
@@ -212,9 +193,6 @@ class RcSpec : MeowSpec() {
     }
 
     fun `test given comment-only rc edits then the reload button reports no changes`() {
-        // the floating button compares the PARSED config (IdeaVim's
-        // VimRcFileState hashes the parsed Script the same way) — formatting
-        // and comment edits never demand a reload
         val home = FileUtil.createTempDirectory("meow-home", null)
         val oldHome = System.getProperty("user.home")
         System.setProperty("user.home", home.path)
@@ -297,18 +275,16 @@ class RcSpec : MeowSpec() {
         val c =
             Rc.parse(
                 listOf(
-                    "frobnicate everything", // unknown command
-                    "nmap <Space> ,b", // SPC is reserved
-                    "map <leader>1 <action>(X)", // keypad digits are reserved
-                    "nmap Q <CR>", // unsupported key token
-                    "mmap <leader>x ,b", // keypad entries are mode-independent
+                    "frobnicate everything",
+                    "nmap <Space> ,b",
+                    "map <leader>1 <action>(X)",
+                    "nmap Q <CR>",
+                    "mmap <leader>x ,b",
                 ),
             )
         assertEquals(5, c.errors.size)
         assertTrue(c.errors[0].startsWith("line 1"))
     }
-
-    // ------------------------------------------------------------ dispatch
 
     fun `test given an rc key-sequence override then the key replays through the engine`() {
         given("two words", "on<caret>e two")
@@ -321,20 +297,20 @@ class RcSpec : MeowSpec() {
         given("two words", "one two<caret>")
         givenRc("nmap B ,b\nnmap Y B")
         whenKeys("Y")
-        thenSelection("one two") // Y -> user B -> whole buffer
+        thenSelection("one two")
     }
 
     fun `test given nnoremap then the RHS runs the bundled default instead`() {
         given("two words", "one two<caret>")
         givenRc("nmap B ,b\nnnoremap Z B")
         whenKeys("Z")
-        thenSelection("two") // bundled-default B = back-symbol, not the user map
+        thenSelection("two")
     }
 
     fun `test given a self-referencing map then recursion is depth-limited`() {
         given("plain", "<caret>hello")
         givenRc("nmap Z Z")
-        whenKeys("Z") // must terminate via the depth guard
+        whenKeys("Z")
         thenText("hello")
     }
 
@@ -348,14 +324,14 @@ class RcSpec : MeowSpec() {
 
     fun `test given an rc keypad mapping then it overrides the bundled entry`() {
         given("two words", "on<caret>e two")
-        givenRc("map <leader>bb ,b") // bundled-default SPC b b = RecentFiles
+        givenRc("map <leader>bb ,b")
         whenKeys(" bb")
         thenSelection("one two")
     }
 
     fun `test given a layout rebinding then the key runs the meow command`() {
         given("two words", "on<caret>e two")
-        givenRc("nmap n meow-mark-word") // bundled-default n = meow-search
+        givenRc("nmap n meow-mark-word")
         whenKeys("n")
         thenSelection("one")
     }
@@ -368,14 +344,12 @@ class RcSpec : MeowSpec() {
     }
 
     fun `test given a motion rebinding then MOTION-state editors use it`() {
-        // read-only editors stay in NORMAL these days (like Emacs read-only
-        // buffers); the mmap table applies to the MOTION state proper
         given("three lines", "<caret>one\ntwo\nthree")
         givenRc("mmap n meow-next")
         st.mode = MeowMode.MOTION
         whenKeys("n")
         assertEquals(1, doc.getLineNumber(ed.caretModel.offset))
-        whenKeys("j") // the default motion keys stay underneath
+        whenKeys("j")
         assertEquals(2, doc.getLineNumber(ed.caretModel.offset))
     }
 
@@ -397,8 +371,6 @@ class RcSpec : MeowSpec() {
         thenText("cdef")
     }
 
-    // ------------------------------------------------------------ which-key
-
     fun `test given keypad entries then which-key rows show terminals and groups`() {
         givenRc("map <leader>zz <action>(GotoFile)\ndesc <leader>z my group")
         val top = WhichKey.keypadRows("")
@@ -417,11 +389,6 @@ class RcSpec : MeowSpec() {
     }
 
     companion object {
-        /**
-         * meow's suggested QWERTY layout (KEYBINDING_QWERTY in meow's README;
-         * `<` and `>` are plugin aliases for `[` and `]`) — the contract the
-         * bundled .ideameowrc layout block must satisfy.
-         */
         private val QWERTY: Map<Char, String> =
             buildMap {
                 for (n in 0..9) put('0' + n, "meow-expand-$n")

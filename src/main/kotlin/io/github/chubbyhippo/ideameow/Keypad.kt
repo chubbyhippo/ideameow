@@ -14,7 +14,6 @@
 // with this program. If not, see <https://www.gnu.org/licenses/>.
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
-
 package io.github.chubbyhippo.ideameow
 
 import com.intellij.openapi.actionSystem.ActionUpdateThread
@@ -25,14 +24,6 @@ import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.project.DumbAwareAction
 import com.intellij.openapi.ui.Messages
 
-/**
- * KEYPAD state. In Emacs, SPC x/c/m reach the C-x / C-c / M- keymaps; here the
- * same key sequences dispatch IDE actions. Like the NORMAL/MOTION layout, the
- * whole table lives in rc lines: the bundled default .ideameowrc defines it
- * and ~/.ideameowrc `map <leader>...` entries layer on top (see Rc.keypad()).
- * SPC 0-9 = digit argument, SPC ? = cheatsheet, SPC / = describe key. A
- * which-key popup lists continuations of a prefix.
- */
 object Keypad {
     fun key(
         editor: Editor,
@@ -91,7 +82,6 @@ object Keypad {
         st: MeowState,
     ) {
         WhichKey.hide()
-        // meow--exit-keypad-state: back to meow--keypad-previous-state
         Meow.setMode(editor, st, st.keypadPreviousState)
     }
 
@@ -166,20 +156,8 @@ object Keypad {
         """.trimIndent()
 }
 
-/** meow-keypad as an IDE action — Emacs' "M-SPC reaches the leader even
- *  from INSERT" (`keymap-global-set "M-SPC" #'meow-keypad`). meow records
- *  meow--keypad-previous-state on entry and every exit path restores it
- *  (meow-keypad.el / meow--exit-keypad-state, 1.5.0), so a command run from
- *  INSERT drops you back in INSERT. Alt+Space is the Windows system menu,
- *  so the `$default` chord is Alt+Semicolon instead — 2026.1.4's
- *  $default.xml carries no SEMICOLON chords at all (the Emacs keymap binds
- *  it to comment; rebind in Settings > Keymap if you use that keymap). Like
- *  windmove, a modifier chord never reaches the modal engine, so this is an
- *  action, NOT an rc line. A no-op when KEYPAD is already active — meow's
- *  overriding keypad map cannot re-enter either. */
 internal class KeypadAction : DumbAwareAction() {
     init {
-        // dialog editors (commit box, dialog diffs) carry meow states too
         setEnabledInModalContext(true)
     }
 

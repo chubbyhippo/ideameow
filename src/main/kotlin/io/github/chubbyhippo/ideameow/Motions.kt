@@ -14,7 +14,6 @@
 // with this program. If not, see <https://www.gnu.org/licenses/>.
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
-
 package io.github.chubbyhippo.ideameow
 
 import com.intellij.openapi.editor.Caret
@@ -23,13 +22,6 @@ import com.intellij.openapi.editor.ScrollType
 import com.intellij.openapi.ui.Messages
 import kotlin.math.abs
 
-/**
- * Cursor motion and the selections it creates: char/line movement with the
- * -expand variants, word/symbol motions, meow-line, goto-line, and find/till.
- * Every behavior here follows meow-command.el, not vim intuition — see the
- * [wordMotion] doc for the direction-normalization rule that makes `w` then
- * `b` extend instead of re-mark.
- */
 internal object Motions {
     val commands: Map<String, MeowCommand> =
         buildMap {
@@ -43,7 +35,6 @@ internal object Motions {
             put("meow-prev-expand", MeowCommand { ed, st, _ -> moveExpand(ed, st, 0, -st.takeCount(1)) })
             put("meow-next-word", MeowCommand { ed, st, _ -> wordMotion(ed, st, symbol = false, n = st.takeCount(1)) })
             put("meow-next-symbol", MeowCommand { ed, st, _ -> wordMotion(ed, st, symbol = true, n = st.takeCount(1)) })
-            // meow-back-word = meow-next-thing with -N
             put("meow-back-word", MeowCommand { ed, st, _ -> wordMotion(ed, st, symbol = false, n = -st.takeCount(1)) })
             put("meow-back-symbol", MeowCommand { ed, st, _ -> wordMotion(ed, st, symbol = true, n = -st.takeCount(1)) })
             put("meow-mark-word", MeowCommand { ed, st, _ -> markWord(ed, st, symbol = false) })
@@ -56,7 +47,6 @@ internal object Motions {
 
     private fun wordType(symbol: Boolean) = if (symbol) SelType.SYMBOL else SelType.WORD
 
-    /** The commands whose chains keep Emacs' temporary-goal-column alive. */
     private val VERTICAL = setOf("meow-next", "meow-prev", "meow-next-expand", "meow-prev-expand")
 
     private fun charSelActive(
@@ -64,8 +54,6 @@ internal object Motions {
         st: MeowState,
     ) = st.selType == SelType.CHAR && editor.selectionModel.hasSelection()
 
-    /** Set (or keep) the goal column, Emacs temporary-goal-column style: it
-     *  only survives while the previous command was a vertical move too. */
     private fun goalColumn(
         editor: Editor,
         st: MeowState,
@@ -78,8 +66,6 @@ internal object Motions {
         return st.goalColumn!!
     }
 
-    /** next-line/previous-line target: goal/own column on the target line;
-     *  past the first/last line the point goes to the buffer edge. */
     private fun movedLineOffset(
         editor: Editor,
         offset: Int,
@@ -105,15 +91,12 @@ internal object Motions {
         }
     }
 
-    /** meow-left/right run backward-char/forward-char: plain offsets, which
-     *  cross newlines — h at bol lands on the previous line's end. */
     private fun moveChar(
         editor: Editor,
         st: MeowState,
         dx: Int,
     ) {
         val extend = charSelActive(editor, st)
-        // meow-left/right cancel (clearing the history) only with a region
         if (!extend && editor.selectionModel.hasSelection()) Selections.cancel(editor, st)
         val len = editor.document.textLength
         for (caret in editor.caretModel.allCarets) {
@@ -129,7 +112,6 @@ internal object Motions {
         dy: Int,
     ) {
         val extend = charSelActive(editor, st)
-        // meow-next/prev run meow--cancel-selection unconditionally otherwise
         if (!extend) Selections.cancel(editor, st)
         val goal = goalColumn(editor, st)
         for (caret in editor.caretModel.allCarets) {
@@ -139,8 +121,6 @@ internal object Motions {
         editor.scrollingModel.scrollToCaret(ScrollType.RELATIVE)
     }
 
-    /** Per-caret goal column: the primary caret keeps the sticky [goal]
-     *  column, every beacon caret its own current column. */
     private fun columnFor(
         editor: Editor,
         caret: Caret,
@@ -151,8 +131,6 @@ internal object Motions {
         return caret.offset - doc.getLineStartOffset(doc.getLineNumber(caret.offset))
     }
 
-    /** Move [caret] to [target], extending the selection from its lead when
-     *  [extend] (read the lead BEFORE moving), else collapsing it. */
     private fun applyCaretMove(
         caret: Caret,
         target: Int,
@@ -168,8 +146,6 @@ internal object Motions {
         }
     }
 
-    /** meow-left/right/next/prev-expand: (expand . char) selection through
-     *  meow--select — so the history is recorded — then the char/line motion. */
     private fun moveExpand(
         editor: Editor,
         st: MeowState,
@@ -203,15 +179,6 @@ internal object Motions {
         editor.scrollingModel.scrollToCaret(ScrollType.RELATIVE)
     }
 
-    /**
-     * meow-next-thing for word/symbol: when the current selection is the
-     * matching (expand . type), the selection direction is normalized to the
-     * motion FIRST (meow--direction-forward/-backward) — so after `w`, `e`
-     * extends from the right end and `b` extends from the left end, anchored
-     * at the opposite end (meow--make-selection keeps min/max of the original
-     * region as the mark). Without a matching selection: fresh (select . type)
-     * from point. No motion -> no selection change.
-     */
     private fun wordMotion(
         editor: Editor,
         st: MeowState,
@@ -222,9 +189,6 @@ internal object Motions {
         val text = editor.document.charsSequence
         val type = wordType(symbol)
         val sm = editor.selectionModel
-        // meow-next-thing: a selection of another type (or none) is cancelled
-        // FIRST — meow--cancel-selection, so the chain history restarts and a
-        // later z pops the null placeholder, not the foreign selection
         if (!(sm.hasSelection() && st.selType == type)) Selections.cancel(editor, st)
         val extend = st.selExpand && st.selType == type && sm.hasSelection()
         val from =
@@ -246,16 +210,11 @@ internal object Motions {
 
                 extend -> sm.selectionStart
 
-                // meow--fix-thing-selection-mark: a fresh selection snaps its
-                // mark to the word's own bounds — the separators between the old
-                // point and the word stay OUTSIDE (e e e steps bare words)
                 else -> Words.fixSelectionMark(text, target, from, charPred(symbol))
             }
         Selections.select(editor, st, type, anchor, target, expand = extend)
     }
 
-    /** meow-mark-word/-symbol: select the thing at point as (expand . type)
-     *  and push its bounded regexp to the search ring — why `n` works after `w`. */
     private fun markWord(
         editor: Editor,
         st: MeowState,
@@ -278,8 +237,6 @@ internal object Motions {
         Search.push(st, Regex("\\b" + Regex.escape(text.subSequence(s, e).toString()) + "\\b"))
     }
 
-    /** meow-line: [bol, eol) without the newline; repeats extend in the
-     *  selection's direction, a negative argument reverses. */
     private fun line(
         editor: Editor,
         st: MeowState,
@@ -289,8 +246,6 @@ internal object Motions {
         val n = st.takeCount(1)
         val sm = editor.selectionModel
         val lastLine = doc.lineCount - 1
-        // extension needs exactly (expand . line) — a digit-expanded
-        // (select . line) selection re-selects the current line instead
         if (st.selType == SelType.LINE && st.selExpand && sm.hasSelection()) {
             val caretLn = doc.getLineNumber(editor.caretModel.offset)
             if (Selections.backwardP(editor)) {
@@ -312,7 +267,6 @@ internal object Motions {
         }
     }
 
-    /** meow-goto-line: select the target line (expand . line) and recenter. */
     private fun gotoLine(
         editor: Editor,
         st: MeowState,
@@ -325,7 +279,6 @@ internal object Motions {
         editor.scrollingModel.scrollToCaret(ScrollType.CENTER)
     }
 
-    /** The second half of meow-find/meow-till, once the char arrives. */
     fun findTill(
         editor: Editor,
         st: MeowState,
@@ -340,8 +293,6 @@ internal object Motions {
             Ide.hint(editor, "char not found: $ch")
             return
         }
-        // BEFORE the select: its expand hints preview further occurrences of
-        // THIS char (a stale lastFind painted the previous find's positions)
         st.lastFind = ch
         Selections.select(editor, st, if (till) SelType.TILL else SelType.FIND, caret, target, expand = false)
     }

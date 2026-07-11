@@ -24,17 +24,10 @@
         <editorActionHandler action="EditorEscape" implementationClass="io.github.chubbyhippo.ideameow.MeowEscapeHandler"/>
         <editorFactoryListener implementation="io.github.chubbyhippo.ideameow.MeowEditorFactoryListener"/>
         <postStartupActivity implementation="io.github.chubbyhippo.ideameow.TreeMeowStartup"/>
-        <!-- double-ESC in a tool window (terminal, AI chat, anything that
-             swallows single ESC) returns focus to the editor -->
         <postStartupActivity implementation="io.github.chubbyhippo.ideameow.ToolWindowEscapeStartup"/>
         <statusBarWidgetFactory id="MeowMode" implementation="io.github.chubbyhippo.ideameow.MeowWidgetFactory"/>
         <notificationGroup id="ideameow" displayType="BALLOON"/>
-        <!-- IdeaVim-style floating "Reload" button on the ~/.ideameowrc editor:
-             appears when the buffer's PARSED config differs from the loaded one
-             (comment/formatting edits don't count) -->
         <editorFloatingToolbarProvider implementation="io.github.chubbyhippo.ideameow.RcReloadFloatingToolbar"/>
-        <!-- shift+arrows collide with the editor's shift-selection actions;
-             windmove wins the conflict, like windmove-default-keybindings -->
         <actionPromoter implementation="io.github.chubbyhippo.ideameow.WindmovePromoter"/>
     </extensions>
     <applicationListeners>
@@ -55,18 +48,11 @@
         <action id="Ideameow.TrackActionIds" class="io.github.chubbyhippo.ideameow.TrackActionIdsAction"
                 text="Track Action IDs"
                 description="Show the id of every performed action, for &lt;action&gt;(...) mappings in ~/.ideameowrc"/>
-        <!-- Emacs: M-SPC reaches the leader even from INSERT (global
-             meow-keypad). Alt+Space is the Windows system menu, so the
-             default chord is Alt+Semicolon (free in $default, verified
-             2026.1.4); keypad returns to the state it was entered from. -->
         <action id="Ideameow.Keypad" class="io.github.chubbyhippo.ideameow.KeypadAction"
                 text="Meow Keypad"
                 description="Enter the meow keypad (SPC leader) from any state, INSERT included">
             <keyboard-shortcut keymap="$default" first-keystroke="alt SEMICOLON"/>
         </action>
-        <!-- Emacs (windmove-default-keybindings): Shift+arrows select the
-             window in that direction — editor splits and diff panes alike.
-             Also on SPC w h/j/k/l via the rc (Emacs C-c w window map). -->
         <action id="Ideameow.WindmoveLeft" class="io.github.chubbyhippo.ideameow.WindmoveLeftAction"
                 text="Windmove Left" description="Select the editor window to the left (Emacs windmove-left)">
             <keyboard-shortcut keymap="$default" first-keystroke="shift LEFT"/>
@@ -83,9 +69,6 @@
                 text="Windmove Down" description="Select the editor window below (Emacs windmove-down)">
             <keyboard-shortcut keymap="$default" first-keystroke="shift DOWN"/>
         </action>
-        <!-- windmove-swap-states: the current split's file and the focus move
-             to the neighbour, its file comes back. SPC w H/J/K/L via the rc,
-             like the Emacs C-c w window map — no default chords. -->
         <action id="Ideameow.WindmoveSwapLeft" class="io.github.chubbyhippo.ideameow.WindmoveSwapLeftAction"
                 text="Windmove Swap Left"
                 description="Swap the current editor window with the one to the left (Emacs windmove-swap-states-left)"/>

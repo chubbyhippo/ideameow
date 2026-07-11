@@ -14,10 +14,8 @@
 // with this program. If not, see <https://www.gnu.org/licenses/>.
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
-
 package io.github.chubbyhippo.ideameow
 
-/** meow-left/right/next/prev and the -expand variants, counts, negative arg. */
 class MovementSpec : MeowSpec() {
     fun `test given a caret when l then it moves right without selecting`() {
         given("plain text", "<caret>hello")
@@ -95,11 +93,6 @@ class MovementSpec : MeowSpec() {
         thenText("hello")
     }
 
-    // The behaviors below were probed against meow 1.5.0 itself (batch
-    // Emacs, 2026-07-06): h/l are backward-char/forward-char (they cross
-    // newlines), j/k are next-line/previous-line (temporary-goal-column,
-    // buffer-edge overflow).
-
     fun `test given the caret at bol when h then it crosses to the previous line end`() {
         given("two lines", "abc\n<caret>def")
         whenKeys("h")
@@ -116,9 +109,9 @@ class MovementSpec : MeowSpec() {
     fun `test given j j through a short line then the goal column is kept`() {
         given("short middle line", "abcd<caret>ef\nxy\nlmnopq")
         whenKeys("j")
-        thenCaretAt(9) // clamped to the short line's end
+        thenCaretAt(9)
         whenKeys("j")
-        thenCaretAt(14) // back out to column 4
+        thenCaretAt(14)
     }
 
     fun `test given j on the last line then the caret moves to the end of buffer`() {

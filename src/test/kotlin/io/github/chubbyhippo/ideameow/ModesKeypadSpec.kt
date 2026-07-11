@@ -14,7 +14,6 @@
 // with this program. If not, see <https://www.gnu.org/licenses/>.
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
-
 package io.github.chubbyhippo.ideameow
 
 import com.intellij.openapi.actionSystem.ActionManager
@@ -25,7 +24,6 @@ import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.editor.actionSystem.EditorActionHandler
 import com.intellij.openapi.editor.ex.EditorEx
 
-/** State transitions: INSERT/NORMAL/MOTION/KEYPAD, escape, keypad dispatch. */
 class ModesKeypadSpec : MeowSpec() {
     private fun pressEsc() {
         val noop =
@@ -64,13 +62,11 @@ class ModesKeypadSpec : MeowSpec() {
         assertNotNull(st.pending)
         pressEsc()
         assertNull(st.pending)
-        whenKeys("l") // 'l' must act as a motion again, not as the find target
+        whenKeys("l")
         thenCaretAt(1)
     }
 
     fun `test given a read-only document then all motions work and the modify commands are inert`() {
-        // like Emacs: a read-only buffer stays in NORMAL — motions, selections
-        // and save all work; only text changes gate (meow--allow-modify-p)
         given("two lines", "<caret>one\ntwo")
         doc.setReadOnly(true)
         try {
@@ -78,13 +74,13 @@ class ModesKeypadSpec : MeowSpec() {
             assertEquals(1, doc.getLineNumber(ed.caretModel.offset))
             whenKeys("kw")
             thenSelection("one")
-            whenKeys("s") // meow-kill: gated silently — nothing at all happens
+            whenKeys("s")
             thenText("one\ntwo")
             thenSelection("one")
-            whenKeys("y") // meow-save is a copy, not a modification: it works
+            whenKeys("y")
             thenClipboard("one")
-            whenKeys("d") // meow-delete: Emacs' "Buffer is read-only" — inert
-            whenKeys("p") // meow-yank: same
+            whenKeys("d")
+            whenKeys("p")
             thenText("one\ntwo")
             thenMode(MeowMode.NORMAL)
         } finally {
@@ -92,16 +88,12 @@ class ModesKeypadSpec : MeowSpec() {
         }
     }
 
-    /** The Alt+; chord's path: the registered action through the platform's
-     *  own programmatic dispatch (update gate included), like a keymap press. */
     private fun fireKeypadAction() {
         val action = ActionManager.getInstance().getAction("Ideameow.Keypad")
         ActionManagerEx.getInstanceEx().tryToExecute(action, null, ed.contentComponent, null, true)
     }
 
     fun `test given INSERT when the keypad action fires then a keypad command returns to INSERT`() {
-        // Emacs: M-SPC reaches the leader even from INSERT; meow records
-        // meow--keypad-previous-state and every exit path restores it
         given("word", "ab<caret>cd")
         givenRc("map <leader>zz <action>(EditorLeft)")
         whenKeys("i")
@@ -117,7 +109,6 @@ class ModesKeypadSpec : MeowSpec() {
     }
 
     fun `test given INSERT when the keypad action then escape then back to INSERT`() {
-        // meow-keypad-quit -> meow--exit-keypad-state: previous state returns
         given("word", "<caret>hello")
         whenKeys("i")
         fireKeypadAction()
@@ -168,8 +159,6 @@ class ModesKeypadSpec : MeowSpec() {
 
     fun `test given NORMAL then a block cursor, given INSERT then a bar cursor`() {
         given("word", "<caret>hello")
-        // given() attaches state without going through the factory listener,
-        // so drive the mode switches and observe the cursor shape they set
         whenKeys("i")
         assertFalse("INSERT uses a bar cursor", ed.settings.isBlockCursor)
         pressEsc()
@@ -181,10 +170,6 @@ class ModesKeypadSpec : MeowSpec() {
         ed.putUserData(Meow.KEY, null)
         assertFalse(Engine.handleChar(ed, 'w', null))
     }
-
-    // these two pin the Ide.act dispatch path with an observable platform
-    // action — a broken update/perform sequence (like the hand-rolled gate
-    // that silently killed SPC c M in a real IDE) fails here, not in the wild
 
     fun `test given an rc key bound to an IDE action then the action performs`() {
         given("word", "ab<caret>cd")
@@ -202,9 +187,6 @@ class ModesKeypadSpec : MeowSpec() {
     }
 
     fun `test given SPC i d then action-id tracking toggles and reports performed action ids`() {
-        // the port of IdeaVim's Track Action IDs: the bundled default binds
-        // SPC i d to the toggle, and while tracking is on the application
-        // AnActionListener reports every performed action's id
         given("word", "ab<caret>cd")
         try {
             assertFalse("tracking starts off", TrackActionIds.enabled)
@@ -212,7 +194,7 @@ class ModesKeypadSpec : MeowSpec() {
             thenMode(MeowMode.NORMAL)
             assertTrue("first press turns tracking on", TrackActionIds.enabled)
             givenRc("nmap Z <action>(EditorLeft)")
-            whenKeys("Z") // a real IDE action performs while tracking
+            whenKeys("Z")
             assertEquals("EditorLeft", TrackActionIds.lastTrackedId)
             whenKeys(" id")
             assertFalse("second press turns tracking off", TrackActionIds.enabled)

@@ -14,7 +14,6 @@
 // with this program. If not, see <https://www.gnu.org/licenses/>.
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
-
 package io.github.chubbyhippo.ideameow
 
 import com.intellij.openapi.editor.Editor
@@ -25,17 +24,6 @@ import com.intellij.testFramework.fixtures.BasePlatformTestCase
 import java.awt.datatransfer.DataFlavor
 import java.awt.datatransfer.StringSelection
 
-/**
- * BDD base for the meow QWERTY specs. Platform fixtures are JUnit3-based, so
- * the Given/When/Then structure lives in a tiny DSL:
- *
- *   given ("a buffer", "hello <caret>world")
- *   whenKeys ("we")
- *   thenSelection ("world")
- *
- * Every behavior asserted here was cross-checked against meow-edit/meow's
- * source (docstrings and command bodies) — not against vim intuition.
- */
 abstract class MeowSpec : BasePlatformTestCase() {
     protected lateinit var st: MeowState
 
@@ -44,7 +32,6 @@ abstract class MeowSpec : BasePlatformTestCase() {
 
     override fun setUp() {
         super.setUp()
-        // never read a developer's real ~/.ideameowrc during tests
         Rc.setForTest(Rc.Config())
     }
 
@@ -57,8 +44,6 @@ abstract class MeowSpec : BasePlatformTestCase() {
             super.tearDown()
         }
     }
-
-    // ------------------------------------------------------------------ DSL
 
     protected fun given(
         @Suppress("UNUSED_PARAMETER") description: String,

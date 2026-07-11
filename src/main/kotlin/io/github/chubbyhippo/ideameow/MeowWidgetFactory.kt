@@ -14,7 +14,6 @@
 // with this program. If not, see <https://www.gnu.org/licenses/>.
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
-
 package io.github.chubbyhippo.ideameow
 
 import com.intellij.openapi.project.Project
@@ -25,7 +24,6 @@ import com.intellij.util.Consumer
 import java.awt.Component
 import java.awt.event.MouseEvent
 
-/** Status-bar mode indicator: MEOW NORMAL / INSERT / MOTION / KEYPAD / BEACON. */
 class MeowWidgetFactory : StatusBarWidgetFactory {
     companion object {
         const val ID = "MeowMode"

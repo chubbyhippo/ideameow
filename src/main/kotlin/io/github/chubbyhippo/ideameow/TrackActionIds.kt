@@ -14,7 +14,6 @@
 // with this program. If not, see <https://www.gnu.org/licenses/>.
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
-
 package io.github.chubbyhippo.ideameow
 
 import com.intellij.notification.Notification
@@ -30,31 +29,15 @@ import com.intellij.openapi.ide.CopyPasteManager
 import com.intellij.openapi.project.DumbAwareToggleAction
 import java.awt.datatransfer.StringSelection
 
-/**
- * IdeaVim's "Track Action IDs", ported (keypad: SPC i d). While tracking is
- * on, every action performed in the IDE pops a notification with its action
- * id — the id an rc line binds with `<action>(...)` — plus Stop Tracking and
- * Copy Action Id buttons. Read out of IdeaVim master, not guessed
- * (IdeaSpecifics.kt VimActionListener + NotificationService.ActionIdNotifier):
- * the id is ActionManager.getId(action) with the action's ProxyShortcutSet id
- * as fallback; the notification fires from beforeActionPerformed; the
- * previous balloon is expired first so only one is up at a time; the
- * notification's own buttons never report themselves. One deliberate
- * deviation: IdeaVim's toggle is a visible checkbox in Search Everywhere —
- * a keypad press has no checkbox, so toggling answers with an on/off balloon
- * (and the toggle action itself is excluded from tracking).
- */
 object TrackActionIds {
     @Volatile
     var enabled = false
 
-    /** The last id shown while tracking — observable by the specs. */
     @Volatile
     var lastTrackedId: String? = null
 
     private var notification: Notification? = null
 
-    /** IdeaVim's id resolution: the registered id, else the ProxyShortcutSet's. */
     fun idOf(action: AnAction): String? =
         ActionManager.getInstance().getId(action)
             ?: (action.shortcutSet as? ProxyShortcutSet)?.actionId
@@ -73,7 +56,6 @@ object TrackActionIds {
         )
     }
 
-    /** beforeActionPerformed while tracking: show the performed action's id. */
     fun track(action: AnAction) {
         if (!enabled) return
         if (action is TrackActionIdsAction || action is StopTracking || action is CopyActionId) return
@@ -126,8 +108,6 @@ object TrackActionIds {
     }
 }
 
-/** The toggle behind SPC i d — also a checkbox in Search Everywhere,
- *  exactly like IdeaVim's FindActionIdAction (a DumbAwareToggleAction). */
 class TrackActionIdsAction : DumbAwareToggleAction() {
     override fun isSelected(e: AnActionEvent): Boolean = TrackActionIds.enabled
 
@@ -141,8 +121,6 @@ class TrackActionIdsAction : DumbAwareToggleAction() {
     override fun getActionUpdateThread(): ActionUpdateThread = ActionUpdateThread.BGT
 }
 
-/** Application-level AnActionListener (plugin.xml applicationListeners):
- *  IdeaVim notifies from beforeActionPerformed, so this does too. */
 class MeowActionIdListener : AnActionListener {
     override fun beforeActionPerformed(
         action: AnAction,

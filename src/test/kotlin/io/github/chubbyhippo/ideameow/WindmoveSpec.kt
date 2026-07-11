@@ -14,7 +14,6 @@
 // with this program. If not, see <https://www.gnu.org/licenses/>.
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
-
 package io.github.chubbyhippo.ideameow
 
 import com.intellij.openapi.actionSystem.ActionManager
@@ -26,28 +25,9 @@ import java.awt.Point
 import java.awt.Rectangle
 import javax.swing.KeyStroke
 
-/**
- * The window surface: windmove, ported from windmove.el + window.el's
- * window-in-direction (Emacs 30.2). The picking geometry is pinned against
- * a batch-Emacs probe of real window layouts (the same layouts below;
- * sign-based references stand in for caret rows there, because
- * posn-at-point is nil in batch — the caret path itself is window.el's
- * three-line posn arithmetic, ported verbatim). The user-error message is
- * batch-verified character for character. Layouts use the probe frame's
- * pixel geometry: 80x25, left column L1(h12)/L2(h6)/L3(h6), right R(h24).
- */
 class WindmoveSpec : MeowSpec() {
     private val frame = Dimension(80, 25)
 
-    /**
-     * +----+------+
-     * | L1 |      |
-     * +----+  R   |
-     * | L2 |      |
-     * +----+      |
-     * | L3 |      |
-     * +----+------+
-     */
     private val l1 = "L1" to Rectangle(0, 0, 40, 12)
     private val l2 = "L2" to Rectangle(0, 12, 40, 6)
     private val l3 = "L3" to Rectangle(0, 18, 40, 6)
@@ -55,19 +35,13 @@ class WindmoveSpec : MeowSpec() {
 
     private fun stacked(vararg but: String) = listOf(l1, l2, l3, r).filter { it.first !in but }
 
-    // ------------------------------------------------------- the caret band
-
     fun `test given a stacked column when left then the window at the caret row is entered`() {
-        // probed: reference at the top edge -> L1, at the bottom edge -> L3
-        // (batch sign probes); the caret row in L2's band -> L2 is the
-        // posn-at-point path, window.el arithmetic
         assertEquals("L1", Windmove.pick(Windmove.Dir.LEFT, r.second, 1, frame, stacked("R")))
         assertEquals("L2", Windmove.pick(Windmove.Dir.LEFT, r.second, 14, frame, stacked("R")))
         assertEquals("L3", Windmove.pick(Windmove.Dir.LEFT, r.second, 23, frame, stacked("R")))
     }
 
     fun `test given a visible caret then it is the reference, else the near edge plus one`() {
-        // window.el: posn-at-point when visible, else the (or ... 1) fallback
         assertEquals(14, Windmove.reference(Windmove.Dir.LEFT, r.second, Point(60, 14)))
         assertEquals(1, Windmove.reference(Windmove.Dir.LEFT, r.second, null))
         assertEquals(1, Windmove.reference(Windmove.Dir.LEFT, r.second, Point(60, 99)))
@@ -76,7 +50,6 @@ class WindmoveSpec : MeowSpec() {
     }
 
     fun `test given the middle of the stack then it moves in all four directions`() {
-        // probed: from L2 — right -> R, up -> L1, down -> L3
         val caretY = 14
         val caretX = 5
         assertEquals("R", Windmove.pick(Windmove.Dir.RIGHT, l2.second, caretY, frame, stacked("L2")))
@@ -85,14 +58,11 @@ class WindmoveSpec : MeowSpec() {
     }
 
     fun `test given no window in the direction then the pick is null`() {
-        // probed: R right -> nil, L1 up -> nil (windmove-wrap-around nil)
         assertNull(Windmove.pick(Windmove.Dir.RIGHT, r.second, 14, frame, stacked("R")))
         assertNull(Windmove.pick(Windmove.Dir.UP, l1.second, 5, frame, stacked("L1")))
     }
 
     fun `test given a two by two grid then the adjacent window is picked`() {
-        // probed 2x2 grid: D left -> C, D up -> B; A right -> B, down -> C,
-        // left -> nil
         val a = "A" to Rectangle(0, 0, 40, 12)
         val b = "B" to Rectangle(40, 0, 40, 12)
         val c = "C" to Rectangle(0, 12, 40, 12)
@@ -106,15 +76,10 @@ class WindmoveSpec : MeowSpec() {
         assertNull(Windmove.pick(Windmove.Dir.LEFT, a.second, 5, frame, fromA))
     }
 
-    // ---------------------------------------------- the two tiers (window.el)
-
     fun `test given a window covering the caret then it beats a nearer one outside the band`() {
-        // window-in-direction tier 1 before tier 2: editors don't tile the
-        // frame like Emacs windows, so both tiers matter here (a diff pane
-        // above-left, a lone editor nearer but off the caret's column)
         val current = Rectangle(0, 100, 50, 50)
-        val covering = "covering" to Rectangle(0, 20, 50, 40) // bottom edge 60
-        val nearer = "nearer" to Rectangle(60, 95, 40, 5) // bottom edge 100
+        val covering = "covering" to Rectangle(0, 20, 50, 40)
+        val nearer = "nearer" to Rectangle(60, 95, 40, 5)
         val picked =
             Windmove.pick(
                 Windmove.Dir.UP,
@@ -127,11 +92,9 @@ class WindmoveSpec : MeowSpec() {
     }
 
     fun `test given only windows outside the band then the smallest band distance wins`() {
-        // tier 2 orders by distance to the caret band (window--in-direction-2),
-        // not by nearness in the movement direction
         val current = Rectangle(0, 100, 50, 50)
-        val bandNear = "bandNear" to Rectangle(60, 20, 40, 40) // band starts at x=60
-        val bandFar = "bandFar" to Rectangle(120, 50, 40, 40) // nearer above, band x=120
+        val bandNear = "bandNear" to Rectangle(60, 20, 40, 40)
+        val bandFar = "bandFar" to Rectangle(120, 50, 40, 40)
         val picked =
             Windmove.pick(
                 Windmove.Dir.UP,
@@ -143,16 +106,12 @@ class WindmoveSpec : MeowSpec() {
         assertEquals("bandNear", picked)
     }
 
-    // ------------------------------------------------------ the Emacs surface
-
     fun `test given no window in the direction then the message is Emacs verbatim`() {
-        // batch-verified: (windmove-do-window-select 'left) with one window
         assertEquals("No window left from selected window", Windmove.noWindowMessage(Windmove.Dir.LEFT))
         assertEquals("No window down from selected window", Windmove.noWindowMessage(Windmove.Dir.DOWN))
     }
 
     fun `test given the default keymap then shift+arrows are the windmove shortcuts`() {
-        // (windmove-default-keybindings) == shift + left/right/up/down
         val expected =
             mapOf(
                 "Ideameow.WindmoveLeft" to "shift LEFT",
@@ -176,8 +135,6 @@ class WindmoveSpec : MeowSpec() {
     }
 
     fun `test given the shift-selection conflict then the promoter puts windmove first`() {
-        // the shift+arrow conflict with EditorLeftWithSelection & friends is
-        // resolved by promotion — windmove wins, as in Emacs
         val windmove = WindmoveLeftAction()
         val other = ActionManager.getInstance().getAction("EditorLeftWithSelection")
         val promoted = WindmovePromoter().promote(mutableListOf(other, windmove), DataContext.EMPTY_CONTEXT)
@@ -193,8 +150,6 @@ class WindmoveSpec : MeowSpec() {
     }
 
     fun `test given the swap actions then no default chords are claimed`() {
-        // windmove-swap-states-default-keybindings is deliberately not
-        // mirrored — the swaps live only on the leader map, so only on SPC w
         for (id in listOf(
             "Ideameow.WindmoveSwapLeft",
             "Ideameow.WindmoveSwapRight",
@@ -216,7 +171,6 @@ class WindmoveSpec : MeowSpec() {
     }
 
     fun `test given the bundled rc then the swaps are on SPC w capitals`() {
-        // the capitals mirror the h/j/k/l moves
         val d = Rc.defaults().keypad
         assertEquals("Ideameow.WindmoveSwapLeft", d["wH"]?.action)
         assertEquals("Ideameow.WindmoveSwapDown", d["wJ"]?.action)

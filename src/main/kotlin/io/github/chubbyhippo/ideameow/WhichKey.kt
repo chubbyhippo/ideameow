@@ -14,7 +14,6 @@
 // with this program. If not, see <https://www.gnu.org/licenses/>.
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
-
 package io.github.chubbyhippo.ideameow
 
 import com.intellij.openapi.editor.Editor
@@ -27,26 +26,12 @@ import com.intellij.util.ui.JBUI
 import java.awt.Point
 import javax.swing.Timer
 
-/**
- * which-key, the Emacs way: after `timeoutlen` ms on a pending prefix — a
- * keypad SPC sequence, or the , . [ ] thing table — a NON-focusable panel
- * appears along the bottom of the editor listing the continuations in
- * columns (column-major, like which-key's grid). It never takes focus and
- * never interrupts: just keep typing the sequence in the editor; ESC cancels
- * through the editor as usual. Deeper prefixes in the same chain refresh the
- * panel without the delay. Descriptions come from `desc` /
- * `let g:WhichKeyDesc_*` entries in ~/.ideameowrc; delay and on/off from
- * `set timeoutlen` / `set nowhich-key`.
- */
 object WhichKey {
     private var popup: JBPopup? = null
     private var timer: Timer? = null
 
-    /** True when hide() closed a visible panel: the chain's next panel
-     *  appears with no delay, like which-key refreshing between prefixes. */
     private var chainVisible = false
 
-    /** which-key-separator. */
     private const val SEPARATOR = " → "
 
     private val THINGS =
@@ -72,7 +57,6 @@ object WhichKey {
 
     fun scheduleThings(editor: Editor) = schedule(editor) { THINGS }
 
-    /** One row per next key continuing [buffer]: terminal label or group desc. */
     fun keypadRows(buffer: String): List<Pair<String, String>> {
         val descs = Rc.keypadDescs()
         val rows = sortedMapOf<String, String>()
@@ -130,12 +114,10 @@ object WhichKey {
                     .createComponentPopupBuilder(label, null)
                     .setRequestFocus(false)
                     .setFocusable(false)
-                    .setCancelKeyEnabled(false) // ESC belongs to the editor
+                    .setCancelKeyEnabled(false)
                     .setCancelOnClickOutside(true)
                     .createPopup()
             popup = p
-            // Emacs shows which-key in a bottom side window spanning the
-            // frame — the closest here: bottom-left of the editor component
             val host = editor.component
             val pref = label.preferredSize
             val y = (host.height - pref.height - JBUI.scale(8)).coerceAtLeast(0)
@@ -143,8 +125,6 @@ object WhichKey {
         }
     }
 
-    /** which-key's grid: entries run DOWN each column, then across, with as
-     *  many columns as the editor width fits. */
     private fun gridHtml(
         editor: Editor,
         rows: List<Pair<String, String>>,

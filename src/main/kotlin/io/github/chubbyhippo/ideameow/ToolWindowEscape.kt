@@ -14,7 +14,6 @@
 // with this program. If not, see <https://www.gnu.org/licenses/>.
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
-
 package io.github.chubbyhippo.ideameow
 
 import com.intellij.ide.DataManager
@@ -29,38 +28,15 @@ import com.intellij.openapi.wm.ToolWindowManager
 import java.awt.AWTEvent
 import java.awt.event.KeyEvent
 
-/**
- * Double-ESC in a tool window returns focus to the editor.
- *
- * A single ESC already does that in most tool windows — the platform's own
- * escape handling — but the terminal and chat-style windows consume every
- * ESC themselves (a shell or a TUI needs the key), so the platform never
- * sees it there. This watches raw ESC presses ahead of all component and
- * shortcut processing (IdeEventQueue custom dispatchers run before the
- * focused component gets the event): the first plain ESC in a tool window
- * passes through untouched, a second one in the SAME tool window within
- * [TIMEOUT_MS] is consumed and focus jumps to the editor through the
- * platform's own [ToolWindowManager.activateEditorComponent].
- *
- * Guards: only modifier-less presses count; anything while a popup is up
- * never counts (ESC must keep closing popups); focus outside a tool window
- * breaks the pair. After a jump, the KEY_TYPED half of the same keystroke
- * (char 27) is swallowed too, so a terminal's TTY never receives a stray
- * escape byte.
- */
 object ToolWindowEscape {
-    /** Two presses at most this many ms apart count as a double-press. */
     const val TIMEOUT_MS = 500L
+    private const val ESC_CHAR = 27
+    private const val TYPED_ESC_SWALLOW_MS = 100L
 
     private var lastWindow: String? = null
     private var lastAt = 0L
     private var swallowTypedUntil = 0L
 
-    /** The double-press decision, kept pure for the specs: every plain ESC
-     *  press reports the active tool window id (null = focus is not in a
-     *  tool window) and its event time; true = second press of a pair, the
-     *  caller jumps. A miss (different window, too slow, null) re-arms with
-     *  the current press. */
     fun onEscape(
         windowId: String?,
         at: Long,
@@ -80,14 +56,12 @@ object ToolWindowEscape {
         lastAt = 0L
     }
 
-    // -------------------------------------------------------------- wiring
-
     internal val dispatcher = IdeEventQueue.EventDispatcher { e -> dispatch(e) }
 
     private fun dispatch(e: AWTEvent): Boolean {
         if (e !is KeyEvent || e.isConsumed) return false
         if (e.id == KeyEvent.KEY_TYPED) {
-            if (e.keyChar.code == 27 && e.`when` <= swallowTypedUntil) {
+            if (e.keyChar.code == ESC_CHAR && e.`when` <= swallowTypedUntil) {
                 swallowTypedUntil = 0L
                 return true
             }
@@ -107,15 +81,12 @@ object ToolWindowEscape {
             }
         val toolWindows = ToolWindowManager.getInstance(project)
         if (!onEscape(toolWindows.activeToolWindowId, e.`when`)) return false
-        swallowTypedUntil = e.`when` + 100
+        swallowTypedUntil = e.`when` + TYPED_ESC_SWALLOW_MS
         toolWindows.activateEditorComponent()
         return true
     }
 }
 
-/** App-level lifetime anchor, the TreeMeowLifecycle pattern: created on
- *  first project open; the dispatcher is parented to this service, so
- *  dynamic plugin unload removes the JVM-global hook with it. */
 @Service(Service.Level.APP)
 internal class ToolWindowEscapeLifecycle : Disposable {
     init {
@@ -125,7 +96,6 @@ internal class ToolWindowEscapeLifecycle : Disposable {
     override fun dispose() = ToolWindowEscape.reset()
 }
 
-/** Installs the double-ESC hook once any project opens. */
 internal class ToolWindowEscapeStartup : ProjectActivity {
     override suspend fun execute(project: Project) {
         ApplicationManager.getApplication().getService(ToolWindowEscapeLifecycle::class.java)

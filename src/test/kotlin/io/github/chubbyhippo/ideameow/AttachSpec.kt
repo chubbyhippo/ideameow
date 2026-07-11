@@ -14,7 +14,6 @@
 // with this program. If not, see <https://www.gnu.org/licenses/>.
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
-
 package io.github.chubbyhippo.ideameow
 
 import com.intellij.openapi.editor.Editor
@@ -25,17 +24,6 @@ import com.intellij.openapi.editor.ex.EditorEx
 import com.intellij.testFramework.fixtures.BasePlatformTestCase
 import com.intellij.util.ui.UIUtil
 
-/**
- * Which editors get meow state: main file editors and diff editors always —
- * in NORMAL even when read-only, like Emacs read-only buffers (the modify
- * commands gate themselves; see ModesKeypadSpec); dialog and tool-window
- * fields (EditorKind.UNTYPED, e.g. the commit message box) only when
- * multi-line and writable — mirroring IdeaVim's `ideavimsupport=dialog`.
- *
- * EditorTextField switches on one-line mode only AFTER the editor is created,
- * so the specs set it post-creation exactly like production does, and the
- * listener's deferred decision is flushed with the EDT queue.
- */
 class AttachSpec : BasePlatformTestCase() {
     private val factory get() = EditorFactory.getInstance()
     private val created = mutableListOf<Editor>()
@@ -48,8 +36,6 @@ class AttachSpec : BasePlatformTestCase() {
             super.tearDown()
         }
     }
-
-    // ------------------------------------------------------------------ DSL
 
     private fun givenEditor(
         kind: EditorKind,
@@ -65,15 +51,15 @@ class AttachSpec : BasePlatformTestCase() {
             } else {
                 factory.createEditor(doc, project, kind)
             }
-        (editor as EditorEx).isOneLineMode = oneLine // EditorTextField does this after creation
+        (editor as EditorEx).isOneLineMode = oneLine
         created += editor
         return editor
     }
 
     private fun whenTheFactoryListenerRuns(editor: Editor) {
-        editor.putUserData(Meow.KEY, null) // isolate from the plugin-registered listener
+        editor.putUserData(Meow.KEY, null)
         MeowEditorFactoryListener().editorCreated(EditorFactoryEvent(factory, editor))
-        UIUtil.dispatchAllInvocationEvents() // flush the deferred UNTYPED decision
+        UIUtil.dispatchAllInvocationEvents()
     }
 
     private fun thenMeowIsAttached(
@@ -87,8 +73,6 @@ class AttachSpec : BasePlatformTestCase() {
     }
 
     private fun thenMeowStaysAway(editor: Editor) = assertNull("expected no meow state on the editor", Meow.state(editor))
-
-    // ---------------------------------------------------------------- specs
 
     fun `test given a multi-line writable dialog editor like the commit message box then meow attaches in NORMAL`() {
         val editor = givenEditor(EditorKind.UNTYPED)
@@ -129,7 +113,6 @@ class AttachSpec : BasePlatformTestCase() {
     }
 
     fun `test given a diff revision side (a read-only viewer) then meow attaches in NORMAL`() {
-        // like an Emacs read-only buffer: full layout, gated modifications
         val editor = givenEditor(EditorKind.DIFF, viewer = true, writable = false)
         whenTheFactoryListenerRuns(editor)
         thenMeowIsAttached(editor, MeowMode.NORMAL)
