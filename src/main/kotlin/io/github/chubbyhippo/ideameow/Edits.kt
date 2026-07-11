@@ -44,7 +44,7 @@ internal object Edits {
             put("meow-yank", MeowCommand { ed, _, _ -> yank(ed) })
             put("meow-replace", MeowCommand { ed, st, _ -> replace(ed, st) })
             put("meow-undo", MeowCommand { ed, st, ctx -> undo(ed, st, ctx) })
-            put("meow-undo-in-selection", MeowCommand { ed, st, ctx -> undoInSelection(ed, st, ctx) })
+            put("meow-undo-in-selection", MeowCommand { ed, _, ctx -> undoInSelection(ed, ctx) })
         }
 
     /** One write command over every caret, highest offset first. */
@@ -312,7 +312,6 @@ internal object Edits {
      *  undo has no IDE analog, so it is a plain undo (see README). */
     private fun undoInSelection(
         editor: Editor,
-        st: MeowState,
         ctx: DataContext?,
     ) {
         if (editor.selectionModel.hasSelection()) Ide.act(editor, ctx, IdeActions.ACTION_UNDO)

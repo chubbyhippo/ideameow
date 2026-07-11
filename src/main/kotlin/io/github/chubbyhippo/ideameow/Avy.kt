@@ -28,7 +28,6 @@ import com.intellij.ui.JBColor
 import java.awt.Color
 import java.awt.Graphics
 import java.awt.Graphics2D
-import java.awt.Point
 import java.awt.Rectangle
 import java.awt.RenderingHints
 import javax.swing.JComponent
@@ -170,7 +169,7 @@ object Avy {
         val doc = editor.document
         val (first, last) = Ide.visibleLines(editor)
         val candidates = (first..last).map { doc.getLineStartOffset(it) }
-        toSelecting(editor, st, session, candidates)
+        toSelecting(editor, session, candidates)
     }
 
     /** One key of an active session; printable keys only reach us. */
@@ -221,18 +220,17 @@ object Avy {
             candidates.size == 1 -> {
                 // avy-single-candidate-jump
                 cancel(editor, st)
-                jump(editor, st, candidates[0])
+                jump(editor, candidates[0])
             }
 
             else -> {
-                toSelecting(editor, st, session, candidates)
+                toSelecting(editor, session, candidates)
             }
         }
     }
 
     private fun toSelecting(
         editor: Editor,
-        st: MeowState,
         session: Session,
         candidates: List<Int>,
     ) {
@@ -262,14 +260,14 @@ object Avy {
                 ) ?: return
             val doc = editor.document
             val ln = parsedLineNumber(input, doc.lineCount) ?: return
-            jump(editor, st, doc.getLineStartOffset(ln))
+            jump(editor, doc.getLineStartOffset(ln))
             return
         }
         val node = session.node ?: return
         when (val child = node.children.firstOrNull { it.first == c }?.second) {
             is Leaf -> {
                 cancel(editor, st)
-                jump(editor, st, child.offset)
+                jump(editor, child.offset)
             }
 
             is Branch -> {
@@ -286,7 +284,6 @@ object Avy {
     /** avy-action-goto: plain goto-char — an active selection extends. */
     private fun jump(
         editor: Editor,
-        st: MeowState,
         offset: Int,
     ) {
         val sm = editor.selectionModel

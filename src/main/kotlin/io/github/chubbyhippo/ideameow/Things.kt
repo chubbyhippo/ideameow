@@ -213,7 +213,7 @@ object Things {
         if (doc.lineCount == 0) return null
 
         fun blank(l: Int) = doc.charsSequence.subSequence(doc.getLineStartOffset(l), doc.getLineEndOffset(l)).isBlank()
-        var ln = doc.getLineNumber(offset.coerceIn(0, doc.textLength))
+        val ln = doc.getLineNumber(offset.coerceIn(0, doc.textLength))
         if (blank(ln)) return null
         var first = ln
         var last = ln
