@@ -79,6 +79,9 @@ class MeowState {
     var grabHighlighter: RangeHighlighter? = null
 
     val keypad = StringBuilder()
+
+    /** meow--keypad-previous-state: the state KEYPAD returns to on exit. */
+    var keypadPreviousState = MeowMode.NORMAL
     val unit = mutableListOf<Char>()
     var lastKeys: List<Char> = emptyList()
     var replaying = false

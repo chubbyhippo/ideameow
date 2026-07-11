@@ -51,8 +51,13 @@ class MeowEscapeHandler(
         WhichKey.hide()
         ExpandHints.clear(st)
         when {
-            st.mode == MeowMode.INSERT || st.mode == MeowMode.KEYPAD -> {
+            st.mode == MeowMode.INSERT -> {
                 Meow.setMode(editor, st, MeowMode.NORMAL)
+            }
+
+            st.mode == MeowMode.KEYPAD -> {
+                // meow-keypad-quit: back to the state keypad was entered from
+                Keypad.exit(editor, st)
             }
 
             editor.caretModel.caretCount > 1 -> {

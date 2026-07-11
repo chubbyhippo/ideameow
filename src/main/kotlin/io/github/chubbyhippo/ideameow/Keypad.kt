@@ -17,8 +17,12 @@
 
 package io.github.chubbyhippo.ideameow
 
+import com.intellij.openapi.actionSystem.ActionUpdateThread
+import com.intellij.openapi.actionSystem.AnActionEvent
+import com.intellij.openapi.actionSystem.CommonDataKeys
 import com.intellij.openapi.actionSystem.DataContext
 import com.intellij.openapi.editor.Editor
+import com.intellij.openapi.project.DumbAwareAction
 import com.intellij.openapi.ui.Messages
 
 /**
@@ -88,7 +92,8 @@ object Keypad {
         st: MeowState,
     ) {
         WhichKey.hide()
-        Meow.setMode(editor, st, MeowMode.NORMAL)
+        // meow--exit-keypad-state: back to meow--keypad-previous-state
+        Meow.setMode(editor, st, st.keypadPreviousState)
     }
 
     private fun describe(
@@ -143,7 +148,7 @@ object Keypad {
           BEACON   grab a region (G), then select w/x/f... inside it:
                    a caret lands on every match — edit them all, ESC to finish
 
-        KEYPAD (SPC)
+        KEYPAD (SPC — or Alt+; from ANY state, INSERT included; returns there)
           SPC b bookmarks/buffers   SPC x file/buffer/window   SPC c commands   SPC m meta
           SPC w windows   SPC 1-9 count   SPC ? this sheet   SPC / describe key
           SPC c m edit ~/.ideameowrc   SPC c M reload it
@@ -160,4 +165,35 @@ object Keypad {
           every binding above is an rc line — the defaults ship as a bundled
           .ideameowrc inside the plugin; ~/.ideameowrc overrides them key by key
         """.trimIndent()
+}
+
+/** meow-keypad as an IDE action — init.el's "M-SPC reaches the leader even
+ *  from INSERT" (`keymap-global-set "M-SPC" #'meow-keypad`). meow records
+ *  meow--keypad-previous-state on entry and every exit path restores it
+ *  (meow-keypad.el / meow--exit-keypad-state, 1.5.0), so a command run from
+ *  INSERT drops you back in INSERT. Alt+Space is the Windows system menu,
+ *  so the `$default` chord is Alt+Semicolon instead — 2026.1.4's
+ *  $default.xml carries no SEMICOLON chords at all (the Emacs keymap binds
+ *  it to comment; rebind in Settings > Keymap if you use that keymap). Like
+ *  windmove, a modifier chord never reaches the modal engine, so this is an
+ *  action, NOT an rc line. A no-op when KEYPAD is already active — meow's
+ *  overriding keypad map cannot re-enter either. */
+internal class KeypadAction : DumbAwareAction() {
+    init {
+        // dialog editors (commit box, dialog diffs) carry meow states too
+        setEnabledInModalContext(true)
+    }
+
+    override fun getActionUpdateThread() = ActionUpdateThread.BGT
+
+    override fun update(e: AnActionEvent) {
+        val editor = e.getData(CommonDataKeys.EDITOR)
+        e.presentation.isEnabled = editor != null && Meow.state(editor) != null
+    }
+
+    override fun actionPerformed(e: AnActionEvent) {
+        val editor = e.getData(CommonDataKeys.EDITOR) ?: return
+        val st = Meow.state(editor)
+        if (st != null && st.mode != MeowMode.KEYPAD) Engine.enterKeypad(editor, st)
+    }
 }

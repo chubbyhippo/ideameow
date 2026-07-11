@@ -55,6 +55,15 @@
         <action id="Ideameow.TrackActionIds" class="io.github.chubbyhippo.ideameow.TrackActionIdsAction"
                 text="Track Action IDs"
                 description="Show the id of every performed action, for &lt;action&gt;(...) mappings in ~/.ideameowrc"/>
+        <!-- init.el: M-SPC reaches the leader even from INSERT (global
+             meow-keypad). Alt+Space is the Windows system menu, so the
+             default chord is Alt+Semicolon (free in $default, verified
+             2026.1.4); keypad returns to the state it was entered from. -->
+        <action id="Ideameow.Keypad" class="io.github.chubbyhippo.ideameow.KeypadAction"
+                text="Meow Keypad"
+                description="Enter the meow keypad (SPC leader) from any state, INSERT included">
+            <keyboard-shortcut keymap="$default" first-keystroke="alt SEMICOLON"/>
+        </action>
         <!-- Emacs (windmove-default-keybindings): Shift+arrows select the
              window in that direction — editor splits and diff panes alike.
              Also on SPC w h/j/k/l via the rc, mirroring init.el's C-c w. -->

@@ -61,18 +61,25 @@ object Engine {
             // dispatcher-level commands: counts, the keypad, repeat, quit, no-op
             put("meow-negative-argument", MeowCommand { _, st, _ -> st.negative = true })
             put("meow-quit", MeowCommand { ed, _, ctx -> Ide.act(ed, ctx, "CloseContent") })
-            put(
-                "meow-keypad",
-                MeowCommand { ed, st, _ ->
-                    Meow.setMode(ed, st, MeowMode.KEYPAD)
-                    WhichKey.scheduleKeypad(ed, "")
-                },
-            )
+            put("meow-keypad", MeowCommand { ed, st, _ -> enterKeypad(ed, st) })
             put("repeat", MeowCommand { ed, st, ctx -> repeatLast(ed, st, ctx) })
             put("ignore", MeowCommand { _, _, _ -> })
         }
 
     private val KEYPAD_BINDING = Rc.Binding(command = "meow-keypad")
+
+    /** meow-keypad (meow-keypad.el): record meow--keypad-previous-state,
+     *  then switch — Keypad.exit restores it, so SPC round-trips to NORMAL
+     *  and the Alt+; action returns to INSERT. Shared by the rc-dispatched
+     *  command and [KeypadAction]. */
+    fun enterKeypad(
+        editor: Editor,
+        st: MeowState,
+    ) {
+        st.keypadPreviousState = st.mode
+        Meow.setMode(editor, st, MeowMode.KEYPAD)
+        WhichKey.scheduleKeypad(editor, "")
+    }
 
     /** @return true when the key was consumed (typed handler skips insertion). */
     fun handleChar(

@@ -17,7 +17,9 @@
 
 package io.github.chubbyhippo.ideameow
 
+import com.intellij.openapi.actionSystem.ActionManager
 import com.intellij.openapi.actionSystem.DataContext
+import com.intellij.openapi.actionSystem.ex.ActionManagerEx
 import com.intellij.openapi.editor.Caret
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.editor.actionSystem.EditorActionHandler
@@ -88,6 +90,48 @@ class ModesKeypadSpec : MeowSpec() {
         } finally {
             doc.setReadOnly(false)
         }
+    }
+
+    /** The Alt+; chord's path: the registered action through the platform's
+     *  own programmatic dispatch (update gate included), like a keymap press. */
+    private fun fireKeypadAction() {
+        val action = ActionManager.getInstance().getAction("Ideameow.Keypad")
+        ActionManagerEx.getInstanceEx().tryToExecute(action, null, ed.contentComponent, null, true)
+    }
+
+    fun `test given INSERT when the keypad action fires then a keypad command returns to INSERT`() {
+        // init.el: M-SPC reaches the leader even from INSERT; meow records
+        // meow--keypad-previous-state and every exit path restores it
+        given("word", "ab<caret>cd")
+        givenRc("map <leader>zz <action>(EditorLeft)")
+        whenKeys("i")
+        thenMode(MeowMode.INSERT)
+        assertFalse("INSERT uses a bar cursor", ed.settings.isBlockCursor)
+        fireKeypadAction()
+        thenMode(MeowMode.KEYPAD)
+        assertTrue("KEYPAD uses a block cursor", ed.settings.isBlockCursor)
+        whenKeys("zz")
+        thenMode(MeowMode.INSERT)
+        assertFalse("back to INSERT's bar cursor", ed.settings.isBlockCursor)
+        thenCaretAt(1)
+    }
+
+    fun `test given INSERT when the keypad action then escape then back to INSERT`() {
+        // meow-keypad-quit -> meow--exit-keypad-state: previous state returns
+        given("word", "<caret>hello")
+        whenKeys("i")
+        fireKeypadAction()
+        thenMode(MeowMode.KEYPAD)
+        pressEsc()
+        thenMode(MeowMode.INSERT)
+    }
+
+    fun `test given NORMAL when the keypad action fires then KEYPAD round-trips to NORMAL`() {
+        given("word", "<caret>hello")
+        fireKeypadAction()
+        thenMode(MeowMode.KEYPAD)
+        pressEsc()
+        thenMode(MeowMode.NORMAL)
     }
 
     fun `test given SPC then KEYPAD opens and a digit becomes the count for the next command`() {
