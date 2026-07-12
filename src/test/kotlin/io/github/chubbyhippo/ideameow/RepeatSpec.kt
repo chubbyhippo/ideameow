@@ -23,8 +23,8 @@ import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.editor.actionSystem.EditorActionHandler
 import com.intellij.openapi.editor.ex.EditorEx
 import com.intellij.openapi.fileEditor.FileDocumentManager
-import com.intellij.openapi.util.io.FileUtil
 import com.intellij.openapi.vfs.LocalFileSystem
+import java.nio.file.Files
 
 class RepeatSpec : MeowSpec() {
     private val navRc =
@@ -113,7 +113,7 @@ class RepeatSpec : MeowSpec() {
     }
 
     fun `test given a repeat line edit then the reload button sees a change`() {
-        val home = FileUtil.createTempDirectory("meow-home", null)
+        val home = Files.createTempDirectory("meow-home").toFile()
         val oldHome = System.getProperty("user.home")
         System.setProperty("user.home", home.path)
         try {
