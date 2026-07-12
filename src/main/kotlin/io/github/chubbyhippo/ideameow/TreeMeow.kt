@@ -83,7 +83,7 @@ object TreeMeow {
     private val dispatcher =
         object : DumbAwareAction() {
             init {
-                setEnabledInModalContext(true)
+                isEnabledInModalContext = true
             }
 
             override fun getActionUpdateThread() = ActionUpdateThread.BGT
