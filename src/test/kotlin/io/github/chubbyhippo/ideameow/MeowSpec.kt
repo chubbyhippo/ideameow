@@ -46,10 +46,10 @@ abstract class MeowSpec : BasePlatformTestCase() {
     }
 
     protected fun given(
-        @Suppress("UNUSED_PARAMETER") description: String,
+        description: String,
         text: String,
     ) {
-        myFixture.configureByText("spec.txt", text)
+        myFixture.configureByText("$description.txt", text)
         st = MeowState()
         ed.putUserData(Meow.KEY, st)
     }
