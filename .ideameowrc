@@ -212,6 +212,7 @@ map <leader>mr <action>(EditorSelectWord)
 map <leader>mR <action>(EditorUnSelectWord)
 map <leader>my <action>(PasteMultiple)
 map <leader>m. <action>(GotoDeclaration)
+map <leader>m, <action>(Back)
 map <leader>mg avy-goto-line
 map <leader>msr <action>(FindInPath)
 map <leader>msl <action>(Find)
