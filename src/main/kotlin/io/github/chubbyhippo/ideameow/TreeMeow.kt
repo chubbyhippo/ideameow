@@ -67,7 +67,7 @@ object TreeMeow {
             return
         }
         val keys = b.keys ?: return
-        if (depth >= 8) return
+        if (depth >= Rc.MAX_MAPPING_DEPTH) return
         for (k in keys) dispatch(tree, k, noremap || !b.recursive, depth + 1)
     }
 

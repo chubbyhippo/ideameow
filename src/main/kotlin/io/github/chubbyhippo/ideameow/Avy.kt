@@ -41,8 +41,8 @@ object Avy {
 
     val commands: Map<String, MeowCommand> =
         mapOf(
-            "avy-goto-char-timer" to MeowCommand { ed, st, _ -> startCharTimer(ed, st) },
-            "avy-goto-line" to MeowCommand { ed, st, _ -> startGotoLine(ed, st) },
+            "avy-goto-char-timer" to MeowCommand { ed, st -> startCharTimer(ed, st) },
+            "avy-goto-line" to MeowCommand { ed, st -> startGotoLine(ed, st) },
         )
 
     enum class Phase { COLLECTING, SELECTING }
@@ -352,9 +352,9 @@ object Avy {
                 val right = if (end > offset) editor.offsetToXY(end, true, false) else null
                 val width =
                     if (right != null && right.y == p.y && right.x > p.x) {
-                        maxOf(right.x - p.x, metrics.stringWidth(label) + 2)
+                        maxOf(right.x - p.x, metrics.stringWidth(label) + Overlay.LABEL_PADDING)
                     } else {
-                        metrics.stringWidth(label) + 2
+                        metrics.stringWidth(label) + Overlay.LABEL_PADDING
                     }
                 g2.color = LEAD_BG
                 g2.fillRect(p.x, p.y, width, editor.lineHeight)

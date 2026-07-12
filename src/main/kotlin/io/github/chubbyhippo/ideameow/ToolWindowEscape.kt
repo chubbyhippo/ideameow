@@ -62,6 +62,7 @@ object ToolWindowEscape {
             override fun dispatch(e: AWTEvent) = this@ToolWindowEscape.dispatch(e)
         }
 
+    @Suppress("UnstableApiUsage")
     private fun dispatch(e: AWTEvent): Boolean {
         if (e !is KeyEvent || e.isConsumed) return false
         if (e.id == KeyEvent.KEY_TYPED) return swallowTypedEscape(e)

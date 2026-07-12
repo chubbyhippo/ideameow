@@ -71,11 +71,11 @@ abstract class MeowSpec : BasePlatformTestCase() {
     }
 
     protected fun whenKeys(keys: String) {
-        for (c in keys) Engine.handleChar(ed, c, null)
+        for (c in keys) Engine.handleChar(ed, c)
     }
 
     protected fun whenCommand(name: String) {
-        Engine.COMMANDS.getValue(name).invoke(ed, st, null)
+        Engine.COMMANDS.getValue(name).invoke(ed, st)
     }
 
     protected fun thenSelection(expected: String) = assertEquals("selected text", expected, ed.selectionModel.selectedText)

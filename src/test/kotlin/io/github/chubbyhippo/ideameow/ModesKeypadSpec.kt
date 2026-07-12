@@ -168,7 +168,7 @@ class ModesKeypadSpec : MeowSpec() {
     fun `test given editors without meow state then keys pass through untouched`() {
         given("word", "<caret>hello")
         ed.putUserData(Meow.KEY, null)
-        assertFalse(Engine.handleChar(ed, 'w', null))
+        assertFalse(Engine.handleChar(ed, 'w'))
     }
 
     fun `test given an rc key bound to an IDE action then the action performs`() {

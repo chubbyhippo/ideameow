@@ -32,9 +32,9 @@ internal object Grab {
 
     val commands: Map<String, MeowCommand> =
         mapOf(
-            "meow-grab" to MeowCommand { ed, st, _ -> grab(ed, st) },
-            "meow-sync-grab" to MeowCommand { ed, st, _ -> sync(ed, st) },
-            "meow-swap-grab" to MeowCommand { ed, st, _ -> swap(ed, st) },
+            "meow-grab" to MeowCommand { ed, st -> grab(ed, st) },
+            "meow-sync-grab" to MeowCommand { ed, st -> sync(ed, st) },
+            "meow-swap-grab" to MeowCommand { ed, st -> swap(ed, st) },
         )
 
     fun clear(

@@ -24,8 +24,8 @@ internal object Search {
 
     val commands: Map<String, MeowCommand> =
         mapOf(
-            "meow-search" to MeowCommand { ed, st, _ -> search(ed, st) },
-            "meow-visit" to MeowCommand { ed, st, _ -> visit(ed, st) },
+            "meow-search" to MeowCommand { ed, st -> search(ed, st) },
+            "meow-visit" to MeowCommand { ed, st -> visit(ed, st) },
         )
 
     fun push(
@@ -109,10 +109,12 @@ internal object Search {
             Ide.hint(editor, "No match: ${re.pattern}")
             return
         }
-        if (!backward) {
-            Selections.select(editor, st, SelType.VISIT, m.range.first, m.range.last + 1, expand = false)
-        } else {
-            Selections.select(editor, st, SelType.VISIT, m.range.last + 1, m.range.first, expand = false)
-        }
+        val (mark, point) =
+            if (backward) {
+                m.range.last + 1 to m.range.first
+            } else {
+                m.range.first to m.range.last + 1
+            }
+        Selections.select(editor, st, SelType.VISIT, mark, point, expand = false)
     }
 }

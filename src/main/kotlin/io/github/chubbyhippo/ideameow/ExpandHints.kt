@@ -121,7 +121,7 @@ object ExpandHints {
                     if (next != null && next.y == p.y && next.x > p.x) {
                         next.x - p.x
                     } else {
-                        metrics.stringWidth(label) + 2
+                        metrics.stringWidth(label) + Overlay.LABEL_PADDING
                     }
                 g2.color = editor.colorsScheme.defaultBackground
                 g2.fillRect(p.x, p.y, cell, lineHeight)

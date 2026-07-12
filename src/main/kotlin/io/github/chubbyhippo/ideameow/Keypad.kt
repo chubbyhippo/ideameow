@@ -19,7 +19,6 @@ package io.github.chubbyhippo.ideameow
 import com.intellij.openapi.actionSystem.ActionUpdateThread
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.CommonDataKeys
-import com.intellij.openapi.actionSystem.DataContext
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.project.DumbAwareAction
 import com.intellij.openapi.ui.Messages
@@ -29,10 +28,9 @@ object Keypad {
         editor: Editor,
         st: MeowState,
         c: Char,
-        ctx: DataContext?,
     ) {
         WhichKey.hide()
-        val keypad = Rc.keypad()
+        val bindings = Rc.keypad()
         val buf = st.keypad.toString()
 
         if (buf == "/") {
@@ -63,13 +61,13 @@ object Keypad {
 
         st.keypad.append(c)
         val cur = st.keypad.toString()
-        val binding = keypad[cur]
+        val binding = bindings[cur]
         if (binding != null) {
             exit(editor, st)
-            Engine.runBinding(editor, st, binding, ctx)
+            Engine.runBinding(editor, st, binding)
             return
         }
-        if (keypad.keys.none { it.startsWith(cur) }) {
+        if (bindings.keys.none { it.startsWith(cur) }) {
             exit(editor, st)
             Ide.hint(editor, "SPC ${cur.toCharArray().joinToString(" ")} is undefined")
         } else {
@@ -82,7 +80,7 @@ object Keypad {
         st: MeowState,
     ) {
         WhichKey.hide()
-        Meow.setMode(editor, st, st.keypadPreviousState)
+        Meow.setMode(editor, st, st.keypadPreviousMode)
     }
 
     private fun describe(

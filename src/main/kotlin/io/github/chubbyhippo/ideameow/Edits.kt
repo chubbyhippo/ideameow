@@ -16,7 +16,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package io.github.chubbyhippo.ideameow
 
-import com.intellij.openapi.actionSystem.DataContext
 import com.intellij.openapi.actionSystem.IdeActions
 import com.intellij.openapi.editor.Caret
 import com.intellij.openapi.editor.Editor
@@ -24,23 +23,23 @@ import com.intellij.openapi.editor.Editor
 internal object Edits {
     val commands: Map<String, MeowCommand> =
         buildMap {
-            put("meow-insert", MeowCommand { ed, st, _ -> enterInsert(ed, st, atSelectionEnd = false) })
-            put("meow-append", MeowCommand { ed, st, _ -> enterInsert(ed, st, atSelectionEnd = true) })
-            put("meow-open-above", MeowCommand { ed, st, ctx -> openLine(ed, st, ctx, "EditorStartNewLineBefore") })
-            put("meow-open-below", MeowCommand { ed, st, ctx -> openLine(ed, st, ctx, "EditorStartNewLine") })
-            put("meow-change", MeowCommand { ed, st, _ -> change(ed, st) })
-            put("meow-delete", MeowCommand { ed, st, _ -> delete(ed, st) })
-            put("meow-backward-delete", MeowCommand { ed, st, _ -> backwardDelete(ed, st) })
-            put("meow-kill", MeowCommand { ed, st, ctx -> kill(ed, st, ctx) })
-            put("meow-save", MeowCommand { ed, st, ctx -> save(ed, st, ctx) })
-            put("meow-yank", MeowCommand { ed, _, _ -> yank(ed) })
-            put("meow-replace", MeowCommand { ed, st, _ -> replace(ed, st) })
-            put("meow-undo", MeowCommand { ed, st, ctx -> undo(ed, st, ctx) })
-            put("meow-undo-in-selection", MeowCommand { ed, _, ctx -> undoInSelection(ed, ctx) })
-            put("upcase-word", MeowCommand { ed, st, _ -> caseWord(ed, st, CaseOp.UPCASE) })
-            put("downcase-word", MeowCommand { ed, st, _ -> caseWord(ed, st, CaseOp.DOWNCASE) })
-            put("capitalize-word", MeowCommand { ed, st, _ -> caseWord(ed, st, CaseOp.CAPITALIZE) })
-            put("kill-word", MeowCommand { ed, st, ctx -> killWord(ed, st, ctx) })
+            put("meow-insert", MeowCommand { ed, st -> enterInsert(ed, st, atSelectionEnd = false) })
+            put("meow-append", MeowCommand { ed, st -> enterInsert(ed, st, atSelectionEnd = true) })
+            put("meow-open-above", MeowCommand { ed, st -> openLine(ed, st, "EditorStartNewLineBefore") })
+            put("meow-open-below", MeowCommand { ed, st -> openLine(ed, st, "EditorStartNewLine") })
+            put("meow-change", MeowCommand { ed, st -> change(ed, st) })
+            put("meow-delete", MeowCommand { ed, st -> delete(ed, st) })
+            put("meow-backward-delete", MeowCommand { ed, st -> backwardDelete(ed, st) })
+            put("meow-kill", MeowCommand { ed, st -> kill(ed, st) })
+            put("meow-save", MeowCommand { ed, st -> save(ed, st) })
+            put("meow-yank", MeowCommand { ed, _ -> yank(ed) })
+            put("meow-replace", MeowCommand { ed, st -> replace(ed, st) })
+            put("meow-undo", MeowCommand { ed, st -> undo(ed, st) })
+            put("meow-undo-in-selection", MeowCommand { ed, _ -> undoInSelection(ed) })
+            put("upcase-word", MeowCommand { ed, st -> caseWord(ed, st, CaseOp.UPCASE) })
+            put("downcase-word", MeowCommand { ed, st -> caseWord(ed, st, CaseOp.DOWNCASE) })
+            put("capitalize-word", MeowCommand { ed, st -> caseWord(ed, st, CaseOp.CAPITALIZE) })
+            put("kill-word", MeowCommand { ed, st -> killWord(ed, st) })
         }
 
     private enum class CaseOp(
@@ -88,12 +87,11 @@ internal object Edits {
     private fun openLine(
         editor: Editor,
         st: MeowState,
-        ctx: DataContext?,
         actionId: String,
     ) {
         if (blockedReadOnly(editor)) return
         Selections.collapse(editor, st)
-        Ide.act(editor, ctx, actionId)
+        Ide.act(editor, actionId)
         Meow.setMode(editor, st, MeowMode.INSERT)
     }
 
@@ -165,7 +163,6 @@ internal object Edits {
     private fun kill(
         editor: Editor,
         st: MeowState,
-        ctx: DataContext?,
     ) {
         if (!allowModify(editor)) return
         val sm = editor.selectionModel
@@ -175,7 +172,7 @@ internal object Edits {
         }
         if (sm.hasSelection()) {
             prepareLineSelectionsForKill(editor, st)
-            Ide.act(editor, ctx, IdeActions.ACTION_EDITOR_CUT)
+            Ide.act(editor, IdeActions.ACTION_EDITOR_CUT)
             st.selType = SelType.NONE
             return
         }
@@ -186,7 +183,7 @@ internal object Edits {
         val end = if (caret == eol) (eol + 1).coerceAtMost(doc.textLength) else eol
         if (end > caret) {
             sm.setSelection(caret, end)
-            Ide.act(editor, ctx, IdeActions.ACTION_EDITOR_CUT)
+            Ide.act(editor, IdeActions.ACTION_EDITOR_CUT)
         }
     }
 
@@ -202,15 +199,14 @@ internal object Edits {
             val text = editor.document.charsSequence
             val before = if (s > 0) text[s - 1] else '\n'
             val after = if (s < text.length) text[s] else '\n'
-            if (before != '\n' &&
-                after != '\n' &&
-                !before.isWhitespace() &&
-                !after.isWhitespace() &&
-                after !in ")]}.,;:" &&
-                before !in "([{"
-            ) {
-                editor.document.insertString(s, " ")
-            }
+            val needsSpace =
+                before != '\n' &&
+                    after != '\n' &&
+                    !before.isWhitespace() &&
+                    !after.isWhitespace() &&
+                    after !in ")]}.,;:" &&
+                    before !in "([{"
+            if (needsSpace) editor.document.insertString(s, " ")
             editor.caretModel.moveToOffset(s)
         }
         Selections.collapse(editor, st)
@@ -219,11 +215,10 @@ internal object Edits {
     private fun save(
         editor: Editor,
         st: MeowState,
-        ctx: DataContext?,
     ) {
         if (!editor.selectionModel.hasSelection()) return
         prepareLineSelectionsForKill(editor, st)
-        Ide.act(editor, ctx, IdeActions.ACTION_EDITOR_COPY)
+        Ide.act(editor, IdeActions.ACTION_EDITOR_COPY)
         for (caret in editor.caretModel.allCarets) caret.removeSelection()
         st.selType = SelType.NONE
         st.selExpand = false
@@ -260,17 +255,13 @@ internal object Edits {
     private fun undo(
         editor: Editor,
         st: MeowState,
-        ctx: DataContext?,
     ) {
         if (editor.selectionModel.hasSelection()) Selections.cancel(editor, st)
-        Ide.act(editor, ctx, IdeActions.ACTION_UNDO)
+        Ide.act(editor, IdeActions.ACTION_UNDO)
     }
 
-    private fun undoInSelection(
-        editor: Editor,
-        ctx: DataContext?,
-    ) {
-        if (editor.selectionModel.hasSelection()) Ide.act(editor, ctx, IdeActions.ACTION_UNDO)
+    private fun undoInSelection(editor: Editor) {
+        if (editor.selectionModel.hasSelection()) Ide.act(editor, IdeActions.ACTION_UNDO)
     }
 
     private fun casified(
@@ -325,7 +316,6 @@ internal object Edits {
     private fun killWord(
         editor: Editor,
         st: MeowState,
-        ctx: DataContext?,
     ) {
         if (blockedReadOnly(editor)) return
         val n = st.takeCount(1)
@@ -343,7 +333,7 @@ internal object Edits {
             caret.setSelection(minOf(from, target), maxOf(from, target))
             any = true
         }
-        if (any) Ide.act(editor, ctx, IdeActions.ACTION_EDITOR_CUT)
+        if (any) Ide.act(editor, IdeActions.ACTION_EDITOR_CUT)
         st.selType = SelType.NONE
         st.selExpand = false
     }

@@ -45,7 +45,7 @@ class EditingSpec : MeowSpec() {
         whenKeys("i")
         assertFalse(
             "typed keys must reach the original handler in INSERT",
-            Engine.handleChar(ed, 'z', null),
+            Engine.handleChar(ed, 'z'),
         )
     }
 

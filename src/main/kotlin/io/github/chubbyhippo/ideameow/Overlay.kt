@@ -26,6 +26,8 @@ import java.awt.RenderingHints
 import javax.swing.JComponent
 
 internal object Overlay {
+    const val LABEL_PADDING = 2
+
     fun attach(
         editor: Editor,
         canvas: Canvas,

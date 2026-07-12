@@ -18,7 +18,6 @@ package io.github.chubbyhippo.ideameow
 
 import com.intellij.codeInsight.hint.HintManager
 import com.intellij.openapi.actionSystem.ActionManager
-import com.intellij.openapi.actionSystem.DataContext
 import com.intellij.openapi.actionSystem.ex.ActionManagerEx
 import com.intellij.openapi.command.WriteCommandAction
 import com.intellij.openapi.editor.Editor
@@ -30,7 +29,6 @@ import javax.swing.JComponent
 internal object Ide {
     fun act(
         editor: Editor,
-        @Suppress("UNUSED_PARAMETER") ctx: DataContext?,
         id: String,
     ) {
         val action =

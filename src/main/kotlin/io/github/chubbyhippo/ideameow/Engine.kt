@@ -16,14 +16,12 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package io.github.chubbyhippo.ideameow
 
-import com.intellij.openapi.actionSystem.DataContext
 import com.intellij.openapi.editor.Editor
 
 fun interface MeowCommand {
     operator fun invoke(
         editor: Editor,
         state: MeowState,
-        ctx: DataContext?,
     )
 }
 
@@ -37,11 +35,11 @@ object Engine {
             putAll(Grab.commands)
             putAll(Edits.commands)
             putAll(Avy.commands)
-            put("meow-negative-argument", MeowCommand { _, st, _ -> st.negative = true })
-            put("meow-quit", MeowCommand { ed, _, ctx -> Ide.act(ed, ctx, "CloseContent") })
-            put("meow-keypad", MeowCommand { ed, st, _ -> enterKeypad(ed, st) })
-            put("repeat", MeowCommand { ed, st, ctx -> repeatLast(ed, st, ctx) })
-            put("ignore", MeowCommand { _, _, _ -> })
+            put("meow-negative-argument", MeowCommand { _, st -> st.negative = true })
+            put("meow-quit", MeowCommand { ed, _ -> Ide.act(ed, "CloseContent") })
+            put("meow-keypad", MeowCommand { ed, st -> enterKeypad(ed, st) })
+            put("repeat", MeowCommand { ed, st -> repeatLast(ed, st) })
+            put("ignore", MeowCommand { _, _ -> })
         }
 
     private val KEYPAD_BINDING = Rc.Binding(command = "meow-keypad")
@@ -50,7 +48,7 @@ object Engine {
         editor: Editor,
         st: MeowState,
     ) {
-        st.keypadPreviousState = st.mode
+        st.keypadPreviousMode = st.mode
         Meow.setMode(editor, st, MeowMode.KEYPAD)
         WhichKey.scheduleKeypad(editor, "")
     }
@@ -58,12 +56,11 @@ object Engine {
     fun handleChar(
         editor: Editor,
         c: Char,
-        ctx: DataContext?,
     ): Boolean {
         val st = Meow.state(editor) ?: return false
         if (st.mode == MeowMode.INSERT) return false
         if (st.mode == MeowMode.KEYPAD) {
-            Keypad.key(editor, st, c, ctx)
+            Keypad.key(editor, st, c)
             st.lastCommand = "keypad"
             Meow.updateWidgets()
             return true
@@ -81,13 +78,13 @@ object Engine {
         val pend = st.pending
         val repeatBinding = if (pend == null) st.repeatMap?.get(c) else null
         if (pend == null && repeatBinding == null) st.repeatMap = null
-        val motionish = st.mode == MeowMode.MOTION
-        val binding = if (pend == null) repeatBinding ?: resolve(st, c, motionish) else null
+        val motion = st.mode == MeowMode.MOTION
+        val binding = if (pend == null) repeatBinding ?: resolve(st, c, motion) else null
         val cmd = binding?.command
 
         if (!st.replaying && cmd != "repeat") {
-            if (pend == null && st.pendingCount == 0 && !st.negative) st.unit.clear()
-            st.unit.add(c)
+            if (pend == null && st.pendingCount == 0 && !st.negative) st.unitKeys.clear()
+            st.unitKeys.add(c)
         }
 
         if (pend != null) {
@@ -95,18 +92,18 @@ object Engine {
             resolvePending(editor, st, pend, c)
             st.lastCommand = "pending"
         } else if (binding != null) {
-            runBinding(editor, st, binding, ctx)
+            runBinding(editor, st, binding)
             st.lastCommand = binding.command ?: binding.action ?: st.lastCommand
         } else {
             st.lastCommand = null
         }
 
-        val prefixy =
+        val isPrefixCommand =
             st.pending != null ||
                 (st.pendingCount != 0 && cmd?.startsWith("meow-expand-") == true) ||
                 (st.negative && cmd == "meow-negative-argument") ||
                 cmd == "meow-keypad"
-        if (!st.replaying && cmd != "repeat" && !prefixy) st.lastKeys = st.unit.toList()
+        if (!st.replaying && cmd != "repeat" && !isPrefixCommand) st.lastKeys = st.unitKeys.toList()
 
         Meow.updateWidgets()
         return true
@@ -150,13 +147,12 @@ object Engine {
     private fun repeatLast(
         editor: Editor,
         st: MeowState,
-        ctx: DataContext?,
     ) {
         val keys = st.lastKeys
         if (keys.isEmpty()) return
         st.replaying = true
         try {
-            for (k in keys) handleChar(editor, k, ctx)
+            for (k in keys) handleChar(editor, k)
         } finally {
             st.replaying = false
         }
@@ -166,9 +162,8 @@ object Engine {
         editor: Editor,
         st: MeowState,
         b: Rc.Binding,
-        ctx: DataContext?,
     ) {
-        dispatch(editor, st, b, ctx)
+        dispatch(editor, st, b)
         val map = Rc.repeatMapFor(b) ?: return
         if (st.repeatMap == null) {
             Ide.hint(editor, "Repeat with ${map.keys.joinToString(", ")}")
@@ -180,21 +175,20 @@ object Engine {
         editor: Editor,
         st: MeowState,
         b: Rc.Binding,
-        ctx: DataContext?,
     ) {
         val command = b.command
         if (command != null) {
-            COMMANDS[command]?.invoke(editor, st, ctx)
+            COMMANDS[command]?.invoke(editor, st)
                 ?: Ide.hint(editor, "Unknown meow command: $command")
             return
         }
         val actionId = b.action
         if (actionId != null) {
-            Ide.act(editor, ctx, actionId)
+            Ide.act(editor, actionId)
             return
         }
         val keys = b.keys ?: return
-        if (st.replayDepth >= 8) {
+        if (st.replayDepth >= Rc.MAX_MAPPING_DEPTH) {
             Ide.hint(editor, "ideameow: mapping recursion is too deep")
             return
         }
@@ -203,7 +197,7 @@ object Engine {
         st.replayDepth++
         if (!b.recursive) st.noremapDepth++
         try {
-            for (k in keys) handleChar(editor, k, ctx)
+            for (k in keys) handleChar(editor, k)
         } finally {
             if (!b.recursive) st.noremapDepth--
             st.replayDepth--

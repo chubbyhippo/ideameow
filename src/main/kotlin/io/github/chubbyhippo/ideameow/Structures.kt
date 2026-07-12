@@ -21,13 +21,13 @@ import com.intellij.openapi.editor.Editor
 internal object Structures {
     val commands: Map<String, MeowCommand> =
         mapOf(
-            "meow-inner-of-thing" to MeowCommand { ed, st, _ -> pendThing(ed, st, Pending.INNER) },
-            "meow-bounds-of-thing" to MeowCommand { ed, st, _ -> pendThing(ed, st, Pending.BOUNDS) },
-            "meow-beginning-of-thing" to MeowCommand { ed, st, _ -> pendThing(ed, st, Pending.BEGIN) },
-            "meow-end-of-thing" to MeowCommand { ed, st, _ -> pendThing(ed, st, Pending.END) },
-            "meow-block" to MeowCommand { ed, st, _ -> block(ed, st) },
-            "meow-to-block" to MeowCommand { ed, st, _ -> toBlock(ed, st) },
-            "meow-join" to MeowCommand { ed, st, _ -> join(ed, st) },
+            "meow-inner-of-thing" to MeowCommand { ed, st -> pendThing(ed, st, Pending.INNER) },
+            "meow-bounds-of-thing" to MeowCommand { ed, st -> pendThing(ed, st, Pending.BOUNDS) },
+            "meow-beginning-of-thing" to MeowCommand { ed, st -> pendThing(ed, st, Pending.BEGIN) },
+            "meow-end-of-thing" to MeowCommand { ed, st -> pendThing(ed, st, Pending.END) },
+            "meow-block" to MeowCommand { ed, st -> block(ed, st) },
+            "meow-to-block" to MeowCommand { ed, st -> toBlock(ed, st) },
+            "meow-join" to MeowCommand { ed, st -> join(ed, st) },
         )
 
     private fun pendThing(

@@ -33,6 +33,10 @@ object WhichKey {
     private var chainVisible = false
 
     private const val SEPARATOR = " → "
+    private const val COLUMN_GAP = 28
+    private const val PANEL_MARGIN = 28
+    private const val BOTTOM_INSET = 8
+    private const val LEFT_INSET = 4
 
     private val THINGS =
         listOf(
@@ -120,8 +124,8 @@ object WhichKey {
             popup = p
             val host = editor.component
             val pref = label.preferredSize
-            val y = (host.height - pref.height - JBUI.scale(8)).coerceAtLeast(0)
-            p.show(RelativePoint(host, Point(JBUI.scale(4), y)))
+            val y = (host.height - pref.height - JBUI.scale(BOTTOM_INSET)).coerceAtLeast(0)
+            p.show(RelativePoint(host, Point(JBUI.scale(LEFT_INSET), y)))
         }
     }
 
@@ -130,8 +134,8 @@ object WhichKey {
         rows: List<Pair<String, String>>,
     ): String {
         val metrics = editor.component.getFontMetrics(JBFont.label())
-        val entryWidth = rows.maxOf { (k, d) -> metrics.stringWidth(k + SEPARATOR + d) } + JBUI.scale(28)
-        val available = (editor.component.width - JBUI.scale(28)).coerceAtLeast(entryWidth)
+        val entryWidth = rows.maxOf { (k, d) -> metrics.stringWidth(k + SEPARATOR + d) } + JBUI.scale(COLUMN_GAP)
+        val available = (editor.component.width - JBUI.scale(PANEL_MARGIN)).coerceAtLeast(entryWidth)
         val cols = (available / entryWidth).coerceIn(1, rows.size)
         val perColumn = (rows.size + cols - 1) / cols
         return buildString {

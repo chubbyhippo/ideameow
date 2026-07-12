@@ -30,8 +30,8 @@ enum class Pending { FIND, TILL, INNER, BOUNDS, BEGIN, END }
 data class SavedSelection(
     val type: SelType?,
     val expand: Boolean,
-    val anchor: Int,
-    val active: Int,
+    val mark: Int,
+    val point: Int,
 )
 
 class MeowState {
@@ -60,8 +60,8 @@ class MeowState {
 
     val keypad = StringBuilder()
 
-    var keypadPreviousState = MeowMode.NORMAL
-    val unit = mutableListOf<Char>()
+    var keypadPreviousMode = MeowMode.NORMAL
+    val unitKeys = mutableListOf<Char>()
     var lastKeys: List<Char> = emptyList()
     var replaying = false
 

@@ -25,10 +25,10 @@ internal object Selections {
 
     val commands: Map<String, MeowCommand> =
         buildMap {
-            for (n in 0..9) put("meow-expand-$n", MeowCommand { ed, st, _ -> expandOrCount(ed, st, n) })
-            put("meow-reverse", MeowCommand { ed, _, _ -> reverse(ed) })
-            put("meow-cancel-selection", MeowCommand { ed, st, _ -> cancelAll(ed, st) })
-            put("meow-pop-selection", MeowCommand { ed, st, _ -> pop(ed, st) })
+            for (n in 0..9) put("meow-expand-$n", MeowCommand { ed, st -> expandOrCount(ed, st, n) })
+            put("meow-reverse", MeowCommand { ed, _ -> reverse(ed) })
+            put("meow-cancel-selection", MeowCommand { ed, st -> cancelAll(ed, st) })
+            put("meow-pop-selection", MeowCommand { ed, st -> pop(ed, st) })
         }
 
     private val EXPANDABLE =
@@ -68,14 +68,14 @@ internal object Selections {
         st: MeowState,
         type: SelType,
         expand: Boolean,
-        anchor: Int,
-        active: Int,
+        mark: Int,
+        point: Int,
         posBefore: Int,
     ) {
         val prev = st.lastSelection ?: SavedSelection(null, false, posBefore, posBefore)
         if (st.selectionHistory.lastOrNull() != prev) st.selectionHistory.addLast(prev)
         while (st.selectionHistory.size > SELECTION_HISTORY_MAX) st.selectionHistory.removeFirst()
-        st.lastSelection = SavedSelection(type, expand, anchor, active)
+        st.lastSelection = SavedSelection(type, expand, mark, point)
     }
 
     fun select(
@@ -153,11 +153,11 @@ internal object Selections {
         if (editor.selectionModel.hasSelection()) {
             val entry = st.selectionHistory.removeLastOrNull() ?: return
             if (entry.type == null) {
-                editor.caretModel.moveToOffset(entry.active)
+                editor.caretModel.moveToOffset(entry.point)
                 cancel(editor, st)
                 Ide.hint(editor, "No previous selection")
             } else {
-                select(editor, st, entry.type, entry.anchor, entry.active, entry.expand, push = false)
+                select(editor, st, entry.type, entry.mark, entry.point, entry.expand, push = false)
             }
         } else if (!Grab.pop(editor, st)) {
             Ide.hint(editor, "No previous selection")

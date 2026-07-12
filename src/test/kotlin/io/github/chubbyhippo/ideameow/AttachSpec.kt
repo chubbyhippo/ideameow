@@ -84,7 +84,7 @@ class AttachSpec : BasePlatformTestCase() {
         val editor = givenEditor(EditorKind.UNTYPED)
         whenTheFactoryListenerRuns(editor)
         val before = editor.document.text
-        assertTrue("NORMAL mode consumes the key", Engine.handleChar(editor, 'j', null))
+        assertTrue("NORMAL mode consumes the key", Engine.handleChar(editor, 'j'))
         assertEquals("nothing was inserted", before, editor.document.text)
     }
 

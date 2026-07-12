@@ -22,6 +22,7 @@ import java.io.File
 
 object Rc {
     const val FILE_NAME = ".ideameowrc"
+    const val MAX_MAPPING_DEPTH = 8
     private const val DEFAULT_WHICH_KEY_DELAY_MS = 250
 
     data class Binding(

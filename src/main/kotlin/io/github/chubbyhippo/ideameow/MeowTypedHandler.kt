@@ -28,7 +28,7 @@ class MeowTypedHandler(
         charTyped: Char,
         dataContext: DataContext,
     ) {
-        if (!Engine.handleChar(editor, charTyped, dataContext)) {
+        if (!Engine.handleChar(editor, charTyped)) {
             original.execute(editor, charTyped, dataContext)
         }
     }

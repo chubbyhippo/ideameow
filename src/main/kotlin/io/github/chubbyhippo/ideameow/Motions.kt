@@ -32,39 +32,39 @@ import kotlin.math.abs
 internal object Motions {
     val commands: Map<String, MeowCommand> =
         buildMap {
-            put("meow-left", MeowCommand { ed, st, _ -> moveChar(ed, st, -st.takeCount(1)) })
-            put("meow-right", MeowCommand { ed, st, _ -> moveChar(ed, st, st.takeCount(1)) })
-            put("meow-next", MeowCommand { ed, st, _ -> moveLine(ed, st, st.takeCount(1)) })
-            put("meow-prev", MeowCommand { ed, st, _ -> moveLine(ed, st, -st.takeCount(1)) })
-            put("meow-left-expand", MeowCommand { ed, st, _ -> moveExpand(ed, st, -st.takeCount(1), 0) })
-            put("meow-right-expand", MeowCommand { ed, st, _ -> moveExpand(ed, st, st.takeCount(1), 0) })
-            put("meow-next-expand", MeowCommand { ed, st, _ -> moveExpand(ed, st, 0, st.takeCount(1)) })
-            put("meow-prev-expand", MeowCommand { ed, st, _ -> moveExpand(ed, st, 0, -st.takeCount(1)) })
-            put("meow-next-word", MeowCommand { ed, st, _ -> wordMotion(ed, st, symbol = false, n = st.takeCount(1)) })
-            put("meow-next-symbol", MeowCommand { ed, st, _ -> wordMotion(ed, st, symbol = true, n = st.takeCount(1)) })
-            put("meow-back-word", MeowCommand { ed, st, _ -> wordMotion(ed, st, symbol = false, n = -st.takeCount(1)) })
-            put("meow-back-symbol", MeowCommand { ed, st, _ -> wordMotion(ed, st, symbol = true, n = -st.takeCount(1)) })
-            put("meow-mark-word", MeowCommand { ed, st, _ -> markWord(ed, st, symbol = false) })
-            put("meow-mark-symbol", MeowCommand { ed, st, _ -> markWord(ed, st, symbol = true) })
-            put("meow-line", MeowCommand { ed, st, _ -> line(ed, st) })
-            put("meow-goto-line", MeowCommand { ed, st, _ -> gotoLine(ed, st) })
-            put("meow-find", MeowCommand { _, st, _ -> st.pending = Pending.FIND })
-            put("meow-till", MeowCommand { _, st, _ -> st.pending = Pending.TILL })
-            put("forward-char", MeowCommand { ed, st, _ -> charOrExpand(ed, st, st.takeCount(1)) })
-            put("backward-char", MeowCommand { ed, st, _ -> charOrExpand(ed, st, -st.takeCount(1)) })
-            put("next-line", MeowCommand { ed, st, _ -> lineOrExpand(ed, st, st.takeCount(1)) })
-            put("previous-line", MeowCommand { ed, st, _ -> lineOrExpand(ed, st, -st.takeCount(1)) })
+            put("meow-left", MeowCommand { ed, st -> moveChar(ed, st, -st.takeCount(1)) })
+            put("meow-right", MeowCommand { ed, st -> moveChar(ed, st, st.takeCount(1)) })
+            put("meow-next", MeowCommand { ed, st -> moveLine(ed, st, st.takeCount(1)) })
+            put("meow-prev", MeowCommand { ed, st -> moveLine(ed, st, -st.takeCount(1)) })
+            put("meow-left-expand", MeowCommand { ed, st -> moveExpand(ed, st, dx = -st.takeCount(1), dy = 0) })
+            put("meow-right-expand", MeowCommand { ed, st -> moveExpand(ed, st, dx = st.takeCount(1), dy = 0) })
+            put("meow-next-expand", MeowCommand { ed, st -> moveExpand(ed, st, dx = 0, dy = st.takeCount(1)) })
+            put("meow-prev-expand", MeowCommand { ed, st -> moveExpand(ed, st, dx = 0, dy = -st.takeCount(1)) })
+            put("meow-next-word", MeowCommand { ed, st -> wordMotion(ed, st, symbol = false, n = st.takeCount(1)) })
+            put("meow-next-symbol", MeowCommand { ed, st -> wordMotion(ed, st, symbol = true, n = st.takeCount(1)) })
+            put("meow-back-word", MeowCommand { ed, st -> wordMotion(ed, st, symbol = false, n = -st.takeCount(1)) })
+            put("meow-back-symbol", MeowCommand { ed, st -> wordMotion(ed, st, symbol = true, n = -st.takeCount(1)) })
+            put("meow-mark-word", MeowCommand { ed, st -> markWord(ed, st, symbol = false) })
+            put("meow-mark-symbol", MeowCommand { ed, st -> markWord(ed, st, symbol = true) })
+            put("meow-line", MeowCommand { ed, st -> line(ed, st) })
+            put("meow-goto-line", MeowCommand { ed, st -> gotoLine(ed, st) })
+            put("meow-find", MeowCommand { _, st -> st.pending = Pending.FIND })
+            put("meow-till", MeowCommand { _, st -> st.pending = Pending.TILL })
+            put("forward-char", MeowCommand { ed, st -> charOrExpand(ed, st, st.takeCount(1)) })
+            put("backward-char", MeowCommand { ed, st -> charOrExpand(ed, st, -st.takeCount(1)) })
+            put("next-line", MeowCommand { ed, st -> lineOrExpand(ed, st, st.takeCount(1)) })
+            put("previous-line", MeowCommand { ed, st -> lineOrExpand(ed, st, -st.takeCount(1)) })
             put(
                 "move-beginning-of-line",
-                MeowCommand { ed, st, _ -> moveToOrExpand(ed, st, SelType.CHAR, ::lineStartOffset) },
+                MeowCommand { ed, st -> moveToOrExpand(ed, st, SelType.CHAR, ::lineStartOffset) },
             )
-            put("move-end-of-line", MeowCommand { ed, st, _ -> moveToOrExpand(ed, st, SelType.CHAR, ::lineEndOffset) })
-            put("forward-word", MeowCommand { ed, st, _ -> wordOrExpand(ed, st, st.takeCount(1)) })
-            put("backward-word", MeowCommand { ed, st, _ -> wordOrExpand(ed, st, -st.takeCount(1)) })
-            put("forward-sentence", MeowCommand { ed, st, _ -> sentenceOrExpand(ed, st, st.takeCount(1)) })
-            put("backward-sentence", MeowCommand { ed, st, _ -> sentenceOrExpand(ed, st, -st.takeCount(1)) })
-            put("beginning-of-buffer", MeowCommand { ed, st, _ -> bufferBoundary(ed, st, top = true) })
-            put("end-of-buffer", MeowCommand { ed, st, _ -> bufferBoundary(ed, st, top = false) })
+            put("move-end-of-line", MeowCommand { ed, st -> moveToOrExpand(ed, st, SelType.CHAR, ::lineEndOffset) })
+            put("forward-word", MeowCommand { ed, st -> wordOrExpand(ed, st, st.takeCount(1)) })
+            put("backward-word", MeowCommand { ed, st -> wordOrExpand(ed, st, -st.takeCount(1)) })
+            put("forward-sentence", MeowCommand { ed, st -> sentenceOrExpand(ed, st, st.takeCount(1)) })
+            put("backward-sentence", MeowCommand { ed, st -> sentenceOrExpand(ed, st, -st.takeCount(1)) })
+            put("beginning-of-buffer", MeowCommand { ed, st -> bufferBoundary(ed, st, top = true) })
+            put("end-of-buffer", MeowCommand { ed, st -> bufferBoundary(ed, st, top = false) })
         }
 
     private fun wordType(symbol: Boolean) = if (symbol) SelType.SYMBOL else SelType.WORD
@@ -184,7 +184,7 @@ internal object Motions {
                 } else {
                     movedLineOffset(editor, caret.offset, dy, columnFor(editor, caret, goal))
                 }
-            applyCaretMove(caret, target, true)
+            applyCaretMove(caret, target, extend = true)
         }
         recordExpandedSelection(editor, st, SelType.CHAR, posBefore)
         editor.scrollingModel.scrollToCaret(ScrollType.RELATIVE)
@@ -197,7 +197,7 @@ internal object Motions {
         posBefore: Int,
     ) {
         val primary = editor.caretModel.primaryCaret
-        Selections.recordSelect(st, type, true, primary.leadSelectionOffset, primary.offset, posBefore)
+        Selections.recordSelect(st, type, expand = true, primary.leadSelectionOffset, primary.offset, posBefore)
         st.selType = type
         st.selExpand = true
         Grab.beacon(editor, st)
@@ -208,7 +208,7 @@ internal object Motions {
         st: MeowState,
         dx: Int,
     ) {
-        if (editor.selectionModel.hasSelection()) moveExpand(editor, st, dx, 0) else moveChar(editor, st, dx)
+        if (editor.selectionModel.hasSelection()) moveExpand(editor, st, dx, dy = 0) else moveChar(editor, st, dx)
     }
 
     private fun lineOrExpand(
@@ -216,7 +216,7 @@ internal object Motions {
         st: MeowState,
         dy: Int,
     ) {
-        if (editor.selectionModel.hasSelection()) moveExpand(editor, st, 0, dy) else moveLine(editor, st, dy)
+        if (editor.selectionModel.hasSelection()) moveExpand(editor, st, dx = 0, dy) else moveLine(editor, st, dy)
     }
 
     private fun lineStartOffset(
@@ -421,7 +421,7 @@ internal sealed class EmacsChordAction(
     override fun actionPerformed(e: AnActionEvent) {
         val editor = e.getData(CommonDataKeys.EDITOR) ?: return
         val st = Meow.state(editor) ?: return
-        Engine.COMMANDS[command]?.invoke(editor, st, e.dataContext)
+        Engine.COMMANDS[command]?.invoke(editor, st)
         Meow.updateWidgets()
     }
 }
