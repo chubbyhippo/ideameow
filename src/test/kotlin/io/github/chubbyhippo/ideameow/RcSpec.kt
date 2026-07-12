@@ -21,10 +21,10 @@ import com.intellij.openapi.actionSystem.impl.SimpleDataContext
 import com.intellij.openapi.command.WriteCommandAction
 import com.intellij.openapi.editor.EditorFactory
 import com.intellij.openapi.fileEditor.FileDocumentManager
-import com.intellij.openapi.util.io.FileUtil
 import com.intellij.openapi.vfs.LocalFileSystem
 import com.intellij.testFramework.TestActionEvent
 import java.io.File
+import java.nio.file.Files
 
 class RcSpec : MeowSpec() {
     fun `test given an action mapping then it parses into a normal override`() {
@@ -170,7 +170,7 @@ class RcSpec : MeowSpec() {
     }
 
     fun `test given unsaved rc edits in the editor then SPC c M flushes and reloads them`() {
-        val home = FileUtil.createTempDirectory("meow-home", null)
+        val home = Files.createTempDirectory("meow-home").toFile()
         val oldHome = System.getProperty("user.home")
         System.setProperty("user.home", home.path)
         try {
@@ -194,7 +194,7 @@ class RcSpec : MeowSpec() {
     }
 
     fun `test given comment-only rc edits then the reload button reports no changes`() {
-        val home = FileUtil.createTempDirectory("meow-home", null)
+        val home = Files.createTempDirectory("meow-home").toFile()
         val oldHome = System.getProperty("user.home")
         System.setProperty("user.home", home.path)
         try {
@@ -230,7 +230,7 @@ class RcSpec : MeowSpec() {
     }
 
     fun `test given the rc editor with changes then the floating reload applies them in place`() {
-        val home = FileUtil.createTempDirectory("meow-home", null)
+        val home = Files.createTempDirectory("meow-home").toFile()
         val oldHome = System.getProperty("user.home")
         System.setProperty("user.home", home.path)
         try {
