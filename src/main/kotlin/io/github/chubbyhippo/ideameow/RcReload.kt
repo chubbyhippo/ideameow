@@ -132,7 +132,6 @@ internal class RcReloadFloatingToolbar : AbstractFloatingToolbarProvider(ReloadR
         component: FloatingToolbarComponent,
         parentDisposable: Disposable,
     ) {
-        super.register(dataContext, component, parentDisposable)
         val show = { component.scheduleShow() }
         RcFileState.whenSaved(show)
         Disposer.register(parentDisposable) { RcFileState.removeListener(show) }
