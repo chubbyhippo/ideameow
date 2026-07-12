@@ -17,18 +17,16 @@
 package io.github.chubbyhippo.ideameow
 
 import com.intellij.openapi.editor.Editor
+import com.intellij.openapi.editor.ScrollType
 import com.intellij.openapi.editor.colors.EditorColors
-import com.intellij.openapi.editor.colors.EditorFontType
 import com.intellij.openapi.editor.markup.HighlighterLayer
 import com.intellij.openapi.editor.markup.HighlighterTargetArea
 import com.intellij.openapi.editor.markup.RangeHighlighter
 import com.intellij.openapi.ui.Messages
 import com.intellij.ui.JBColor
 import java.awt.Color
-import java.awt.Graphics
+import java.awt.FontMetrics
 import java.awt.Graphics2D
-import java.awt.Rectangle
-import java.awt.RenderingHints
 import javax.swing.JComponent
 import javax.swing.Timer
 import kotlin.math.ln
@@ -255,7 +253,7 @@ object Avy {
         } else {
             editor.caretModel.moveToOffset(offset)
         }
-        editor.scrollingModel.scrollToCaret(com.intellij.openapi.editor.ScrollType.RELATIVE)
+        editor.scrollingModel.scrollToCaret(ScrollType.RELATIVE)
     }
 
     fun cancel(
@@ -319,12 +317,8 @@ object Avy {
     ) {
         clearVisuals(editor, session)
         val labels = session.node?.let { labels(it) } ?: return
-        val host = editor.contentComponent
         val canvas = LabelsCanvas(editor, labels)
-        canvas.isOpaque = false
-        canvas.bounds = Rectangle(0, 0, host.width, host.height)
-        host.add(canvas)
-        host.repaint()
+        Overlay.attach(editor, canvas)
         session.canvas = canvas
     }
 
@@ -332,29 +326,21 @@ object Avy {
         editor: Editor,
         session: Session,
     ) {
-        session.canvas?.let { canvas ->
-            canvas.parent?.let { parent ->
-                parent.remove(canvas)
-                parent.repaint()
-            }
-        }
+        Overlay.detach(session.canvas)
         session.canvas = null
         session.matchHighlights.forEach { editor.markupModel.removeHighlighter(it) }
         session.matchHighlights.clear()
     }
 
     private class LabelsCanvas(
-        private val editor: Editor,
+        editor: Editor,
         private val labels: List<Pair<Int, String>>,
-    ) : JComponent() {
-        override fun paintComponent(g: Graphics) {
-            if (editor.isDisposed) return
-            val g2 = g as Graphics2D
-            g2.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON)
-            val font = editor.colorsScheme.getFont(EditorFontType.BOLD)
-            val metrics = editor.contentComponent.getFontMetrics(font)
+    ) : Overlay.Canvas(editor) {
+        override fun paintLabels(
+            g2: Graphics2D,
+            metrics: FontMetrics,
+        ) {
             val text = editor.document.charsSequence
-            g2.font = font
             for ((offset, label) in labels) {
                 val p = editor.offsetToXY(offset, true, false)
                 var covered = 0

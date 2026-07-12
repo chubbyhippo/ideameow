@@ -163,10 +163,7 @@ object Things {
         if (o >= text.length || !isSymbolChar(text[o])) {
             if (o > 0 && isSymbolChar(text[o - 1])) o-- else return null
         }
-        var s = o
-        var e = o
-        while (s > 0 && isSymbolChar(text[s - 1])) s--
-        while (e < text.length && isSymbolChar(text[e])) e++
+        val (s, e) = Words.spanAt(text, o, ::isSymbolChar)
         return Bounds(s, e)
     }
 

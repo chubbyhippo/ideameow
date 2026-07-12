@@ -54,25 +54,15 @@ internal object Structures {
                 Ide.hint(editor, "No thing '$ch' here")
                 return
             }
-        when (kind) {
-            Pending.INNER -> {
-                Selections.select(editor, st, SelType.TRANSIENT, b.start, b.end, expand = false)
+        val (mark, point) =
+            when (kind) {
+                Pending.INNER -> b.start to b.end
+                Pending.BOUNDS -> b.end to b.start
+                Pending.BEGIN -> off to b.start
+                Pending.END -> off to b.end
+                else -> return
             }
-
-            Pending.BOUNDS -> {
-                Selections.select(editor, st, SelType.TRANSIENT, b.end, b.start, expand = false)
-            }
-
-            Pending.BEGIN -> {
-                Selections.select(editor, st, SelType.TRANSIENT, off, b.start, expand = false)
-            }
-
-            Pending.END -> {
-                Selections.select(editor, st, SelType.TRANSIENT, off, b.end, expand = false)
-            }
-
-            else -> {}
-        }
+        Selections.select(editor, st, SelType.TRANSIENT, mark, point, expand = false)
     }
 
     private data class PairRange(
@@ -178,24 +168,25 @@ internal object Structures {
         fun blank(l: Int) = text.subSequence(doc.getLineStartOffset(l), doc.getLineEndOffset(l)).isBlank()
 
         val ln = doc.getLineNumber(editor.caretModel.offset)
+        val markLine: Int
+        val pointLine: Int
         if (n >= 0) {
             var pl = ln - 1
             while (pl >= 0 && blank(pl)) pl--
             if (pl < 0) return
-            val m = doc.getLineEndOffset(pl)
-            var p = doc.getLineStartOffset(ln)
-            val eol = doc.getLineEndOffset(ln)
-            while (p < eol && text[p].isWhitespace()) p++
-            Selections.select(editor, st, SelType.JOIN, m, p, expand = true)
+            markLine = pl
+            pointLine = ln
         } else {
             var nl = ln + 1
             while (nl <= doc.lineCount - 1 && blank(nl)) nl++
             if (nl > doc.lineCount - 1) return
-            val m = doc.getLineEndOffset(ln)
-            var p = doc.getLineStartOffset(nl)
-            val eol = doc.getLineEndOffset(nl)
-            while (p < eol && text[p].isWhitespace()) p++
-            Selections.select(editor, st, SelType.JOIN, m, p, expand = true)
+            markLine = ln
+            pointLine = nl
         }
+        val m = doc.getLineEndOffset(markLine)
+        var p = doc.getLineStartOffset(pointLine)
+        val eol = doc.getLineEndOffset(pointLine)
+        while (p < eol && text[p].isWhitespace()) p++
+        Selections.select(editor, st, SelType.JOIN, m, p, expand = true)
     }
 }

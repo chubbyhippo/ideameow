@@ -4,8 +4,6 @@
   <CurrentIssues>
     <ID>ComplexCondition:Edits.kt$Edits$before != '\n' &amp;&amp; after != '\n' &amp;&amp; !before.isWhitespace() &amp;&amp; !after.isWhitespace() &amp;&amp; after !in ")]}.,;:" &amp;&amp; before !in "([{"</ID>
     <ID>ComplexCondition:Structures.kt$Structures$o &lt; s &amp;&amp; i + 1 >= e &amp;&amp; (best == null || i - o &lt; best.close - best.open)</ID>
-    <ID>ComplexCondition:Things.kt$Things$c in enders || (c == '\n' &amp;&amp; s > 1 &amp;&amp; text[s - 2] == '\n')</ID>
-    <ID>ComplexCondition:Things.kt$Things$e &lt; text.length &amp;&amp; text[e] !in enders &amp;&amp; !(text[e] == '\n' &amp;&amp; e + 1 &lt; text.length &amp;&amp; text[e + 1] == '\n')</ID>
     <ID>ComplexCondition:Things.kt$Things$t.contains("METHOD") || t.contains("FUNCTION") || t.startsWith("FUN") || t.contains("LAMBDA")</ID>
     <ID>CyclomaticComplexMethod:Engine.kt$Engine$fun handleChar( editor: Editor, c: Char, ctx: DataContext?, ): Boolean</ID>
     <ID>CyclomaticComplexMethod:ExpandHints.kt$ExpandHints$private fun positions( editor: Editor, st: MeowState, count: Int, ): List&lt;Int></ID>
@@ -30,13 +28,8 @@
     <ID>LoopWithTooManyJumpStatements:Things.kt$Things$while</ID>
     <ID>MaxLineLength:AttachSpec.kt$AttachSpec$private fun thenMeowStaysAway(editor: Editor)</ID>
     <ID>MaxLineLength:MeowSpec.kt$MeowSpec$protected fun thenSelection(expected: String)</ID>
-    <ID>MaxLineLength:Motions.kt$Motions$Selections.select(editor, st, SelType.LINE, Selections.mark(editor), doc.getLineEndOffset(ln), expand = true)</ID>
-    <ID>MaxLineLength:Motions.kt$Motions$Selections.select(editor, st, SelType.LINE, Selections.mark(editor), doc.getLineStartOffset(ln), expand = true)</ID>
-    <ID>MaxLineLength:Motions.kt$Motions$Selections.select(editor, st, SelType.LINE, doc.getLineEndOffset(ln), doc.getLineStartOffset(startLn), expand = true)</ID>
-    <ID>MaxLineLength:Motions.kt$Motions$Selections.select(editor, st, SelType.LINE, doc.getLineStartOffset(ln), doc.getLineEndOffset(endLn), expand = true)</ID>
     <ID>MaxLineLength:Motions.kt$Motions$put("meow-back-symbol", MeowCommand { ed, st, _ -> wordMotion(ed, st, symbol = true, n = -st.takeCount(1)) })</ID>
     <ID>MaxLineLength:RcParser.kt$RcParser$err("unsupported key token ${s.substring(i, close + 1)} (only printable keys reach the meow engine)")</ID>
-    <ID>MaxLineLength:Things.kt$Things$while (e &lt; text.length &amp;&amp; text[e] !in enders &amp;&amp; !(text[e] == '\n' &amp;&amp; e + 1 &lt; text.length &amp;&amp; text[e + 1] == '\n')) e++</ID>
     <ID>MaxLineLength:ThingsSpec.kt$ThingsSpec$fun</ID>
     <ID>MemberNameEqualsClassName:Grab.kt$Grab$private fun grab( editor: Editor, st: MeowState, )</ID>
     <ID>MemberNameEqualsClassName:Search.kt$Search$private fun search( editor: Editor, st: MeowState, )</ID>
@@ -67,6 +60,7 @@
     <ID>ReturnCount:Things.kt$Things$private fun paragraph( editor: Editor, offset: Int, inner: Boolean, ): Bounds?</ID>
     <ID>ReturnCount:Things.kt$Things$private fun sentence( text: CharSequence, offset: Int, inner: Boolean, ): Bounds?</ID>
     <ID>ReturnCount:ToolWindowEscape.kt$ToolWindowEscape$private fun dispatch(e: AWTEvent): Boolean</ID>
+    <ID>ReturnCount:ToolWindowEscape.kt$ToolWindowEscape$private fun handleEscapePress(e: KeyEvent): Boolean</ID>
     <ID>ReturnCount:TreeMeow.kt$TreeMeow$fun dispatch( tree: JTree, c: Char, noremap: Boolean = false, depth: Int = 0, )</ID>
     <ID>ReturnCount:TreeMeow.kt$TreeMeow.&lt;no name provided>$override fun actionPerformed(e: AnActionEvent)</ID>
     <ID>ReturnCount:Windmove.kt$Windmove$@Suppress("UnstableApiUsage") fun swap( editor: Editor, dir: Dir, )</ID>

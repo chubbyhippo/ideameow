@@ -16,6 +16,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package io.github.chubbyhippo.ideameow
 
+import com.intellij.openapi.editor.Document
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.editor.ScrollType
 
@@ -50,6 +51,18 @@ internal object Selections {
         if (!sm.hasSelection()) return editor.caretModel.offset
         return if (backwardP(editor)) sm.selectionEnd else sm.selectionStart
     }
+
+    fun lineExpandPoint(
+        doc: Document,
+        ln: Int,
+        n: Int,
+        back: Boolean,
+    ): Int =
+        if (back) {
+            doc.getLineStartOffset((ln - n).coerceAtLeast(0))
+        } else {
+            doc.getLineEndOffset((ln + n).coerceAtMost(doc.lineCount - 1))
+        }
 
     fun recordSelect(
         st: MeowState,
@@ -183,14 +196,7 @@ internal object Selections {
                     if (back) Words.prevStart(text, caret, n, p) else Words.nextEnd(text, caret, n, p)
                 }
 
-                SelType.LINE -> {
-                    val ln = doc.getLineNumber(caret)
-                    if (back) {
-                        doc.getLineStartOffset((ln - n).coerceAtLeast(0))
-                    } else {
-                        doc.getLineEndOffset((ln + n).coerceAtMost(doc.lineCount - 1))
-                    }
-                }
+                SelType.LINE -> lineExpandPoint(doc, doc.getLineNumber(caret), n, back)
 
                 SelType.FIND, SelType.TILL -> {
                     val ch = st.lastFind ?: return

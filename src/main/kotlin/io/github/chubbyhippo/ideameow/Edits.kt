@@ -24,10 +24,10 @@ import com.intellij.openapi.editor.Editor
 internal object Edits {
     val commands: Map<String, MeowCommand> =
         buildMap {
-            put("meow-insert", MeowCommand { ed, st, _ -> insert(ed, st) })
-            put("meow-append", MeowCommand { ed, st, _ -> append(ed, st) })
-            put("meow-open-above", MeowCommand { ed, st, ctx -> openAbove(ed, st, ctx) })
-            put("meow-open-below", MeowCommand { ed, st, ctx -> openBelow(ed, st, ctx) })
+            put("meow-insert", MeowCommand { ed, st, _ -> enterInsert(ed, st, atSelectionEnd = false) })
+            put("meow-append", MeowCommand { ed, st, _ -> enterInsert(ed, st, atSelectionEnd = true) })
+            put("meow-open-above", MeowCommand { ed, st, ctx -> openLine(ed, st, ctx, "EditorStartNewLineBefore") })
+            put("meow-open-below", MeowCommand { ed, st, ctx -> openLine(ed, st, ctx, "EditorStartNewLine") })
             put("meow-change", MeowCommand { ed, st, _ -> change(ed, st) })
             put("meow-delete", MeowCommand { ed, st, _ -> delete(ed, st) })
             put("meow-backward-delete", MeowCommand { ed, st, _ -> backwardDelete(ed, st) })
@@ -69,12 +69,15 @@ internal object Edits {
         return true
     }
 
-    private fun insert(
+    private fun enterInsert(
         editor: Editor,
         st: MeowState,
+        atSelectionEnd: Boolean,
     ) {
         for (caret in editor.caretModel.allCarets) {
-            if (caret.hasSelection()) caret.moveToOffset(caret.selectionStart)
+            if (caret.hasSelection()) {
+                caret.moveToOffset(if (atSelectionEnd) caret.selectionEnd else caret.selectionStart)
+            }
             caret.removeSelection()
         }
         st.selType = SelType.NONE
@@ -82,38 +85,15 @@ internal object Edits {
         Meow.setMode(editor, st, MeowMode.INSERT)
     }
 
-    private fun append(
-        editor: Editor,
-        st: MeowState,
-    ) {
-        for (caret in editor.caretModel.allCarets) {
-            if (caret.hasSelection()) caret.moveToOffset(caret.selectionEnd)
-            caret.removeSelection()
-        }
-        st.selType = SelType.NONE
-        Selections.resetSelectionMemory(st)
-        Meow.setMode(editor, st, MeowMode.INSERT)
-    }
-
-    private fun openBelow(
+    private fun openLine(
         editor: Editor,
         st: MeowState,
         ctx: DataContext?,
+        actionId: String,
     ) {
         if (blockedReadOnly(editor)) return
         Selections.collapse(editor, st)
-        Ide.act(editor, ctx, "EditorStartNewLine")
-        Meow.setMode(editor, st, MeowMode.INSERT)
-    }
-
-    private fun openAbove(
-        editor: Editor,
-        st: MeowState,
-        ctx: DataContext?,
-    ) {
-        if (blockedReadOnly(editor)) return
-        Selections.collapse(editor, st)
-        Ide.act(editor, ctx, "EditorStartNewLineBefore")
+        Ide.act(editor, ctx, actionId)
         Meow.setMode(editor, st, MeowMode.INSERT)
     }
 
@@ -332,7 +312,7 @@ internal object Edits {
         editCarets(editor, op.commandName) { caret ->
             val text = editor.document.charsSequence
             val from = caret.offset
-            val target = if (n > 0) Words.nextEnd(text, from, n, pred) else Words.prevStart(text, from, -n, pred)
+            val target = Words.move(text, from, n, pred)
             val s = minOf(from, target)
             val e = maxOf(from, target)
             if (s == e) return@editCarets
@@ -355,7 +335,7 @@ internal object Edits {
         var any = false
         for (caret in editor.caretModel.allCarets) {
             val from = caret.offset
-            val target = if (n > 0) Words.nextEnd(text, from, n, pred) else Words.prevStart(text, from, -n, pred)
+            val target = Words.move(text, from, n, pred)
             if (target == from) {
                 caret.removeSelection()
                 continue

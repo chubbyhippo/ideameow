@@ -177,7 +177,6 @@ internal object Motions {
         val posBefore = editor.caretModel.offset
         val goal = if (dy != 0) goalColumn(editor, st) else 0
         val len = editor.document.textLength
-        val primary = editor.caretModel.primaryCaret
         for (caret in editor.caretModel.allCarets) {
             val target =
                 if (dy == 0) {
@@ -187,18 +186,21 @@ internal object Motions {
                 }
             applyCaretMove(caret, target, true)
         }
-        Selections.recordSelect(
-            st,
-            SelType.CHAR,
-            true,
-            primary.leadSelectionOffset,
-            primary.offset,
-            posBefore,
-        )
-        st.selType = SelType.CHAR
+        recordExpandedSelection(editor, st, SelType.CHAR, posBefore)
+        editor.scrollingModel.scrollToCaret(ScrollType.RELATIVE)
+    }
+
+    private fun recordExpandedSelection(
+        editor: Editor,
+        st: MeowState,
+        type: SelType,
+        posBefore: Int,
+    ) {
+        val primary = editor.caretModel.primaryCaret
+        Selections.recordSelect(st, type, true, primary.leadSelectionOffset, primary.offset, posBefore)
+        st.selType = type
         st.selExpand = true
         Grab.beacon(editor, st)
-        editor.scrollingModel.scrollToCaret(ScrollType.RELATIVE)
     }
 
     private fun charOrExpand(
@@ -241,16 +243,10 @@ internal object Motions {
     ) {
         val extend = editor.selectionModel.hasSelection()
         val posBefore = editor.caretModel.offset
-        val primary = editor.caretModel.primaryCaret
         for (caret in editor.caretModel.allCarets) {
             applyCaretMove(caret, target(editor, caret.offset), extend)
         }
-        if (extend) {
-            Selections.recordSelect(st, type, true, primary.leadSelectionOffset, primary.offset, posBefore)
-            st.selType = type
-            st.selExpand = true
-            Grab.beacon(editor, st)
-        }
+        if (extend) recordExpandedSelection(editor, st, type, posBefore)
         editor.scrollingModel.scrollToCaret(ScrollType.RELATIVE)
     }
 
@@ -261,9 +257,7 @@ internal object Motions {
     ) {
         val text = editor.document.charsSequence
         val pred = charPred(symbol = false)
-        moveToOrExpand(editor, st, SelType.WORD) { _, offset ->
-            if (n >= 0) Words.nextEnd(text, offset, n, pred) else Words.prevStart(text, offset, -n, pred)
-        }
+        moveToOrExpand(editor, st, SelType.WORD) { _, offset -> Words.move(text, offset, n, pred) }
     }
 
     private fun sentenceOrExpand(
@@ -315,6 +309,7 @@ internal object Motions {
         if (n == 0) return
         val text = editor.document.charsSequence
         val type = wordType(symbol)
+        val pred = charPred(symbol)
         val sm = editor.selectionModel
         if (!(sm.hasSelection() && st.selType == type)) Selections.cancel(editor, st)
         val extend = st.selExpand && st.selType == type && sm.hasSelection()
@@ -324,12 +319,7 @@ internal object Motions {
                 extend -> sm.selectionEnd
                 else -> editor.caretModel.offset
             }
-        val target =
-            if (n > 0) {
-                Words.nextEnd(text, from, n, charPred(symbol))
-            } else {
-                Words.prevStart(text, from, -n, charPred(symbol))
-            }
+        val target = Words.move(text, from, n, pred)
         if (target == from) return
         val anchor =
             when {
@@ -337,7 +327,7 @@ internal object Motions {
 
                 extend -> sm.selectionStart
 
-                else -> Words.fixSelectionMark(text, target, from, charPred(symbol))
+                else -> Words.fixSelectionMark(text, target, from, pred)
             }
         Selections.select(editor, st, type, anchor, target, expand = extend)
     }
@@ -356,11 +346,8 @@ internal object Motions {
                     return
                 }
         val (s, e) = b
-        if (neg) {
-            Selections.select(editor, st, wordType(symbol), e, s, expand = true)
-        } else {
-            Selections.select(editor, st, wordType(symbol), s, e, expand = true)
-        }
+        val (mark, point) = if (neg) e to s else s to e
+        Selections.select(editor, st, wordType(symbol), mark, point, expand = true)
         Search.push(st, Regex("\\b" + Regex.escape(text.subSequence(s, e).toString()) + "\\b"))
     }
 
@@ -371,27 +358,19 @@ internal object Motions {
         val doc = editor.document
         if (doc.textLength == 0) return
         val n = st.takeCount(1)
-        val sm = editor.selectionModel
-        val lastLine = doc.lineCount - 1
-        if (st.selType == SelType.LINE && st.selExpand && sm.hasSelection()) {
-            val caretLn = doc.getLineNumber(editor.caretModel.offset)
-            if (Selections.backwardP(editor)) {
-                val ln = (caretLn - abs(n)).coerceAtLeast(0)
-                Selections.select(editor, st, SelType.LINE, Selections.mark(editor), doc.getLineStartOffset(ln), expand = true)
-            } else {
-                val ln = (caretLn + abs(n)).coerceAtMost(lastLine)
-                Selections.select(editor, st, SelType.LINE, Selections.mark(editor), doc.getLineEndOffset(ln), expand = true)
-            }
+        val ln = doc.getLineNumber(editor.caretModel.offset)
+        if (st.selType == SelType.LINE && st.selExpand && editor.selectionModel.hasSelection()) {
+            val point = Selections.lineExpandPoint(doc, ln, abs(n), Selections.backwardP(editor))
+            Selections.select(editor, st, SelType.LINE, Selections.mark(editor), point, expand = true)
             return
         }
-        val ln = doc.getLineNumber(editor.caretModel.offset)
-        if (n < 0) {
-            val startLn = (ln + n + 1).coerceAtLeast(0)
-            Selections.select(editor, st, SelType.LINE, doc.getLineEndOffset(ln), doc.getLineStartOffset(startLn), expand = true)
-        } else {
-            val endLn = (ln + n - 1).coerceAtMost(lastLine)
-            Selections.select(editor, st, SelType.LINE, doc.getLineStartOffset(ln), doc.getLineEndOffset(endLn), expand = true)
-        }
+        val (mark, point) =
+            if (n < 0) {
+                doc.getLineEndOffset(ln) to doc.getLineStartOffset((ln + n + 1).coerceAtLeast(0))
+            } else {
+                doc.getLineStartOffset(ln) to doc.getLineEndOffset((ln + n - 1).coerceAtMost(doc.lineCount - 1))
+            }
+        Selections.select(editor, st, SelType.LINE, mark, point, expand = true)
     }
 
     private fun gotoLine(

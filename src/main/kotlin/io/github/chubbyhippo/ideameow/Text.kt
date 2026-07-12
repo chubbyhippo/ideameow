@@ -135,6 +135,25 @@ object Words {
         return i
     }
 
+    fun move(
+        text: CharSequence,
+        from: Int,
+        n: Int,
+        pred: (Char) -> Boolean,
+    ): Int = if (n >= 0) nextEnd(text, from, n, pred) else prevStart(text, from, -n, pred)
+
+    fun spanAt(
+        text: CharSequence,
+        offset: Int,
+        pred: (Char) -> Boolean,
+    ): Pair<Int, Int> {
+        var s = offset
+        var e = offset
+        while (s > 0 && pred(text[s - 1])) s--
+        while (e < text.length && pred(text[e])) e++
+        return s to e
+    }
+
     fun fixSelectionMark(
         text: CharSequence,
         pos: Int,
@@ -166,10 +185,6 @@ object Words {
                 }
             }
         }
-        var s = o
-        var e = o
-        while (s > 0 && pred(text[s - 1])) s--
-        while (e < text.length && pred(text[e])) e++
-        return s to e
+        return spanAt(text, o, pred)
     }
 }

@@ -21,6 +21,7 @@ import com.intellij.ide.IdeEventQueue
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.actionSystem.CommonDataKeys
 import com.intellij.openapi.application.ApplicationManager
+import com.intellij.openapi.application.WriteIntentReadAction
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.startup.ProjectActivity
@@ -56,29 +57,36 @@ object ToolWindowEscape {
         lastAt = 0L
     }
 
-    internal val dispatcher = IdeEventQueue.EventDispatcher { e -> dispatch(e) }
+    internal val dispatcher =
+        object : IdeEventQueue.NonLockedEventDispatcher {
+            override fun dispatch(e: AWTEvent) = this@ToolWindowEscape.dispatch(e)
+        }
 
     private fun dispatch(e: AWTEvent): Boolean {
         if (e !is KeyEvent || e.isConsumed) return false
-        if (e.id == KeyEvent.KEY_TYPED) {
-            if (e.keyChar.code == ESC_CHAR && e.`when` <= swallowTypedUntil) {
-                swallowTypedUntil = 0L
-                return true
-            }
-            return false
-        }
+        if (e.id == KeyEvent.KEY_TYPED) return swallowTypedEscape(e)
         if (e.id != KeyEvent.KEY_PRESSED || e.keyCode != KeyEvent.VK_ESCAPE) return false
+        return WriteIntentReadAction.compute<Boolean> { handleEscapePress(e) }
+    }
+
+    private fun swallowTypedEscape(e: KeyEvent): Boolean {
+        if (e.keyChar.code != ESC_CHAR || e.`when` > swallowTypedUntil) return false
+        swallowTypedUntil = 0L
+        return true
+    }
+
+    private fun handleEscapePress(e: KeyEvent): Boolean {
         if (e.modifiersEx != 0 || IdeEventQueue.getInstance().isPopupActive) {
             reset()
             return false
         }
         val component = e.component ?: return false
         val context = DataManager.getInstance().getDataContext(component)
-        val project =
-            CommonDataKeys.PROJECT.getData(context) ?: run {
-                reset()
-                return false
-            }
+        val project = CommonDataKeys.PROJECT.getData(context)
+        if (project == null) {
+            reset()
+            return false
+        }
         val toolWindows = ToolWindowManager.getInstance(project)
         if (!onEscape(toolWindows.activeToolWindowId, e.`when`)) return false
         swallowTypedUntil = e.`when` + TYPED_ESC_SWALLOW_MS

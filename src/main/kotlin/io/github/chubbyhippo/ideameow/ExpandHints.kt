@@ -17,14 +17,10 @@
 package io.github.chubbyhippo.ideameow
 
 import com.intellij.openapi.editor.Editor
-import com.intellij.openapi.editor.colors.EditorFontType
 import com.intellij.ui.JBColor
 import java.awt.Color
-import java.awt.Graphics
+import java.awt.FontMetrics
 import java.awt.Graphics2D
-import java.awt.Rectangle
-import java.awt.RenderingHints
-import javax.swing.JComponent
 import javax.swing.Timer
 
 object ExpandHints {
@@ -41,12 +37,8 @@ object ExpandHints {
         val positions = positions(editor, st, 10)
         if (positions.isEmpty()) return
         val labels = positions.mapIndexed { i, off -> off to ((i + 1) % 10).toString() }
-        val host = editor.contentComponent
         val canvas = HintsCanvas(editor, labels)
-        canvas.isOpaque = false
-        canvas.bounds = Rectangle(0, 0, host.width, host.height)
-        host.add(canvas)
-        host.repaint()
+        Overlay.attach(editor, canvas)
         st.hintOverlay = canvas
         st.hintTimer =
             Timer(HINT_TIMEOUT_MS) { clear(st) }.apply {
@@ -58,12 +50,7 @@ object ExpandHints {
     fun clear(st: MeowState) {
         st.hintTimer?.stop()
         st.hintTimer = null
-        st.hintOverlay?.let { canvas ->
-            canvas.parent?.let { parent ->
-                parent.remove(canvas)
-                parent.repaint()
-            }
-        }
+        Overlay.detach(st.hintOverlay)
         st.hintOverlay = null
     }
 
@@ -113,18 +100,15 @@ object ExpandHints {
     }
 
     private class HintsCanvas(
-        private val editor: Editor,
+        editor: Editor,
         private val hints: List<Pair<Int, String>>,
-    ) : JComponent() {
-        override fun paintComponent(g: Graphics) {
-            if (editor.isDisposed) return
-            val g2 = g as Graphics2D
-            g2.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON)
-            val font = editor.colorsScheme.getFont(EditorFontType.BOLD)
-            val metrics = editor.contentComponent.getFontMetrics(font)
+    ) : Overlay.Canvas(editor) {
+        override fun paintLabels(
+            g2: Graphics2D,
+            metrics: FontMetrics,
+        ) {
             val text = editor.document.charsSequence
             val lineHeight = editor.lineHeight
-            g2.font = font
             for ((offset, label) in hints) {
                 val p = editor.offsetToXY(offset, true, false)
                 val next =
