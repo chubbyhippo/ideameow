@@ -30,7 +30,6 @@ import com.intellij.openapi.editor.toolbar.floating.FloatingToolbarComponent
 import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.project.DumbAwareAction
 import com.intellij.openapi.util.Disposer
-import com.intellij.openapi.util.io.FileUtil
 import com.intellij.openapi.vfs.LocalFileSystem
 import java.io.File
 
@@ -105,7 +104,7 @@ internal class ReloadRcFloatingAction : DumbAwareAction() {
     override fun update(e: AnActionEvent) {
         val editor = e.getData(PlatformDataKeys.EDITOR)
         val vf = e.getData(PlatformDataKeys.VIRTUAL_FILE)
-        if (editor == null || vf == null || !FileUtil.filesEqual(File(vf.path), Rc.rcFile())) {
+        if (editor == null || vf == null || File(vf.path) != Rc.rcFile()) {
             e.presentation.isEnabledAndVisible = false
             return
         }
