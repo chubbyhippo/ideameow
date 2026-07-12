@@ -37,7 +37,19 @@ internal object Edits {
             put("meow-replace", MeowCommand { ed, st, _ -> replace(ed, st) })
             put("meow-undo", MeowCommand { ed, st, ctx -> undo(ed, st, ctx) })
             put("meow-undo-in-selection", MeowCommand { ed, _, ctx -> undoInSelection(ed, ctx) })
+            put("upcase-word", MeowCommand { ed, st, _ -> caseWord(ed, st, CaseOp.UPCASE) })
+            put("downcase-word", MeowCommand { ed, st, _ -> caseWord(ed, st, CaseOp.DOWNCASE) })
+            put("capitalize-word", MeowCommand { ed, st, _ -> caseWord(ed, st, CaseOp.CAPITALIZE) })
+            put("kill-word", MeowCommand { ed, st, ctx -> killWord(ed, st, ctx) })
         }
+
+    private enum class CaseOp(
+        val commandName: String,
+    ) {
+        UPCASE("Meow Upcase Word"),
+        DOWNCASE("Meow Downcase Word"),
+        CAPITALIZE("Meow Capitalize Word"),
+    }
 
     private inline fun editCarets(
         editor: Editor,
@@ -280,4 +292,87 @@ internal object Edits {
     ) {
         if (editor.selectionModel.hasSelection()) Ide.act(editor, ctx, IdeActions.ACTION_UNDO)
     }
+
+    private fun casified(
+        slice: String,
+        op: CaseOp,
+    ): String =
+        when (op) {
+            CaseOp.UPCASE -> slice.uppercase()
+            CaseOp.DOWNCASE -> slice.lowercase()
+            CaseOp.CAPITALIZE -> capitalizedWords(slice)
+        }
+
+    private fun capitalizedWords(slice: String): String {
+        val pred = charPred(symbol = false)
+        val out = StringBuilder(slice.length)
+        var inWord = false
+        for (c in slice) {
+            if (pred(c)) {
+                out.append(if (inWord) c.lowercaseChar() else c.uppercaseChar())
+                inWord = true
+            } else {
+                out.append(c)
+                inWord = false
+            }
+        }
+        return out.toString()
+    }
+
+    private fun caseWord(
+        editor: Editor,
+        st: MeowState,
+        op: CaseOp,
+    ) {
+        if (blockedReadOnly(editor)) return
+        val n = st.takeCount(1)
+        if (n == 0) return
+        val hadSelection = editor.selectionModel.hasSelection()
+        val pred = charPred(symbol = false)
+        editCarets(editor, op.commandName) { caret ->
+            val text = editor.document.charsSequence
+            val from = caret.offset
+            val target = if (n > 0) Words.nextEnd(text, from, n, pred) else Words.prevStart(text, from, -n, pred)
+            val s = minOf(from, target)
+            val e = maxOf(from, target)
+            if (s == e) return@editCarets
+            editor.document.replaceString(s, e, casified(text.subSequence(s, e).toString(), op))
+            if (n > 0) caret.moveToOffset(e)
+        }
+        if (hadSelection) Selections.collapse(editor, st)
+    }
+
+    private fun killWord(
+        editor: Editor,
+        st: MeowState,
+        ctx: DataContext?,
+    ) {
+        if (blockedReadOnly(editor)) return
+        val n = st.takeCount(1)
+        if (n == 0) return
+        val text = editor.document.charsSequence
+        val pred = charPred(symbol = false)
+        var any = false
+        for (caret in editor.caretModel.allCarets) {
+            val from = caret.offset
+            val target = if (n > 0) Words.nextEnd(text, from, n, pred) else Words.prevStart(text, from, -n, pred)
+            if (target == from) {
+                caret.removeSelection()
+                continue
+            }
+            caret.setSelection(minOf(from, target), maxOf(from, target))
+            any = true
+        }
+        if (any) Ide.act(editor, ctx, IdeActions.ACTION_EDITOR_CUT)
+        st.selType = SelType.NONE
+        st.selExpand = false
+    }
 }
+
+internal class EmacsUpcaseWordAction : EmacsChordAction("upcase-word")
+
+internal class EmacsDowncaseWordAction : EmacsChordAction("downcase-word")
+
+internal class EmacsCapitalizeWordAction : EmacsChordAction("capitalize-word")
+
+internal class EmacsKillWordAction : EmacsChordAction("kill-word")

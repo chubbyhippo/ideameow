@@ -73,11 +73,13 @@ shadow shift-selection in editors, the exact tradeoff the Emacs binding
 makes (select with meow instead; trees and dialogs keep native
 shift-selection, since the actions only enable on editors).
 
-**Emacs motion chords** — `Ctrl+f/b/n/p/a/e` and `Alt+f/b/a/e` are the real
+**Emacs chords** — `Ctrl+f/b/n/p/a/e` and `Alt+f/b/a/e` are the real
 Emacs point motions (`forward/backward-char`, `next/previous-line`,
 `move-beginning/end-of-line`, `forward/backward-word`,
 `backward/forward-sentence`), not meow commands: meow itself never rebinds
-these chords, so in real Emacs they simply move point — and, since a meow
+these chords — its state keymaps hold only single printable keys, so every
+chord falls through to the vanilla Emacs keymap ("Compatible with the
+vanilla Emacs keymap", meow's own README) — and, since a meow
 selection is an active Emacs mark, that same point motion stretches an
 already-active selection for free, with no special-casing. ideameow ports
 that: with no selection the chord just moves the caret, and with one active
@@ -86,9 +88,27 @@ so `w` then `Ctrl+f Ctrl+f` grows the marked word one character at a time,
 and `;` (reverse) flips which end subsequent chords grow from. `Alt+n` /
 `Alt+p` are deliberately left unbound: stock Emacs has no default binding
 for them either (only the unrelated `M-g n` / `M-g p` error-navigation
-prefix exists) — verified against the GNU Emacs manual, not guessed. Like
-Windmove's Shift+arrows above, these sit on the IDE keymap (modifier chords
-never reach the modal engine) — rebind under *Settings → Keymap*.
+prefix exists) — verified against the GNU Emacs manual, not guessed.
+
+The same treatment covers the rest of the portable Emacs chord layer:
+`Alt+Shift+,` / `Alt+Shift+.` are `beginning/end-of-buffer` (Emacs `M-<` /
+`M->` — a count lands N/10 of the way in, snapping to the next line start,
+exactly the stock behavior), `Alt+u` / `Alt+l` / `Alt+c` are
+`upcase/downcase/capitalize-word` (from the caret through the word's end; a
+negative count — `-` then the chord — reaches back without moving the
+caret), and `Alt+d` is `kill-word` (into the clipboard; negative count
+kills backward). The four `Alt+letter` chords are unbound in the IDE's
+default keymap, so nothing native is displaced; `Alt+Shift+,` / `.` shadow
+the global font-size zoom in NORMAL only — the same tradeoff `Ctrl+f`
+makes with Find above, and the zoom keeps `Ctrl+wheel`, `SPC w` and INSERT.
+Emacs chords whose IDE default matters more (`Ctrl+v` paste, `Ctrl+o`
+override-methods, `Ctrl+l` find-next, `Alt+Backspace` undo, `Alt+q`
+context-info...) deliberately stay with the IDE, and Emacs `M-/` needs no
+port at all: the IDE's own `Alt+/` is HippieCompletion, named after the
+hippie-expand it implements. Like Windmove's Shift+arrows above, all of
+these sit on the IDE keymap (modifier chords never reach the modal
+engine) — rebind under *Settings → Keymap* — and they answer in NORMAL
+mode, yielding to the IDE's own chords in INSERT.
 
 And one idea borrowed straight from meow itself: **the plugin binds no keys in
 code.** The entire keymap — the NORMAL/MOTION layout *and* the whole `SPC`

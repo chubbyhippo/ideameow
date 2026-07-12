@@ -197,4 +197,52 @@ class EmacsMotionSpec : MeowSpec() {
                 .sorted(),
         )
     }
+
+    fun `test given no selection when beginning-of-buffer then the caret goes to point-min`() {
+        given("two lines", "one\nt<caret>wo")
+        whenCommand("beginning-of-buffer")
+        thenCaretAt(0)
+        thenNoSelection()
+    }
+
+    fun `test given no selection when end-of-buffer then the caret goes to point-max`() {
+        given("two lines", "on<caret>e\ntwo")
+        whenCommand("end-of-buffer")
+        thenCaretAt(7)
+        thenNoSelection()
+    }
+
+    fun `test given w then end-of-buffer extends the selection to point-max`() {
+        given("two words", "<caret>hello world")
+        whenKeys("w")
+        thenSelection("hello")
+        whenCommand("end-of-buffer")
+        thenSelection("hello world")
+        thenCaretAtSelectionEnd()
+    }
+
+    fun `test given w then beginning-of-buffer extends the selection back to point-min`() {
+        given("prefixed word", "ab <caret>hello")
+        whenKeys("w")
+        thenSelection("hello")
+        whenCommand("beginning-of-buffer")
+        thenSelection("ab ")
+        thenCaretAtSelectionStart()
+    }
+
+    fun `test given a count when beginning-of-buffer then the caret lands at the next line start past that tenth`() {
+        given("five ten-char lines", "<caret>0123456789\n0123456789\n0123456789\n0123456789\n0123456789")
+        whenKeys("3")
+        whenCommand("beginning-of-buffer")
+        thenCaretAt(22)
+        thenNoSelection()
+    }
+
+    fun `test given a count when end-of-buffer then the caret lands a tenth back at the next line start`() {
+        given("five ten-char lines", "<caret>0123456789\n0123456789\n0123456789\n0123456789\n0123456789")
+        whenKeys("3")
+        whenCommand("end-of-buffer")
+        thenCaretAt(44)
+        thenNoSelection()
+    }
 }

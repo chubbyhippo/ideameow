@@ -63,6 +63,8 @@ internal object Motions {
             put("backward-word", MeowCommand { ed, st, _ -> wordOrExpand(ed, st, -st.takeCount(1)) })
             put("forward-sentence", MeowCommand { ed, st, _ -> sentenceOrExpand(ed, st, st.takeCount(1)) })
             put("backward-sentence", MeowCommand { ed, st, _ -> sentenceOrExpand(ed, st, -st.takeCount(1)) })
+            put("beginning-of-buffer", MeowCommand { ed, st, _ -> bufferBoundary(ed, st, top = true) })
+            put("end-of-buffer", MeowCommand { ed, st, _ -> bufferBoundary(ed, st, top = false) })
         }
 
     private fun wordType(symbol: Boolean) = if (symbol) SelType.SYMBOL else SelType.WORD
@@ -275,6 +277,35 @@ internal object Motions {
         }
     }
 
+    private fun bufferBoundary(
+        editor: Editor,
+        st: MeowState,
+        top: Boolean,
+    ) {
+        val counted = st.pendingCount != 0 || st.negative
+        val n = st.takeCount(1)
+        moveToOrExpand(editor, st, SelType.CHAR) { ed, _ ->
+            val len = ed.document.textLength
+            if (!counted) {
+                if (top) 0 else len
+            } else {
+                val tenth = len * n / 10
+                val raw = (if (top) 1 + tenth else len - tenth).coerceIn(0, len)
+                nextLineStart(ed, raw)
+            }
+        }
+    }
+
+    private fun nextLineStart(
+        editor: Editor,
+        offset: Int,
+    ): Int {
+        val doc = editor.document
+        if (doc.textLength == 0) return 0
+        val ln = doc.getLineNumber(offset.coerceIn(0, doc.textLength))
+        return if (ln >= doc.lineCount - 1) doc.textLength else doc.getLineStartOffset(ln + 1)
+    }
+
     private fun wordMotion(
         editor: Editor,
         st: MeowState,
@@ -394,7 +425,7 @@ internal object Motions {
     }
 }
 
-internal sealed class EmacsMotionAction(
+internal sealed class EmacsChordAction(
     private val command: String,
 ) : DumbAwareAction() {
     init {
@@ -416,29 +447,33 @@ internal sealed class EmacsMotionAction(
     }
 }
 
-internal class EmacsForwardCharAction : EmacsMotionAction("forward-char")
+internal class EmacsForwardCharAction : EmacsChordAction("forward-char")
 
-internal class EmacsBackwardCharAction : EmacsMotionAction("backward-char")
+internal class EmacsBackwardCharAction : EmacsChordAction("backward-char")
 
-internal class EmacsNextLineAction : EmacsMotionAction("next-line")
+internal class EmacsNextLineAction : EmacsChordAction("next-line")
 
-internal class EmacsPreviousLineAction : EmacsMotionAction("previous-line")
+internal class EmacsPreviousLineAction : EmacsChordAction("previous-line")
 
-internal class EmacsBeginningOfLineAction : EmacsMotionAction("move-beginning-of-line")
+internal class EmacsBeginningOfLineAction : EmacsChordAction("move-beginning-of-line")
 
-internal class EmacsEndOfLineAction : EmacsMotionAction("move-end-of-line")
+internal class EmacsEndOfLineAction : EmacsChordAction("move-end-of-line")
 
-internal class EmacsForwardWordAction : EmacsMotionAction("forward-word")
+internal class EmacsForwardWordAction : EmacsChordAction("forward-word")
 
-internal class EmacsBackwardWordAction : EmacsMotionAction("backward-word")
+internal class EmacsBackwardWordAction : EmacsChordAction("backward-word")
 
-internal class EmacsBackwardSentenceAction : EmacsMotionAction("backward-sentence")
+internal class EmacsBackwardSentenceAction : EmacsChordAction("backward-sentence")
 
-internal class EmacsForwardSentenceAction : EmacsMotionAction("forward-sentence")
+internal class EmacsForwardSentenceAction : EmacsChordAction("forward-sentence")
 
-internal class EmacsMotionPromoter : ActionPromoter {
+internal class EmacsBeginningOfBufferAction : EmacsChordAction("beginning-of-buffer")
+
+internal class EmacsEndOfBufferAction : EmacsChordAction("end-of-buffer")
+
+internal class EmacsChordPromoter : ActionPromoter {
     override fun promote(
         actions: List<AnAction>,
         context: DataContext,
-    ): List<AnAction> = actions.sortedByDescending { it is EmacsMotionAction }
+    ): List<AnAction> = actions.sortedByDescending { it is EmacsChordAction }
 }

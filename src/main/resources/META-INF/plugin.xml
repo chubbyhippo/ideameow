@@ -29,7 +29,7 @@
         <notificationGroup id="ideameow" displayType="BALLOON"/>
         <editorFloatingToolbarProvider implementation="io.github.chubbyhippo.ideameow.RcReloadFloatingToolbar"/>
         <actionPromoter implementation="io.github.chubbyhippo.ideameow.WindmovePromoter"/>
-        <actionPromoter implementation="io.github.chubbyhippo.ideameow.EmacsMotionPromoter"/>
+        <actionPromoter implementation="io.github.chubbyhippo.ideameow.EmacsChordPromoter"/>
     </extensions>
     <applicationListeners>
         <listener class="io.github.chubbyhippo.ideameow.MeowActionIdListener"
@@ -131,6 +131,36 @@
                 text="Emacs Forward Sentence"
                 description="Move forward one sentence; extend the meow selection if one is active (Emacs forward-sentence)">
             <keyboard-shortcut keymap="$default" first-keystroke="alt E"/>
+        </action>
+        <action id="Ideameow.EmacsBeginningOfBuffer" class="io.github.chubbyhippo.ideameow.EmacsBeginningOfBufferAction"
+                text="Emacs Beginning Of Buffer"
+                description="Move to the beginning of the buffer, a count landing N/10 of the way in; extend the meow selection if one is active (Emacs beginning-of-buffer)">
+            <keyboard-shortcut keymap="$default" first-keystroke="alt shift COMMA"/>
+        </action>
+        <action id="Ideameow.EmacsEndOfBuffer" class="io.github.chubbyhippo.ideameow.EmacsEndOfBufferAction"
+                text="Emacs End Of Buffer"
+                description="Move to the end of the buffer, a count landing N/10 of the way back; extend the meow selection if one is active (Emacs end-of-buffer)">
+            <keyboard-shortcut keymap="$default" first-keystroke="alt shift PERIOD"/>
+        </action>
+        <action id="Ideameow.EmacsUpcaseWord" class="io.github.chubbyhippo.ideameow.EmacsUpcaseWordAction"
+                text="Emacs Upcase Word"
+                description="Upcase from the caret to the end of the word, a negative count reaching back without moving (Emacs upcase-word)">
+            <keyboard-shortcut keymap="$default" first-keystroke="alt U"/>
+        </action>
+        <action id="Ideameow.EmacsDowncaseWord" class="io.github.chubbyhippo.ideameow.EmacsDowncaseWordAction"
+                text="Emacs Downcase Word"
+                description="Downcase from the caret to the end of the word, a negative count reaching back without moving (Emacs downcase-word)">
+            <keyboard-shortcut keymap="$default" first-keystroke="alt L"/>
+        </action>
+        <action id="Ideameow.EmacsCapitalizeWord" class="io.github.chubbyhippo.ideameow.EmacsCapitalizeWordAction"
+                text="Emacs Capitalize Word"
+                description="Capitalize from the caret to the end of the word, a negative count reaching back without moving (Emacs capitalize-word)">
+            <keyboard-shortcut keymap="$default" first-keystroke="alt C"/>
+        </action>
+        <action id="Ideameow.EmacsKillWord" class="io.github.chubbyhippo.ideameow.EmacsKillWordAction"
+                text="Emacs Kill Word"
+                description="Kill forward to the end of the word into the clipboard, a negative count killing backward (Emacs kill-word)">
+            <keyboard-shortcut keymap="$default" first-keystroke="alt D"/>
         </action>
     </actions>
 </idea-plugin>

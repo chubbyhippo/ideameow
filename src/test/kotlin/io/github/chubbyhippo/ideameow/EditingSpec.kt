@@ -265,4 +265,76 @@ class EditingSpec : MeowSpec() {
         whenKeys("'")
         thenSelection("b'")
     }
+
+    fun `test given a caret mid-word when upcase-word then the rest upcases and the caret moves to word end`() {
+        given("mixed-case word", "he<caret>LLo world")
+        whenCommand("upcase-word")
+        thenText("heLLO world")
+        thenCaretAt(5)
+    }
+
+    fun `test given a count when upcase-word then that many words upcase`() {
+        given("three words", "<caret>hello world foo")
+        whenKeys("2")
+        whenCommand("upcase-word")
+        thenText("HELLO WORLD foo")
+        thenCaretAt(11)
+    }
+
+    fun `test given a negative count when upcase-word then the previous word upcases and the caret stays`() {
+        given("two words", "hello <caret>world")
+        whenKeys("-")
+        whenCommand("upcase-word")
+        thenText("HELLO world")
+        thenCaretAt(6)
+    }
+
+    fun `test given a caret when downcase-word then the word downcases`() {
+        given("upper words", "<caret>HELLO WORLD")
+        whenCommand("downcase-word")
+        thenText("hello WORLD")
+        thenCaretAt(5)
+    }
+
+    fun `test given a caret mid-word when capitalize-word then the slice capitalizes as a fresh word`() {
+        given("mixed-case word", "he<caret>LLo world")
+        whenCommand("capitalize-word")
+        thenText("heLlo world")
+        thenCaretAt(5)
+    }
+
+    fun `test given a count when capitalize-word then each word capitalizes`() {
+        given("mixed words", "<caret>heLLO WOrld")
+        whenKeys("2")
+        whenCommand("capitalize-word")
+        thenText("Hello World")
+        thenCaretAt(11)
+    }
+
+    fun `test given a selection when upcase-word then it upcases from the caret and deactivates it`() {
+        given("two words", "<caret>hello world")
+        whenKeys("w")
+        thenSelection("hello")
+        whenCommand("upcase-word")
+        thenText("hello WORLD")
+        thenNoSelection()
+        thenCaretAt(11)
+    }
+
+    fun `test given a caret when kill-word then the word kills to the clipboard`() {
+        given("two words", "<caret>hello world")
+        whenCommand("kill-word")
+        thenText(" world")
+        thenCaretAt(0)
+        thenClipboard("hello")
+    }
+
+    fun `test given a negative count when kill-word then the previous word kills backward`() {
+        given("two words", "hello world<caret>")
+        whenKeys("-")
+        whenCommand("kill-word")
+        thenText("hello ")
+        thenCaretAt(6)
+        thenClipboard("world")
+    }
 }
