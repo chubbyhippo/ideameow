@@ -162,7 +162,7 @@ object Keypad {
 
 internal class KeypadAction : DumbAwareAction() {
     init {
-        setEnabledInModalContext(true)
+        isEnabledInModalContext = true
     }
 
     override fun getActionUpdateThread() = ActionUpdateThread.BGT
