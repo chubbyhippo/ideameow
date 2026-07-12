@@ -20,9 +20,7 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.wm.StatusBar
 import com.intellij.openapi.wm.StatusBarWidget
 import com.intellij.openapi.wm.StatusBarWidgetFactory
-import com.intellij.util.Consumer
 import java.awt.Component
-import java.awt.event.MouseEvent
 
 class MeowWidgetFactory : StatusBarWidgetFactory {
     companion object {
@@ -57,8 +55,6 @@ private class MeowWidget(
     override fun getText(): String = Meow.statusText(project)
 
     override fun getTooltipText(): String = "Meow modal editing state"
-
-    override fun getClickConsumer(): Consumer<MouseEvent>? = null
 
     override fun getAlignment(): Float = Component.CENTER_ALIGNMENT
 }
