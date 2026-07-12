@@ -67,7 +67,7 @@ object ToolWindowEscape {
         if (e !is KeyEvent || e.isConsumed) return false
         if (e.id == KeyEvent.KEY_TYPED) return swallowTypedEscape(e)
         if (e.id != KeyEvent.KEY_PRESSED || e.keyCode != KeyEvent.VK_ESCAPE) return false
-        return WriteIntentReadAction.compute<Boolean> { handleEscapePress(e) }
+        return WriteIntentReadAction.compute { handleEscapePress(e) }
     }
 
     private fun swallowTypedEscape(e: KeyEvent): Boolean {
