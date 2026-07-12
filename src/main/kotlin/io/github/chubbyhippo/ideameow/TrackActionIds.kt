@@ -38,6 +38,7 @@ object TrackActionIds {
 
     private var notification: Notification? = null
 
+    @Suppress("UnstableApiUsage")
     fun idOf(action: AnAction): String? =
         ActionManager.getInstance().getId(action)
             ?: (action.shortcutSet as? ProxyShortcutSet)?.actionId
