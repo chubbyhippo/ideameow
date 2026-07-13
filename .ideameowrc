@@ -107,7 +107,7 @@ nmap z meow-pop-selection
 nmap ' repeat
 
 " MOTION mode — the keymap of tool-window trees (project view, structure,
-" TODO, find results, ...): j/k/h/l move like the arrow keys (h collapses
+" to-do, find results, ...): j/k/h/l move like the arrow keys (h collapses
 " or goes to the parent, l expands or enters), q hides the tool window,
 " and every unmapped key keeps its native meaning — Enter opens, any other
 " letter still starts speed search. Read-only editors do NOT use MOTION;
