@@ -219,6 +219,10 @@ map <leader>wD <action>(UnsplitAll)
 map <leader>wm <action>(UnsplitAll)
 map <leader>ww <action>(NextSplitter)
 map <leader>wW <action>(MoveEditorToOppositeTabGroup)
+" n/p: cycle editor tabs (C-x <right>/<left>); the tab repeat group below
+" keeps a bare n/p walking afterwards
+map <leader>wn <action>(NextTab)
+map <leader>wp <action>(PreviousTab)
 " h/j/k/l: directional window focus from the caret — editor splits AND
 " diff panes. Plain Shift+arrows are bound to the same moves on the IDE
 " keymap (Settings > Keymap > Windmove *), not in this rc — modifier
@@ -545,3 +549,5 @@ repeat zoom u <action>(EditorResetFontSize)
 repeat zoom 0 <action>(EditorResetFontSize)
 repeat expand . <action>(EditorSelectWord)
 repeat expand , <action>(EditorUnSelectWord)
+repeat tab n <action>(NextTab)
+repeat tab p <action>(PreviousTab)

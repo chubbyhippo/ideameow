@@ -112,6 +112,13 @@ class RepeatSpec : MeowSpec() {
         assertEquals("EditorUnSelectWord", d["expand"]!![',']!!.action)
     }
 
+    fun `test given the bundled rc then the tab repeat group cycles editor tabs`() {
+        val d = Rc.defaults().repeat
+        assertEquals("NextTab", d["tab"]!!['n']!!.action)
+        assertEquals("PreviousTab", d["tab"]!!['p']!!.action)
+        assertEquals(setOf('n', 'p'), d["tab"]!!.keys)
+    }
+
     fun `test given a repeat line edit then the reload button sees a change`() {
         val home = Files.createTempDirectory("meow-home").toFile()
         val oldHome = System.getProperty("user.home")
