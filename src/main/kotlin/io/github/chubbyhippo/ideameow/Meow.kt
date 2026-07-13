@@ -49,7 +49,7 @@ object Meow {
         val editor = FileEditorManager.getInstance(project).selectedTextEditor ?: return ""
         val st = state(editor) ?: return ""
         val beacon = editor.caretModel.caretCount > 1
-        val repeat = st.repeatMap
+        val repeat = Engine.repeatMap
         return when {
             st.mode == MeowMode.KEYPAD -> "MEOW KEYPAD  SPC ${st.keypad.toString().toCharArray().joinToString(" ")}"
 

@@ -33,6 +33,7 @@ abstract class MeowSpec : BasePlatformTestCase() {
     override fun setUp() {
         super.setUp()
         Rc.setForTest(Rc.Config())
+        Engine.repeatMap = null
     }
 
     override fun tearDown() {

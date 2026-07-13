@@ -44,6 +44,8 @@ object Engine {
 
     private val KEYPAD_BINDING = Rc.Binding(command = "meow-keypad")
 
+    var repeatMap: Map<Char, Rc.Binding>? = null
+
     fun enterKeypad(
         editor: Editor,
         st: MeowState,
@@ -76,8 +78,8 @@ object Engine {
         ExpandHints.clear(st)
 
         val pend = st.pending
-        val repeatBinding = if (pend == null) st.repeatMap?.get(c) else null
-        if (pend == null && repeatBinding == null) st.repeatMap = null
+        val repeatBinding = if (pend == null) repeatMap?.get(c) else null
+        if (pend == null && repeatBinding == null) repeatMap = null
         val motion = st.mode == MeowMode.MOTION
         val binding = if (pend == null) repeatBinding ?: resolve(st, c, motion) else null
         val cmd = binding?.command
@@ -165,10 +167,10 @@ object Engine {
     ) {
         dispatch(editor, st, b)
         val map = Rc.repeatMapFor(b) ?: return
-        if (st.repeatMap == null) {
+        if (repeatMap == null) {
             Ide.hint(editor, "Repeat with ${map.keys.joinToString(", ")}")
         }
-        st.repeatMap = map
+        repeatMap = map
     }
 
     private fun dispatch(

@@ -41,7 +41,7 @@ class MeowEscapeHandler(
             return
         }
         st.pending = null
-        st.repeatMap = null
+        Engine.repeatMap = null
         WhichKey.hide()
         ExpandHints.clear(st)
         when {

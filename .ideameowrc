@@ -219,10 +219,12 @@ map <leader>wD <action>(UnsplitAll)
 map <leader>wm <action>(UnsplitAll)
 map <leader>ww <action>(NextSplitter)
 map <leader>wW <action>(MoveEditorToOppositeTabGroup)
-" n/p: cycle editor tabs (C-x <right>/<left>); the tab repeat group below
-" keeps a bare n/p walking afterwards
+" n/p (aliases . and ,): cycle editor tabs (C-x <right>/<left>); the tab
+" repeat group below keeps a bare n/p/./, walking afterwards
 map <leader>wn <action>(NextTab)
 map <leader>wp <action>(PreviousTab)
+map <leader>w. <action>(NextTab)
+map <leader>w, <action>(PreviousTab)
 " h/j/k/l: directional window focus from the caret — editor splits AND
 " diff panes. Plain Shift+arrows are bound to the same moves on the IDE
 " keymap (Settings > Keymap > Windmove *), not in this rc — modifier
@@ -515,14 +517,16 @@ map <leader>vp <action>(Git.Pull)
 map <leader>vP <action>(Vcs.Push)
 
 " --- SPC . / SPC , — next / previous (change / diff / error) --------------------------------------
-desc <leader>. next (change / diff / error)
+desc <leader>. next (change / diff / error / tab)
 map <leader>.c <action>(VcsShowNextChangeMarker)
 map <leader>.d <action>(NextDiff)
 map <leader>.e <action>(GotoNextError)
-desc <leader>, previous (change / diff / error)
+map <leader>.t <action>(NextTab)
+desc <leader>, previous (change / diff / error / tab)
 map <leader>,c <action>(VcsShowPrevChangeMarker)
 map <leader>,d <action>(PreviousDiff)
 map <leader>,e <action>(GotoPreviousError)
+map <leader>,t <action>(PreviousTab)
 
 " ============================================================================
 " Repeat groups — tap-to-continue transient maps
@@ -551,3 +555,5 @@ repeat expand . <action>(EditorSelectWord)
 repeat expand , <action>(EditorUnSelectWord)
 repeat tab n <action>(NextTab)
 repeat tab p <action>(PreviousTab)
+repeat tab . <action>(NextTab)
+repeat tab , <action>(PreviousTab)

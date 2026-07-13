@@ -116,7 +116,9 @@ class RepeatSpec : MeowSpec() {
         val d = Rc.defaults().repeat
         assertEquals("NextTab", d["tab"]!!['n']!!.action)
         assertEquals("PreviousTab", d["tab"]!!['p']!!.action)
-        assertEquals(setOf('n', 'p'), d["tab"]!!.keys)
+        assertEquals("NextTab", d["tab"]!!['.']!!.action)
+        assertEquals("PreviousTab", d["tab"]!![',']!!.action)
+        assertEquals(setOf('n', 'p', '.', ','), d["tab"]!!.keys)
     }
 
     fun `test given a repeat line edit then the reload button sees a change`() {
@@ -162,14 +164,25 @@ class RepeatSpec : MeowSpec() {
         assertEquals(2, caretLine())
     }
 
+    fun `test given a run then a member tap continues after an editor switch`() {
+        given("four lines", "<caret>one\ntwo\nthree\nfour")
+        givenRc(navRc)
+        whenKeys(" tn")
+        assertEquals(1, caretLine())
+        st = MeowState()
+        ed.putUserData(Meow.KEY, st)
+        whenKeys(".")
+        assertEquals(2, caretLine())
+    }
+
     fun `test given a non-member key then the run ends and the key keeps its normal meaning`() {
         given("four lines", "<caret>one\ntwo\nthree\nfour")
         givenRc(navRc)
         whenKeys(" tn")
-        assertNotNull(st.repeatMap)
+        assertNotNull(Engine.repeatMap)
         whenKeys("w")
         thenSelection("two")
-        assertNull(st.repeatMap)
+        assertNull(Engine.repeatMap)
     }
 
     fun `test given the run over then the member keys mean their normal commands again`() {
@@ -187,9 +200,9 @@ class RepeatSpec : MeowSpec() {
         given("four lines", "<caret>one\ntwo\nthree\nfour")
         givenRc(navRc)
         whenKeys(" tn")
-        assertNotNull(st.repeatMap)
+        assertNotNull(Engine.repeatMap)
         pressEsc()
-        assertNull(st.repeatMap)
+        assertNull(Engine.repeatMap)
         whenKeys(".")
         assertEquals(Pending.BOUNDS, st.pending)
         assertEquals(1, caretLine())
@@ -217,8 +230,8 @@ class RepeatSpec : MeowSpec() {
         given("four lines", "<caret>one\ntwo\nthree\nfour")
         givenRc(navRc)
         whenKeys(" tn")
-        assertEquals(setOf('.', ','), st.repeatMap?.keys)
+        assertEquals(setOf('.', ','), Engine.repeatMap?.keys)
         whenKeys("w")
-        assertNull(st.repeatMap)
+        assertNull(Engine.repeatMap)
     }
 }

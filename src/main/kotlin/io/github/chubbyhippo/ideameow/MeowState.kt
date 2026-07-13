@@ -75,8 +75,6 @@ class MeowState {
 
     var avy: Avy.Session? = null
 
-    var repeatMap: Map<Char, Rc.Binding>? = null
-
     fun takeCount(default: Int = 1): Int {
         val n = if (pendingCount == 0) default else pendingCount
         val r = if (negative) -n else n
