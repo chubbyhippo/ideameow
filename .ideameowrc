@@ -1,14 +1,15 @@
 " ============================================================================
 " .ideameowrc — THE default keymap of the ideameow plugin
 " ----------------------------------------------------------------------------
-" Like meow in Emacs, the plugin binds no keys in code: this file defines
-" every default — the NORMAL/MOTION layout and the whole SPC keypad table —
-" and ships bundled inside the plugin jar. A ~/.ideameowrc in your home
-" directory (Linux/macOS: ~/.ideameowrc, Windows: C:\Users\<you>\.ideameowrc)
+" The plugin binds no keys in code: this file defines every default — the
+" NORMAL/MOTION layout and the whole SPC keypad table — and ships bundled
+" inside the plugin jar. A ~/.ideameowrc in your home directory
+" (Linux/macOS: ~/.ideameowrc, Windows: C:\Users\<you>\.ideameowrc)
 " overrides it entry by entry — only the lines you change matter; a deleted
 " line falls back to the bundled default (bind `ignore` to disable a key).
 " Open it with SPC c m — the first press creates ~/.ideameowrc as a full
 " copy of this file; reload after editing with SPC c M ("Reload .ideameowrc").
+" Within this file, a later line for the same key wins.
 "
 " Syntax (see the README for the full guide):
 "   nmap <key> <action>(ActionId)     NORMAL-mode key -> IDE action
@@ -23,12 +24,6 @@
 "   desc <leader><seq> <text>         which-key label for an entry or a group
 "   set timeoutlen=300                which-key popup delay in ms
 "   set nowhich-key                   turn the which-key popup off
-"
-" Vim/IdeaVim content with no equivalent here (and why) is listed at the
-" bottom. The meow layout itself needs NO porting — the plugin implements it
-" natively; the layout section right below IS the keymap (like
-" meow-normal-define-key in Emacs), so any key can be rebound.
-" Within this file, a later line for the same key wins.
 " ============================================================================
 
 set which-key
@@ -37,11 +32,8 @@ set timeoutlen=300
 " ============================================================================
 " The meow layout — QWERTY by default, every key rebindable
 " ----------------------------------------------------------------------------
-" These lines ARE the default layout (there is no key table in the plugin's
-" code). Rebind any key to another meow command, to an <action>(...), or to
-" replayed keys; bind a key to `ignore` to disable it. In a home ~/.ideameowrc
-" only overrides are needed — a key without a home line keeps its binding
-" from this bundled file. mmap does the same for MOTION mode.
+" Rebind any key to another meow command, to an <action>(...), or to
+" replayed keys; bind a key to `ignore` to disable it.
 " SPC is the keypad key and cannot be remapped; ESC and modifier
 " chords never reach the modal engine (put those on the IDE keymap).
 " ============================================================================
@@ -114,14 +106,13 @@ nmap Y meow-sync-grab
 nmap z meow-pop-selection
 nmap ' repeat
 
-" MOTION mode — meow's reduced state for special contexts, exactly like
-" special buffers in Emacs. Read-only editors do NOT use it (they stay
-" NORMAL, like Emacs read-only buffers, with the modify commands inert);
-" it IS the keymap of tool-window trees — project view, structure, TODO,
-" find results, ... — where j/k/h/l move like the arrow keys (h collapses
+" MOTION mode — the keymap of tool-window trees (project view, structure,
+" TODO, find results, ...): j/k/h/l move like the arrow keys (h collapses
 " or goes to the parent, l expands or enters), q hides the tool window,
-" and every unmapped key keeps its native meaning: Enter opens, any other
-" letter still starts speed search. Add your own the same way, e.g.
+" and every unmapped key keeps its native meaning — Enter opens, any other
+" letter still starts speed search. Read-only editors do NOT use MOTION;
+" they stay NORMAL with the modify commands inert. Add your own keys the
+" same way, e.g.
 "   mmap o <action>(EditSource)            open without leaving the tree
 "   mmap r <action>(SynchronizeCurrentFile) NERDTree-style refresh
 " and `mmap <key> ignore` gives a key back to the tree (native speed
@@ -135,15 +126,15 @@ mmap q <action>(HideActiveWindow)
 " ============================================================================
 " The keypad (SPC) table — every entry an rc line, like the layout above
 " ----------------------------------------------------------------------------
-" In Emacs, SPC x / c / m reach the C-x / C-c / M- keymaps; here the same
-" sequences dispatch IDE actions. SPC 0-9 (digit argument), SPC ? (cheatsheet)
-" and SPC / (describe key) are reserved by the keypad itself and cannot be
-" remapped.
+" Group names follow the Emacs prefixes: SPC x / c / m = the C-x / C-c / M-
+" keymaps. SPC 0-9 (digit argument), SPC ? (cheatsheet) and SPC / (describe
+" key) are reserved by the keypad itself and cannot be remapped.
 " Finding an action's id for <action>(...): SPC i d toggles action-id
-" tracking (IdeaVim's "Track Action IDs") — while it is on, every action you
-" perform shows a balloon with its id and a Copy Action Id button.
+" tracking — while it is on, every action you perform shows a balloon with
+" its id and a Copy Action Id button.
 " ============================================================================
 
+" SPC b: bookmarks / buffers
 map <leader>bb <action>(RecentFiles)
 map <leader>bm <action>(ToggleBookmark)
 map <leader>bj <action>(ShowBookmarks)
@@ -175,14 +166,14 @@ map <leader>x1 <action>(UnsplitAll)
 map <leader>x2 <action>(SplitHorizontally)
 map <leader>x3 <action>(SplitVertically)
 
-" SPC x p = C-x p: project.el
+" SPC x p = C-x p: project
 map <leader>xpf <action>(GotoFile)
 map <leader>xpb <action>(RecentFiles)
 map <leader>xpg <action>(FindInPath)
 map <leader>xpr <action>(ReplaceInPath)
 map <leader>xpc <action>(CompileProject)
 
-" SPC x r = C-x r: bookmarks (Emacs: C-x r b = consult-bookmark)
+" SPC x r = C-x r: bookmarks
 map <leader>xrb <action>(ShowBookmarks)
 
 " SPC c = C-c: personal commands
@@ -200,7 +191,7 @@ map <leader>cg <action>(Vcs.Operations.Popup)
 map <leader>cm <action>(Ideameow.EditRc)
 map <leader>cM <action>(Ideameow.ReloadRc)
 
-" SPC c j: avy jumps — implemented natively by the plugin, no AceJump needed
+" SPC c j: avy jumps
 map <leader>cjw avy-goto-char-timer
 map <leader>cjc avy-goto-char-timer
 map <leader>cjl avy-goto-line
@@ -228,18 +219,17 @@ map <leader>wD <action>(UnsplitAll)
 map <leader>wm <action>(UnsplitAll)
 map <leader>ww <action>(NextSplitter)
 map <leader>wW <action>(MoveEditorToOppositeTabGroup)
-" h/j/k/l: windmove, ported from windmove.el — directional focus over editor
-" splits AND diff panes, from the caret like Emacs. The plugin also binds
-" plain Shift+arrows to these, i.e. (windmove-default-keybindings) — that
-" lives on the IDE keymap (Settings > Keymap > Windmove *), not in this rc,
-" because modifier chords never reach the modal engine.
+" h/j/k/l: directional window focus from the caret — editor splits AND
+" diff panes. Plain Shift+arrows are bound to the same moves on the IDE
+" keymap (Settings > Keymap > Windmove *), not in this rc — modifier
+" chords never reach the modal engine.
 map <leader>wh <action>(Ideameow.WindmoveLeft)
 map <leader>wj <action>(Ideameow.WindmoveDown)
 map <leader>wk <action>(Ideameow.WindmoveUp)
 map <leader>wl <action>(Ideameow.WindmoveRight)
-" H/J/K/L: windmove-swap-states — the capitals mirror the h/j/k/l moves:
-" your file and the focus travel to the neighbouring split, its file comes
-" back to yours (editor splits only; a diff pane can't be swapped)
+" H/J/K/L: swap — the capitals mirror the h/j/k/l moves: your file and the
+" focus travel to the neighbouring split, its file comes back to yours
+" (editor splits only; a diff pane can't be swapped)
 map <leader>wH <action>(Ideameow.WindmoveSwapLeft)
 map <leader>wJ <action>(Ideameow.WindmoveSwapDown)
 map <leader>wK <action>(Ideameow.WindmoveSwapUp)
@@ -251,18 +241,14 @@ map <leader>w- <action>(EditorDecreaseFontSize)
 map <leader>wu <action>(EditorResetFontSize)
 map <leader>w0 <action>(EditorResetFontSize)
 
-" --- avy jumps (native port of avy 0.5.0 — no AceJump plugin) ---------------
-" S = avy-goto-char-timer, Q = avy-goto-line. X still goes-to-line,
-" so overriding Q costs nothing. Type chars (0.25 s pause labels the
-" matches), then hit a label key; Q labels visible lines, digits switch to
-" a line-number prompt.
+" --- avy jumps ---------------------------------------------------------------
+" S = avy-goto-char-timer, Q = avy-goto-line (no AceJump plugin needed).
+" Type chars (0.25 s pause labels the matches), then hit a label key;
+" Q labels visible lines, digits switch to a line-number prompt.
 nmap S avy-goto-char-timer
 nmap Q avy-goto-line
 
 " --- split resizing (= _ +) --------------------------------------------------
-" '-' stays meow's negative-argument (vim setups put '-' here only because
-" vim lacks negative counts — this plugin doesn't). The other three keys
-" are free in the meow layout:
 nmap = <action>(StretchSplitToTop)
 nmap _ <action>(StretchSplitToLeft)
 nmap + <action>(StretchSplitToRight)
@@ -284,7 +270,7 @@ desc <leader>w window map (Emacs C-c w)
 " reserved by the keypad)
 " ============================================================================
 
-" --- SPC . — settings / UI ---------------------------------------------------
+" --- SPC ; — settings / UI ---------------------------------------------------
 desc <leader>; settings / UI
 map <leader>;c <action>(ToggleCompactMode)
 map <leader>;C <action>(CloseProject)
@@ -497,7 +483,7 @@ map <leader>sp <action>(TextSearchAction)
 map <leader>sr <action>(ReplaceInPath)
 map <leader>st <action>(TextSearchAction)
 map <leader>su <action>(ShowUsages)
-" SPC s v: vim's "source the rc" slot — here it reloads ~/.ideameowrc
+" SPC s v: reload ~/.ideameowrc
 map <leader>sv <action>(Ideameow.ReloadRc)
 map <leader>sw <action>(SurroundWith)
 
@@ -524,10 +510,7 @@ map <leader>vl <action>(Vcs.Show.Log)
 map <leader>vp <action>(Git.Pull)
 map <leader>vP <action>(Vcs.Push)
 
-" --- SPC ] / SPC [ — next / prev navigation ------------------------------------------------------
-" Vim keymaps put ]c [c ]d [d ]e [e in NORMAL; multi-key NORMAL sequences don't
-" exist here ([ ] are meow's beginning/end-of-thing), so they live on the
-" keypad instead.
+" --- SPC . / SPC , — next / previous (change / diff / error) --------------------------------------
 desc <leader>. next (change / diff / error)
 map <leader>.c <action>(VcsShowNextChangeMarker)
 map <leader>.d <action>(NextDiff)
@@ -538,21 +521,18 @@ map <leader>,d <action>(PreviousDiff)
 map <leader>,e <action>(GotoPreviousError)
 
 " ============================================================================
-" Repeat groups — Emacs repeat-mode, ported (repeat.el's transient maps)
+" Repeat groups — tap-to-continue transient maps
 " ----------------------------------------------------------------------------
-" After any binding whose TARGET is listed in a group below — membership is
-" the target, not the key, like the repeat-map property on an Emacs command —
-" the next keypress is first looked up in that group: a member key
-" re-dispatches its target and keeps the run alive; any other key (or ESC)
-" ends the run and keeps its normal meaning (Emacs transient-keymap
-" fall-through — nothing is swallowed, and there is no timeout). The entering
-" keypad key needn't be a member: Emacs' repeat-check-key 'no behaves the
-" same way. Syntax:
+" After any binding whose TARGET is listed in a group below (membership is
+" the target, not the key), the next keypress is first looked up in that
+" group: a member key re-dispatches its target and keeps the run alive; any
+" other key (or ESC) ends the run and keeps its normal meaning — nothing is
+" swallowed, and there is no timeout. The entering keypad key needn't be a
+" member. So: SPC . e then . . , walks errors; SPC w i then i i i keeps
+" zooming. Syntax:
 "   repeat <group> <key> <target>     target grammar = the map-line RHS
 "   repeat <group> <key> ignore       give a bundled group's key back
-" Mirroring Emacs' maps 1:1: flymake -> error, diff-hl -> change, text-scale ->
-" zoom, expreg -> expand (winner-mode has no analog — no layout history).
-" So: SPC . e then . . , walks errors; SPC w i then i i i keeps zooming.
+" ============================================================================
 repeat error . <action>(GotoNextError)
 repeat error , <action>(GotoPreviousError)
 repeat change . <action>(VcsShowNextChangeMarker)
