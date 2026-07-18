@@ -16,18 +16,25 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package io.github.chubbyhippo.ideameow
 
+import com.intellij.codeInsight.lookup.LookupManager
 import com.intellij.ide.DataManager
 import com.intellij.ide.IdeEventQueue
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.actionSystem.CommonDataKeys
+import com.intellij.openapi.actionSystem.DataContext
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.WriteIntentReadAction
 import com.intellij.openapi.components.Service
+import com.intellij.openapi.editor.Editor
+import com.intellij.openapi.editor.EditorFactory
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.startup.ProjectActivity
 import com.intellij.openapi.wm.ToolWindowManager
 import java.awt.AWTEvent
+import java.awt.Component
+import java.awt.KeyboardFocusManager
 import java.awt.event.KeyEvent
+import javax.swing.SwingUtilities
 
 object ToolWindowEscape {
     const val TIMEOUT_MS = 500L
@@ -83,6 +90,7 @@ object ToolWindowEscape {
         }
         val component = e.component ?: return false
         val context = DataManager.getInstance().getDataContext(component)
+        if (consumeForMeow(component, context, e)) return true
         val project = CommonDataKeys.PROJECT.getData(context)
         if (project == null) {
             reset()
@@ -94,6 +102,44 @@ object ToolWindowEscape {
         toolWindows.activateEditorComponent()
         return true
     }
+
+    private fun consumeForMeow(
+        component: Component,
+        context: DataContext,
+        e: KeyEvent,
+    ): Boolean {
+        val (editor, st) = focusedMeowEditor(component, context) ?: return false
+        if (LookupManager.getActiveLookup(editor) != null) return false
+        val consumed =
+            try {
+                MeowEscape.wants(editor, st) && MeowEscape.consume(editor, st)
+            } catch (_: RuntimeException) {
+                false
+            }
+        if (!consumed) return false
+        reset()
+        swallowTypedUntil = e.`when` + TYPED_ESC_SWALLOW_MS
+        return true
+    }
+
+    private fun focusedMeowEditor(
+        component: Component,
+        context: DataContext,
+    ): Pair<Editor, MeowState>? {
+        val focus = KeyboardFocusManager.getCurrentKeyboardFocusManager().focusOwner
+        for (editor in EditorFactory.getInstance().allEditors) {
+            val st = Meow.state(editor) ?: continue
+            val content = editor.contentComponent
+            if (isWithin(content, component) || isWithin(content, focus)) return editor to st
+        }
+        val fromData = CommonDataKeys.EDITOR.getData(context) ?: CommonDataKeys.EDITOR_EVEN_IF_INACTIVE.getData(context)
+        return fromData?.let { ed -> Meow.state(ed)?.let { ed to it } }
+    }
+
+    private fun isWithin(
+        ancestor: Component,
+        c: Component?,
+    ): Boolean = c != null && (ancestor === c || SwingUtilities.isDescendingFrom(c, ancestor))
 }
 
 @Service(Service.Level.APP)

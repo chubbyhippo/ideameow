@@ -59,4 +59,43 @@ class ToolWindowEscapeSpec : MeowSpec() {
         assertFalse(ToolWindowEscape.onEscape(null, 1_100))
         assertFalse(ToolWindowEscape.onEscape("Terminal", 1_200))
     }
+
+    fun `test given INSERT then escape is meow's and returns to NORMAL`() {
+        given("insert escape", "abc")
+        st.mode = MeowMode.INSERT
+        assertTrue(MeowEscape.wants(ed, st))
+        assertTrue(MeowEscape.consume(ed, st))
+        thenMode(MeowMode.NORMAL)
+    }
+
+    fun `test given KEYPAD then escape is meow's and exits the keypad`() {
+        given("keypad escape", "abc")
+        whenCommand("meow-keypad")
+        assertTrue(MeowEscape.wants(ed, st))
+        assertTrue(MeowEscape.consume(ed, st))
+        thenMode(MeowMode.NORMAL)
+    }
+
+    fun `test given an active selection then escape is meow's and clears it`() {
+        given("selection escape", "abc")
+        whenKeys("e")
+        assertTrue(MeowEscape.wants(ed, st))
+        assertTrue(MeowEscape.consume(ed, st))
+        thenNoSelection()
+        thenMode(MeowMode.NORMAL)
+    }
+
+    fun `test given an armed repeat run then escape is meow's and ends it`() {
+        given("repeat escape", "abc")
+        Engine.repeatMap = emptyMap()
+        assertTrue(MeowEscape.wants(ed, st))
+        assertTrue(MeowEscape.consume(ed, st))
+        assertNull(Engine.repeatMap)
+    }
+
+    fun `test given NORMAL with nothing to cancel then escape is not meow's`() {
+        given("idle escape", "abc")
+        assertFalse(MeowEscape.wants(ed, st))
+        assertFalse(MeowEscape.consume(ed, st))
+    }
 }

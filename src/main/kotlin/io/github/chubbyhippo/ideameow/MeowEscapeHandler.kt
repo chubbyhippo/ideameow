@@ -22,6 +22,60 @@ import com.intellij.openapi.editor.Caret
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.editor.actionSystem.EditorActionHandler
 
+internal object MeowEscape {
+    fun wants(
+        editor: Editor,
+        st: MeowState,
+    ): Boolean =
+        st.avy != null ||
+            st.pending != null ||
+            Engine.repeatMap != null ||
+            st.mode == MeowMode.INSERT ||
+            st.mode == MeowMode.KEYPAD ||
+            editor.caretModel.caretCount > 1 ||
+            editor.selectionModel.hasSelection()
+
+    fun consume(
+        editor: Editor,
+        st: MeowState,
+    ): Boolean {
+        if (st.avy != null) {
+            Avy.cancel(editor, st)
+            Meow.updateWidgets()
+            return true
+        }
+        val hadTransient = st.pending != null || Engine.repeatMap != null
+        st.pending = null
+        Engine.repeatMap = null
+        WhichKey.hide()
+        ExpandHints.clear(st)
+        return when {
+            st.mode == MeowMode.INSERT -> {
+                Meow.setMode(editor, st, MeowMode.NORMAL)
+                true
+            }
+
+            st.mode == MeowMode.KEYPAD -> {
+                Keypad.exit(editor, st)
+                true
+            }
+
+            editor.caretModel.caretCount > 1 -> {
+                editor.caretModel.removeSecondaryCarets()
+                Meow.updateWidgets()
+                true
+            }
+
+            editor.selectionModel.hasSelection() -> {
+                editor.selectionModel.removeSelection()
+                true
+            }
+
+            else -> hadTransient
+        }
+    }
+}
+
 class MeowEscapeHandler(
     private val original: EditorActionHandler,
 ) : EditorActionHandler() {
@@ -31,36 +85,8 @@ class MeowEscapeHandler(
         dataContext: DataContext?,
     ) {
         val st = Meow.state(editor)
-        if (st == null || LookupManager.getActiveLookup(editor) != null) {
+        if (st == null || LookupManager.getActiveLookup(editor) != null || !MeowEscape.consume(editor, st)) {
             original.execute(editor, caret, dataContext)
-            return
-        }
-        if (st.avy != null) {
-            Avy.cancel(editor, st)
-            Meow.updateWidgets()
-            return
-        }
-        st.pending = null
-        Engine.repeatMap = null
-        WhichKey.hide()
-        ExpandHints.clear(st)
-        when {
-            st.mode == MeowMode.INSERT -> {
-                Meow.setMode(editor, st, MeowMode.NORMAL)
-            }
-
-            st.mode == MeowMode.KEYPAD -> {
-                Keypad.exit(editor, st)
-            }
-
-            editor.caretModel.caretCount > 1 -> {
-                editor.caretModel.removeSecondaryCarets()
-                Meow.updateWidgets()
-            }
-
-            else -> {
-                original.execute(editor, caret, dataContext)
-            }
         }
     }
 }

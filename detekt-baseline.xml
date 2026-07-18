@@ -58,6 +58,7 @@
     <ID>ReturnCount:Things.kt$Things$private fun paragraph( editor: Editor, offset: Int, inner: Boolean, ): Bounds?</ID>
     <ID>ReturnCount:Things.kt$Things$private fun sentence( text: CharSequence, offset: Int, inner: Boolean, ): Bounds?</ID>
     <ID>ReturnCount:ToolWindowEscape.kt$ToolWindowEscape$@Suppress("UnstableApiUsage") private fun dispatch(e: AWTEvent): Boolean</ID>
+    <ID>ReturnCount:ToolWindowEscape.kt$ToolWindowEscape$private fun consumeForMeow( component: Component, context: DataContext, e: KeyEvent, ): Boolean</ID>
     <ID>ReturnCount:ToolWindowEscape.kt$ToolWindowEscape$private fun handleEscapePress(e: KeyEvent): Boolean</ID>
     <ID>ReturnCount:TreeMeow.kt$TreeMeow$fun dispatch( tree: JTree, c: Char, noremap: Boolean = false, depth: Int = 0, )</ID>
     <ID>ReturnCount:TreeMeow.kt$TreeMeow.&lt;no name provided>$override fun actionPerformed(e: AnActionEvent)</ID>
