@@ -52,8 +52,20 @@ internal object Motions {
             put("meow-till", MeowCommand { _, st -> st.pending = Pending.TILL })
             put("forward-char", MeowCommand { ed, st -> charOrExpand(ed, st, st.takeCount(1)) })
             put("backward-char", MeowCommand { ed, st -> charOrExpand(ed, st, -st.takeCount(1)) })
-            put("next-line", MeowCommand { ed, st -> lineOrExpand(ed, st, st.takeCount(1)) })
-            put("previous-line", MeowCommand { ed, st -> lineOrExpand(ed, st, -st.takeCount(1)) })
+            put(
+                "next-line",
+                MeowCommand { ed, st ->
+                    lineOrExpand(ed, st, st.takeCount(1))
+                    st.lastCommand = "next-line"
+                },
+            )
+            put(
+                "previous-line",
+                MeowCommand { ed, st ->
+                    lineOrExpand(ed, st, -st.takeCount(1))
+                    st.lastCommand = "previous-line"
+                },
+            )
             put(
                 "move-beginning-of-line",
                 MeowCommand { ed, st -> moveToOrExpand(ed, st, SelType.CHAR, ::lineStartOffset) },
@@ -69,7 +81,8 @@ internal object Motions {
 
     private fun wordType(symbol: Boolean) = if (symbol) SelType.SYMBOL else SelType.WORD
 
-    private val VERTICAL = setOf("meow-next", "meow-prev", "meow-next-expand", "meow-prev-expand")
+    private val VERTICAL =
+        setOf("meow-next", "meow-prev", "meow-next-expand", "meow-prev-expand", "next-line", "previous-line")
 
     private fun charSelActive(
         editor: Editor,
@@ -284,7 +297,7 @@ internal object Motions {
                 if (top) 0 else len
             } else {
                 val tenth = len * n / 10
-                val raw = (if (top) 1 + tenth else len - tenth).coerceIn(0, len)
+                val raw = (if (top) tenth else len - tenth).coerceIn(0, len)
                 nextLineStart(ed, raw)
             }
         }
