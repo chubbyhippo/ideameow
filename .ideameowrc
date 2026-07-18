@@ -151,6 +151,8 @@ map <leader><Space> <action>(Switcher)
 
 " SPC x = C-x: files / buffers / windows
 map <leader>xf <action>(GotoFile)
+" SPC x z = C-x z: repeat the last command (then bare z keeps repeating)
+map <leader>xz repeat
 map <leader>xs <action>(SaveAll)
 map <leader>xb <action>(RecentFiles)
 map <leader>xk <action>(CloseContent)
@@ -556,3 +558,6 @@ repeat tab n <action>(NextTab)
 repeat tab p <action>(PreviousTab)
 repeat tab . <action>(NextTab)
 repeat tab , <action>(PreviousTab)
+
+" Emacs C-x z: after repeat (SPC x z or '), bare z keeps repeating
+repeat replay z repeat

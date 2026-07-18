@@ -234,4 +234,17 @@ class RepeatSpec : MeowSpec() {
         whenKeys("w")
         assertNull(Engine.repeatMap)
     }
+
+    fun `test given the bundled rc then SPC x z repeats the last command and bare z keeps repeating like Emacs C-x z`() {
+        given("delete run", "<caret>aaaaa")
+        whenKeys("d")
+        thenText("aaaa")
+        whenKeys(" xz")
+        thenText("aaa")
+        whenKeys("z")
+        thenText("aa")
+        whenKeys("z")
+        thenText("a")
+        thenMode(MeowMode.NORMAL)
+    }
 }
