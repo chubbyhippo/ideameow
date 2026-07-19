@@ -160,6 +160,7 @@ map <leader>xd <action>(ActivateProjectToolWindow)
 map <leader>xg <action>(ActivateVersionControlToolWindow)
 map <leader>xj <action>(SelectInProjectView)
 map <leader>xe <action>(PlaybackLastMacro)
+map <leader>xq <action>(ToggleReadOnlyAttribute)
 map <leader>xo ace-window
 map <leader>xu <action>(LocalHistory.ShowHistory)
 map <leader>xv <action>(Vcs.Operations.Popup)
@@ -202,6 +203,7 @@ map <leader>cjl avy-goto-line
 " SPC m = M-: meta
 map <leader>mx <action>(GotoAction)
 map <leader>mo avy-goto-char-timer
+map <leader>mq <action>(FillParagraph)
 map <leader>mr <action>(EditorSelectWord)
 map <leader>mR <action>(EditorUnSelectWord)
 map <leader>my <action>(PasteMultiple)
