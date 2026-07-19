@@ -37,6 +37,7 @@ object Engine {
             putAll(Avy.commands)
             putAll(AceWindow.commands)
             put("meow-negative-argument", MeowCommand { _, st -> st.negative = true })
+            put("negative-argument", MeowCommand { _, st -> st.negative = true })
             put("meow-quit", MeowCommand { ed, _ -> Ide.act(ed, "CloseContent") })
             put("meow-keypad", MeowCommand { ed, st -> enterKeypad(ed, st) })
             put("repeat", MeowCommand { ed, st -> repeatLast(ed, st) })

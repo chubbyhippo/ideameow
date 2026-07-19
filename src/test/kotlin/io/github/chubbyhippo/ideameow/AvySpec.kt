@@ -56,6 +56,17 @@ class AvySpec : MeowSpec() {
         assertNull(st.avy)
     }
 
+    fun `test given S then the input timeout is awaited only once a char is typed (avy-timeout-seconds)`() {
+        given("words", "<caret>foo foo foo")
+        whenKeys("S")
+        assertNull(st.avy?.timer)
+        whenKeys("f")
+        assertNotNull(st.avy?.timer)
+        timeout()
+        assertEquals(Avy.Phase.SELECTING, st.avy?.phase)
+        assertNotNull(st.avy)
+    }
+
     fun `test given no candidates then the session ends where it started`() {
         given("words", "<caret>alpha beta")
         whenKeys("S")

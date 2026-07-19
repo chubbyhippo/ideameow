@@ -94,7 +94,7 @@ class EditingSpec : MeowSpec() {
         thenMode(MeowMode.NORMAL)
     }
 
-    fun `test given U without a selection then nothing happens (undo-in-selection is region-gated)`() {
+    fun `test given U then undo runs only with an active region (undo-in-selection is gated)`() {
         given("chars", "<caret>abc")
         whenKeys("dU")
         thenText("bc")
