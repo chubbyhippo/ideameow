@@ -374,7 +374,9 @@ internal object Motions {
         val (s, e) = b
         val (mark, point) = if (neg) e to s else s to e
         Selections.select(editor, st, wordType(symbol), mark, point, expand = true)
-        Search.push(st, Regex("\\b" + Regex.escape(text.subSequence(s, e).toString()) + "\\b"))
+        val quoted = Regex.escape(text.subSequence(s, e).toString())
+        val pattern = if (symbol) "(?<![\\w$])$quoted(?![\\w$])" else "\\b$quoted\\b"
+        Search.push(st, Regex(pattern))
     }
 
     private fun line(
