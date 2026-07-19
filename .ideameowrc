@@ -158,6 +158,7 @@ map <leader>xb <action>(RecentFiles)
 map <leader>xk <action>(CloseContent)
 map <leader>xd <action>(ActivateProjectToolWindow)
 map <leader>xg <action>(ActivateVersionControlToolWindow)
+map <leader>xj <action>(SelectInProjectView)
 map <leader>xo ace-window
 map <leader>xu <action>(LocalHistory.ShowHistory)
 map <leader>xv <action>(Vcs.Operations.Popup)
