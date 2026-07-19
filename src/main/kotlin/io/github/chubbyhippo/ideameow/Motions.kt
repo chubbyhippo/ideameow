@@ -77,6 +77,8 @@ internal object Motions {
             put("backward-sentence", MeowCommand { ed, st -> sentenceOrExpand(ed, st, -st.takeCount(1)) })
             put("beginning-of-buffer", MeowCommand { ed, st -> bufferBoundary(ed, st, top = true) })
             put("end-of-buffer", MeowCommand { ed, st -> bufferBoundary(ed, st, top = false) })
+            put("forward-paragraph", MeowCommand { ed, st -> paragraphOrExpand(ed, st, st.takeCount(1)) })
+            put("backward-paragraph", MeowCommand { ed, st -> paragraphOrExpand(ed, st, -st.takeCount(1)) })
         }
 
     private fun wordType(symbol: Boolean) = if (symbol) SelType.SYMBOL else SelType.WORD
@@ -284,6 +286,17 @@ internal object Motions {
         }
     }
 
+    private fun paragraphOrExpand(
+        editor: Editor,
+        st: MeowState,
+        n: Int,
+    ) {
+        val text = editor.document.charsSequence
+        moveToOrExpand(editor, st, SelType.CHAR) { _, offset ->
+            if (n >= 0) Paragraphs.nextEnd(text, offset, n) else Paragraphs.prevStart(text, offset, -n)
+        }
+    }
+
     private fun bufferBoundary(
         editor: Editor,
         st: MeowState,
@@ -462,6 +475,10 @@ internal class EmacsForwardSentenceAction : EmacsChordAction("forward-sentence")
 internal class EmacsBeginningOfBufferAction : EmacsChordAction("beginning-of-buffer")
 
 internal class EmacsEndOfBufferAction : EmacsChordAction("end-of-buffer")
+
+internal class EmacsBackwardParagraphAction : EmacsChordAction("backward-paragraph")
+
+internal class EmacsForwardParagraphAction : EmacsChordAction("forward-paragraph")
 
 internal class EmacsChordPromoter : ActionPromoter {
     override fun promote(

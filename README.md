@@ -93,11 +93,16 @@ prefix exists) — verified against the GNU Emacs manual, not guessed.
 The same treatment covers the rest of the portable Emacs chord layer:
 `Alt+Shift+,` / `Alt+Shift+.` are `beginning/end-of-buffer` (Emacs `M-<` /
 `M->` — a count lands N/10 of the way in, snapping to the next line start,
-exactly the stock behavior), `Alt+u` / `Alt+l` / `Alt+c` are
+exactly the stock behavior), `Alt+Shift+[` / `Alt+Shift+]` are
+`backward/forward-paragraph` (Emacs `M-{` / `M-}` — paragraphs are
+blank-line-delimited; forward lands on the separator line, backward on the
+paragraph start with one adjacent empty line joining it), `Alt+u` /
+`Alt+l` / `Alt+c` are
 `upcase/downcase/capitalize-word` (from the caret through the word's end; a
 negative count — `-` then the chord — reaches back without moving the
 caret), and `Alt+d` is `kill-word` (into the clipboard; negative count
-kills backward). The four `Alt+letter` chords are unbound in the IDE's
+kills backward). The four `Alt+letter` chords and the `Alt+Shift+[` / `]`
+bracket pair are unbound in the IDE's
 default keymap, so nothing native is displaced; `Alt+Shift+,` / `.` shadow
 the global font-size zoom in NORMAL only — the same tradeoff `Ctrl+f`
 makes with Find above, and the zoom keeps `Ctrl+wheel`, `SPC w` and INSERT.

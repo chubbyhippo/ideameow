@@ -142,6 +142,16 @@
                 description="Move to the end of the buffer, a count landing N/10 of the way back; extend the meow selection if one is active (Emacs end-of-buffer)">
             <keyboard-shortcut keymap="$default" first-keystroke="alt shift PERIOD"/>
         </action>
+        <action id="Ideameow.EmacsBackwardParagraph" class="io.github.chubbyhippo.ideameow.EmacsBackwardParagraphAction"
+                text="Emacs Backward Paragraph"
+                description="Move backward to the paragraph start; extend the meow selection if one is active (Emacs backward-paragraph)">
+            <keyboard-shortcut keymap="$default" first-keystroke="alt shift OPEN_BRACKET"/>
+        </action>
+        <action id="Ideameow.EmacsForwardParagraph" class="io.github.chubbyhippo.ideameow.EmacsForwardParagraphAction"
+                text="Emacs Forward Paragraph"
+                description="Move forward to the paragraph end; extend the meow selection if one is active (Emacs forward-paragraph)">
+            <keyboard-shortcut keymap="$default" first-keystroke="alt shift CLOSE_BRACKET"/>
+        </action>
         <action id="Ideameow.EmacsUpcaseWord" class="io.github.chubbyhippo.ideameow.EmacsUpcaseWordAction"
                 text="Emacs Upcase Word"
                 description="Upcase from the caret to the end of the word, a negative count reaching back without moving (Emacs upcase-word)">

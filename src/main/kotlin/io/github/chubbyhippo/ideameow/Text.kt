@@ -106,6 +106,79 @@ internal fun prevSentenceStart(
     return i
 }
 
+object Paragraphs {
+    fun nextEnd(
+        text: CharSequence,
+        from: Int,
+        n: Int,
+    ): Int {
+        var pos = from.coerceIn(0, text.length)
+        repeat(n) {
+            var i = lineStartAt(text, pos)
+            while (i < text.length && blankLineAt(text, i)) i = followingLineStart(text, i)
+            while (i < text.length && !blankLineAt(text, i)) i = followingLineStart(text, i)
+            pos = i
+        }
+        return pos
+    }
+
+    fun prevStart(
+        text: CharSequence,
+        from: Int,
+        n: Int,
+    ): Int {
+        var pos = from.coerceIn(0, text.length)
+        repeat(n) {
+            if (pos > 0) {
+                val start = startBefore(text, pos)
+                pos = if (start < pos) start else startBefore(text, start - 1)
+            }
+        }
+        return pos
+    }
+
+    private fun startBefore(
+        text: CharSequence,
+        offset: Int,
+    ): Int {
+        var i = lineStartAt(text, offset)
+        while (i > 0 && blankLineAt(text, i)) i = lineStartAt(text, i - 1)
+        while (i > 0 && !blankLineAt(text, lineStartAt(text, i - 1))) i = lineStartAt(text, i - 1)
+        val prevLineEmpty = i > 0 && text[i - 1] == '\n' && (i == 1 || text[i - 2] == '\n')
+        return if (prevLineEmpty) i - 1 else i
+    }
+
+    private fun lineStartAt(
+        text: CharSequence,
+        offset: Int,
+    ): Int {
+        var i = offset
+        while (i > 0 && text[i - 1] != '\n') i--
+        return i
+    }
+
+    private fun followingLineStart(
+        text: CharSequence,
+        bol: Int,
+    ): Int {
+        var i = bol
+        while (i < text.length && text[i] != '\n') i++
+        return if (i < text.length) i + 1 else i
+    }
+
+    private fun blankLineAt(
+        text: CharSequence,
+        bol: Int,
+    ): Boolean {
+        var i = bol
+        while (i < text.length && text[i] != '\n') {
+            if (!text[i].isWhitespace()) return false
+            i++
+        }
+        return true
+    }
+}
+
 object Words {
     fun nextEnd(
         text: CharSequence,
