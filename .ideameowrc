@@ -158,7 +158,7 @@ map <leader>xb <action>(RecentFiles)
 map <leader>xk <action>(CloseContent)
 map <leader>xd <action>(ActivateProjectToolWindow)
 map <leader>xg <action>(ActivateVersionControlToolWindow)
-map <leader>xo <action>(NextSplitter)
+map <leader>xo ace-window
 map <leader>xu <action>(LocalHistory.ShowHistory)
 map <leader>xv <action>(Vcs.Operations.Popup)
 map <leader>xc <action>(CloseProject)
@@ -218,8 +218,8 @@ map <leader>ws <action>(SplitHorizontally)
 map <leader>wd <action>(Unsplit)
 map <leader>wD <action>(UnsplitAll)
 map <leader>wm <action>(UnsplitAll)
-map <leader>ww <action>(NextSplitter)
-map <leader>wW <action>(MoveEditorToOppositeTabGroup)
+map <leader>ww ace-window
+map <leader>wW ace-swap-window
 " n/p (aliases . and ,): cycle editor tabs (C-x <right>/<left>); the tab
 " repeat group below keeps a bare n/p/./, walking afterwards
 map <leader>wn <action>(NextTab)

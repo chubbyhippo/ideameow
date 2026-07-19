@@ -35,6 +35,7 @@ object Engine {
             putAll(Grab.commands)
             putAll(Edits.commands)
             putAll(Avy.commands)
+            putAll(AceWindow.commands)
             put("meow-negative-argument", MeowCommand { _, st -> st.negative = true })
             put("meow-quit", MeowCommand { ed, _ -> Ide.act(ed, "CloseContent") })
             put("meow-keypad", MeowCommand { ed, st -> enterKeypad(ed, st) })
@@ -70,6 +71,12 @@ object Engine {
         if (st.avy != null) {
             Avy.key(editor, st, c)
             st.lastCommand = "avy"
+            Meow.updateWidgets()
+            return true
+        }
+        if (st.aceWindow != null) {
+            AceWindow.key(editor, st, c)
+            st.lastCommand = "ace-window"
             Meow.updateWidgets()
             return true
         }

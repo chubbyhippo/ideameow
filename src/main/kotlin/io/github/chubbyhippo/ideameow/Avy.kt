@@ -36,8 +36,8 @@ object Avy {
 
     private const val TIMEOUT_MS = 250
 
-    private val LEAD_FG = JBColor(Color.WHITE, Color.WHITE)
-    private val LEAD_BG = JBColor(Color(0xE5, 0x2B, 0x50), Color(0xE5, 0x2B, 0x50))
+    val LEAD_FG = JBColor(Color.WHITE, Color.WHITE)
+    val LEAD_BG = JBColor(Color(0xE5, 0x2B, 0x50), Color(0xE5, 0x2B, 0x50))
 
     val commands: Map<String, MeowCommand> =
         mapOf(

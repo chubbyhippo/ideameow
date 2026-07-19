@@ -73,6 +73,18 @@ shadow shift-selection in editors, the exact tradeoff the Emacs binding
 makes (select with meow instead; trees and dialogs keep native
 shift-selection, since the actions only enable on editors).
 
+**Ace-window** — `SPC w w` (and `SPC x o`, the `C-x o` slot) is a native
+port of ace-window: with three or more windows every visible editor gets a
+home-row label painted at its top-left (`a s d f g h j k l`, the same keys
+and label style as avy, multi-char past nine windows) and the next key
+jumps there; with exactly two windows it hops straight to the other one,
+like `other-window`; `Esc` cancels. `SPC w W` is `ace-swap-window`: pick a
+window by label and it exchanges files with yours, focus following the
+swap (editor splits only — picking a window that isn't a tab group, a
+diff pane say, hints instead). ace-window's extra dispatch keys
+(`x`, `m`, `c`…) are deliberately not ported — the keypad's own `w` group
+already covers splitting, deleting, and swapping.
+
 **Emacs chords** — `Ctrl+f/b/n/p/a/e` and `Alt+f/b/a/e` are the real
 Emacs point motions (`forward/backward-char`, `next/previous-line`,
 `move-beginning/end-of-line`, `forward/backward-word`,

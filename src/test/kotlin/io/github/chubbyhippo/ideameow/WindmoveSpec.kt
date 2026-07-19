@@ -35,6 +35,17 @@ class WindmoveSpec : MeowSpec() {
 
     private fun stacked(vararg but: String) = listOf(l1, l2, l3, r).filter { it.first !in but }
 
+    fun `test given window rectangles then ace-window orders them left to right then top down`() {
+        assertEquals(listOf("L1", "L2", "R"), AceWindow.ordered(listOf(r, l2, l1)))
+    }
+
+    fun `test given one two or many windows then ace-window plans self other or labels`() {
+        assertEquals(AceWindow.Plan.NONE, AceWindow.plan(1))
+        assertEquals(AceWindow.Plan.OTHER, AceWindow.plan(2))
+        assertEquals(AceWindow.Plan.LABELS, AceWindow.plan(3))
+        assertEquals(AceWindow.Plan.LABELS, AceWindow.plan(9))
+    }
+
     fun `test given a stacked column when left then the window at the caret row is entered`() {
         assertEquals("L1", Windmove.pick(Windmove.Dir.LEFT, r.second, 1, frame, stacked("R")))
         assertEquals("L2", Windmove.pick(Windmove.Dir.LEFT, r.second, 14, frame, stacked("R")))

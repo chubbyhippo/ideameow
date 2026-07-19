@@ -128,10 +128,10 @@ internal object Windmove {
         dir: Dir,
     ) {
         val frame = SwingUtilities.getWindowAncestor(editor.component) ?: return
-        val current = rectIn(frame, editor) ?: return
+        val current = rectIn(frame, editor.component) ?: return
         val candidates =
             visibleEditors(editor, frame).mapNotNull { other ->
-                rectIn(frame, other)?.let { other to it }
+                rectIn(frame, other.component)?.let { other to it }
             }
         val posn = reference(dir, current, caretPoint(editor, frame))
         val target = pick(dir, current, posn, frame.size, candidates)
@@ -142,7 +142,6 @@ internal object Windmove {
         IdeFocusManager.getInstance(editor.project).requestFocus(target.contentComponent, true)
     }
 
-    @Suppress("UnstableApiUsage")
     fun swap(
         editor: Editor,
         dir: Dir,
@@ -158,12 +157,19 @@ internal object Windmove {
                 .mapNotNull { w -> rectIn(frame, w)?.let { w to it } }
         val posn = reference(dir, currentRect, caretPoint(editor, frame))
         val target = pick(dir, currentRect, posn, frame.size, candidates)
-        val mine = current.selectedComposite?.file
-        val theirs = target?.selectedComposite?.file
-        if (target == null || mine == null || theirs == null) {
+        if (target == null || !exchange(fem, current, target)) {
             Ide.hint(editor, noWindowMessage(dir))
-            return
         }
+    }
+
+    @Suppress("UnstableApiUsage")
+    fun exchange(
+        fem: FileEditorManagerEx,
+        current: EditorWindow,
+        target: EditorWindow,
+    ): Boolean {
+        val mine = current.selectedComposite?.file ?: return false
+        val theirs = target.selectedComposite?.file ?: return false
         if (mine != theirs) {
             val options = FileEditorOpenOptions(requestFocus = false)
             fem.openFile(mine, target, options)
@@ -172,6 +178,7 @@ internal object Windmove {
             target.closeFile(theirs)
         }
         target.setAsCurrentWindow(true)
+        return true
     }
 
     private fun rectIn(
@@ -179,10 +186,10 @@ internal object Windmove {
         window: EditorWindow,
     ): Rectangle? {
         if (window.selectedComposite == null) return null
-        return componentRect(frame, window.tabbedPane.component)
+        return rectIn(frame, window.tabbedPane.component)
     }
 
-    private fun componentRect(
+    fun rectIn(
         frame: java.awt.Window,
         c: java.awt.Component,
     ): Rectangle? {
@@ -190,7 +197,7 @@ internal object Windmove {
         return SwingUtilities.convertRectangle(c.parent, c.bounds, frame)
     }
 
-    private fun visibleEditors(
+    fun visibleEditors(
         editor: Editor,
         frame: java.awt.Window,
     ) = EditorFactory.getInstance().allEditors.filter { other ->
@@ -201,11 +208,6 @@ internal object Windmove {
             !SwingUtilities.isDescendingFrom(other.component, editor.component) &&
             !SwingUtilities.isDescendingFrom(editor.component, other.component)
     }
-
-    private fun rectIn(
-        frame: java.awt.Window,
-        editor: Editor,
-    ): Rectangle? = componentRect(frame, editor.component)
 
     private fun caretPoint(
         editor: Editor,

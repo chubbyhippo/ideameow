@@ -28,6 +28,7 @@ internal object MeowEscape {
         st: MeowState,
     ): Boolean =
         st.avy != null ||
+            st.aceWindow != null ||
             st.pending != null ||
             Engine.repeatMap != null ||
             st.mode == MeowMode.INSERT ||
@@ -41,6 +42,11 @@ internal object MeowEscape {
     ): Boolean {
         if (st.avy != null) {
             Avy.cancel(editor, st)
+            Meow.updateWidgets()
+            return true
+        }
+        if (st.aceWindow != null) {
+            AceWindow.cancel(st)
             Meow.updateWidgets()
             return true
         }
