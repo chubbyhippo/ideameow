@@ -56,6 +56,15 @@ class SpaceLeaderSpec : MeowSpec() {
         assertTrue(SpaceLeader.nativeSpace(JPanel().also { JComboBox<String>().add(it) }))
     }
 
+    fun `test given an open menu then arming skips the native-space and editor gates`() {
+        given("space leader menu", "text")
+        assertTrue(SpaceLeader.blocksArming(false, JTextField()))
+        assertFalse(SpaceLeader.blocksArming(true, JTextField()))
+        assertTrue(SpaceLeader.blocksArming(false, ed.contentComponent))
+        assertFalse(SpaceLeader.blocksArming(true, ed.contentComponent))
+        assertFalse(SpaceLeader.blocksArming(false, JPanel()))
+    }
+
     fun `test given a routed leader surface then typed keys drive the keypad`() {
         given("space leader routing", "text")
         whenKeys(" ")

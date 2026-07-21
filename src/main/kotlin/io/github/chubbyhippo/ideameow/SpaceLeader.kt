@@ -33,6 +33,7 @@ import java.awt.event.InputEvent
 import java.awt.event.KeyEvent
 import javax.swing.AbstractButton
 import javax.swing.JComboBox
+import javax.swing.MenuSelectionManager
 import javax.swing.SwingUtilities
 import javax.swing.text.JTextComponent
 
@@ -93,13 +94,20 @@ internal object SpaceLeader {
         if (e.id != KeyEvent.KEY_PRESSED || e.keyCode != KeyEvent.VK_SPACE || e.modifiersEx != 0) return false
         if (IdeEventQueue.getInstance().isPopupActive) return false
         val focus = KeyboardFocusManager.getCurrentKeyboardFocusManager().focusOwner ?: return false
-        if (nativeSpace(focus) || inAnyEditor(focus)) return false
+        if (blocksArming(menuOpen(), focus)) return false
         val target = leaderTarget(focus) ?: return false
         routed = target
         swallowNextTyped = true
         WriteIntentReadAction.compute { openKeypad(target.editor, target.state) }
         return true
     }
+
+    private fun menuOpen(): Boolean = MenuSelectionManager.defaultManager().selectedPath.isNotEmpty()
+
+    internal fun blocksArming(
+        menuOpen: Boolean,
+        focus: Component,
+    ): Boolean = !menuOpen && (nativeSpace(focus) || inAnyEditor(focus))
 
     internal fun openKeypad(
         editor: Editor,
@@ -155,9 +163,15 @@ internal object SpaceLeader {
         val editor = FileEditorManager.getInstance(project).selectedTextEditor ?: return null
         val st = Meow.state(editor) ?: return null
         if (st.mode == MeowMode.KEYPAD) return null
-        if (SwingUtilities.getWindowAncestor(focus) !== SwingUtilities.getWindowAncestor(editor.component)) return null
+        val editorWindow = SwingUtilities.getWindowAncestor(editor.component)
+        if (!windowChainContains(SwingUtilities.getWindowAncestor(focus), editorWindow)) return null
         return Routed(editor, st, focus)
     }
+
+    private fun windowChainContains(
+        from: Window?,
+        target: Window?,
+    ): Boolean = generateSequence(from) { it.owner }.any { it === target }
 
     @Suppress("UnstableApiUsage")
     private fun routePressed(

@@ -27,11 +27,16 @@ import java.awt.Rectangle
 import javax.swing.JButton
 import javax.swing.JComboBox
 import javax.swing.JLabel
+import javax.swing.JLayeredPane
 import javax.swing.JMenu
+import javax.swing.JMenuItem
 import javax.swing.JPanel
+import javax.swing.JPopupMenu
 import javax.swing.JScrollBar
 import javax.swing.JSpinner
 import javax.swing.JTextField
+import javax.swing.MenuElement
+import javax.swing.MenuSelectionManager
 
 class AceClickSpec : MeowSpec() {
     private fun targets(
@@ -180,6 +185,101 @@ class AceClickSpec : MeowSpec() {
         given("ace-click empty", "text")
         AceClick.begin(ed, st, emptyList())
         assertNull(st.aceClick)
+    }
+
+    fun `test given a menu then ace-click opens it by selecting its path`() {
+        val menu = JMenu("m")
+        menu.add(JMenuItem("i"))
+        try {
+            AceClick.clicker(menu)!!.invoke()
+            assertEquals(listOf<MenuElement>(menu, menu.popupMenu), MenuSelectionManager.defaultManager().selectedPath.toList())
+        } finally {
+            MenuSelectionManager.defaultManager().clearSelectedPath()
+        }
+    }
+
+    fun `test given a menu item in an open path then the pick clears the path before clicking`() {
+        val popup = JPopupMenu()
+        val item = JMenuItem("i")
+        popup.add(item)
+        var pathSizeAtClick = -1
+        item.addActionListener { pathSizeAtClick = MenuSelectionManager.defaultManager().selectedPath.size }
+        MenuSelectionManager.defaultManager().setSelectedPath(arrayOf<MenuElement>(popup))
+        try {
+            AceClick.clicker(item)!!.invoke()
+            assertEquals(0, pathSizeAtClick)
+        } finally {
+            MenuSelectionManager.defaultManager().clearSelectedPath()
+        }
+    }
+
+    fun `test given a pick outside an open menu then the menu closes before the click`() {
+        given("ace-click menu outside", "text")
+        val clicks = mutableListOf<Int>()
+        MenuSelectionManager.defaultManager().setSelectedPath(arrayOf<MenuElement>(JPopupMenu()))
+        try {
+            AceClick.begin(ed, st, targets(1, clicks))
+            whenKeys("a")
+            UIUtil.dispatchAllInvocationEvents()
+            assertEquals(listOf(0), clicks)
+            assertEquals(0, MenuSelectionManager.defaultManager().selectedPath.size)
+        } finally {
+            MenuSelectionManager.defaultManager().clearSelectedPath()
+        }
+    }
+
+    fun `test given targets on two layers then each layer carries its own badge canvas`() {
+        given("ace-click layers", "text")
+        val panel = JPanel()
+        val first = JLayeredPane()
+        val second = JLayeredPane()
+        val button = JButton().also { panel.add(it) }
+        val other = JButton().also { panel.add(it) }
+        AceClick.begin(
+            ed,
+            st,
+            listOf(
+                AceClick.Target(Rectangle(0, 0, 10, 10), button, first) { },
+                AceClick.Target(Rectangle(10, 0, 10, 10), other, second) { },
+            ),
+        )
+        assertEquals(2, st.aceClick!!.canvases.size)
+        assertEquals(1, first.componentCount)
+        assertEquals(1, second.componentCount)
+        pressEsc()
+        assertEquals(0, first.componentCount)
+        assertEquals(0, second.componentCount)
+    }
+
+    fun `test given screen geometry then hint labels follow the screen order`() {
+        given("ace-click screen order", "text")
+        val panel = JPanel()
+        val clicks = mutableListOf<String>()
+        val rightmost = JButton().also { panel.add(it) }
+        val leftmost = JButton().also { panel.add(it) }
+        AceClick.begin(
+            ed,
+            st,
+            listOf(
+                AceClick.Target(Rectangle(0, 0, 10, 10), rightmost, null, Rectangle(100, 0, 10, 10)) { clicks.add("right") },
+                AceClick.Target(Rectangle(0, 0, 10, 10), leftmost, null, Rectangle(0, 0, 10, 10)) { clicks.add("left") },
+            ),
+        )
+        whenKeys("a")
+        UIUtil.dispatchAllInvocationEvents()
+        assertEquals(listOf("left"), clicks)
+    }
+
+    fun `test given an INSERT editor with a live session then keys drive the pick`() {
+        given("ace-click insert session", "text")
+        whenKeys("i")
+        thenMode(MeowMode.INSERT)
+        val clicks = mutableListOf<Int>()
+        AceClick.begin(ed, st, targets(1, clicks))
+        whenKeys("a")
+        UIUtil.dispatchAllInvocationEvents()
+        assertEquals(listOf(0), clicks)
+        thenMode(MeowMode.INSERT)
     }
 
     fun `test given the bundled rc then SPC j j runs ace-click`() {

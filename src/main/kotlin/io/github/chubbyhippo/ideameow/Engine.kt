@@ -63,7 +63,6 @@ object Engine {
         c: Char,
     ): Boolean {
         val st = Meow.state(editor) ?: return false
-        if (st.mode == MeowMode.INSERT) return false
         if (st.mode == MeowMode.KEYPAD) {
             Keypad.key(editor, st, c)
             st.lastCommand = "keypad"
@@ -88,6 +87,7 @@ object Engine {
             Meow.updateWidgets()
             return true
         }
+        if (st.mode == MeowMode.INSERT) return false
 
         WhichKey.hide()
         ExpandHints.clear(st)
