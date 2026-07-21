@@ -282,8 +282,18 @@ class AceClickSpec : MeowSpec() {
         thenMode(MeowMode.INSERT)
     }
 
-    fun `test given the bundled rc then SPC j j runs ace-click`() {
-        assertEquals("ace-click", Rc.defaults().keypad["jj"]?.command)
+    fun `test given the bundled rc then SPC SPC runs ace-click`() {
+        assertEquals("ace-click", Rc.defaults().keypad[" "]?.command)
+        assertNull("SPC j j is retired", Rc.defaults().keypad["jj"])
         assertTrue(Engine.COMMANDS.containsKey("ace-click"))
+    }
+
+    fun `test given a space-keyed keypad entry then SPC SPC dispatches it`() {
+        given("spc spc dispatch", "text")
+        givenRc("map <leader><Space> meow-insert")
+        whenKeys(" ")
+        thenMode(MeowMode.KEYPAD)
+        whenKeys(" ")
+        thenMode(MeowMode.INSERT)
     }
 }

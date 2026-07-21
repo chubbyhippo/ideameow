@@ -133,6 +133,10 @@ mmap q <action>(HideActiveWindow)
 " its id and a Copy Action Id button.
 " ============================================================================
 
+" SPC SPC: ace-click — label every clickable UI element, then pick one
+desc <leader><Space> ace-click
+map <leader><Space> ace-click
+
 " SPC b: bookmarks / buffers
 map <leader>bb <action>(RecentFiles)
 map <leader>bm <action>(ToggleBookmark)
@@ -147,7 +151,6 @@ map <leader>b6 <action>(ToggleBookmark6)
 map <leader>b7 <action>(ToggleBookmark7)
 map <leader>b8 <action>(ToggleBookmark8)
 map <leader>b9 <action>(ToggleBookmark9)
-map <leader><Space> <action>(Switcher)
 
 " SPC x = C-x: files / buffers / windows
 map <leader>xf <action>(GotoFile)
@@ -398,7 +401,6 @@ map <leader>iv <action>(IntroduceVariable)
 desc <leader>j docs / jump
 map <leader>jd <action>(QuickJavaDoc)
 map <leader>ji <action>(QuickImplementations)
-map <leader>jj ace-click
 
 " --- SPC k — change keymap ----------------------------------------------------------
 desc <leader>k change keymap

@@ -143,7 +143,7 @@ class RcSpec : MeowSpec() {
         assertEquals("meow-next", d.motion['j']?.command)
         assertEquals("meow-prev", d.motion['k']?.command)
         assertEquals("RecentFiles", d.keypad["bb"]?.action)
-        assertEquals("Switcher", d.keypad[" "]?.action)
+        assertEquals("ace-click", d.keypad[" "]?.command)
         assertEquals("Ideameow.EditRc", d.keypad["cm"]?.action)
         assertEquals("Ideameow.ReloadRc", d.keypad["cM"]?.action)
         assertEquals("Ideameow.TrackActionIds", d.keypad["id"]?.action)
