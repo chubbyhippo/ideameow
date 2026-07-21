@@ -23,8 +23,8 @@ import com.intellij.ui.awt.RelativePoint
 import com.intellij.ui.components.JBLabel
 import com.intellij.util.ui.JBFont
 import com.intellij.util.ui.JBUI
+import java.awt.Component
 import java.awt.Point
-import javax.swing.JComponent
 import javax.swing.Timer
 
 object WhichKey {
@@ -109,7 +109,7 @@ object WhichKey {
     ) {
         runCatching {
             if (rows.isEmpty() || editor.isDisposed) return
-            val host = PreviewKeypad.surfaceFor(editor) ?: editor.component
+            val host = SpaceLeader.surfaceFor(editor) ?: editor.component
             val label =
                 JBLabel(gridHtml(host, rows)).apply {
                     border = JBUI.Borders.empty(6, 10)
@@ -131,7 +131,7 @@ object WhichKey {
     }
 
     private fun gridHtml(
-        host: JComponent,
+        host: Component,
         rows: List<Pair<String, String>>,
     ): String {
         val metrics = host.getFontMetrics(JBFont.label())

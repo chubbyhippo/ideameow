@@ -23,7 +23,6 @@
     <ID>LongParameterList:Selections.kt$Selections$( st: MeowState, type: SelType, expand: Boolean, mark: Int, point: Int, posBefore: Int, )</ID>
     <ID>LongParameterList:Text.kt$( text: CharSequence, ch: Char, caret: Int, n: Int, backward: Boolean, till: Boolean, )</ID>
     <ID>LoopWithTooManyJumpStatements:Grab.kt$Grab$for</ID>
-    <ID>LoopWithTooManyJumpStatements:PreviewKeypad.kt$PreviewKeypad$for</ID>
     <ID>LoopWithTooManyJumpStatements:RcParser.kt$RcParser$for</ID>
     <ID>LoopWithTooManyJumpStatements:Things.kt$Things$while</ID>
     <ID>MaxLineLength:RcParser.kt$RcParser$err("unsupported key token ${s.substring(i, close + 1)} (only printable keys reach the meow engine)")</ID>
@@ -48,14 +47,16 @@
     <ID>ReturnCount:Meow.kt$Meow$fun statusText(project: Project): String</ID>
     <ID>ReturnCount:MeowEscapeHandler.kt$MeowEscape$fun consume( editor: Editor, st: MeowState, ): Boolean</ID>
     <ID>ReturnCount:Motions.kt$Motions$private fun gotoLine( editor: Editor, st: MeowState, )</ID>
-    <ID>ReturnCount:PreviewKeypad.kt$PreviewKeypad$@Suppress("UnstableApiUsage") private fun armOnSpace(e: KeyEvent): Boolean</ID>
-    <ID>ReturnCount:PreviewKeypad.kt$PreviewKeypad$@Suppress("UnstableApiUsage") private fun routeTyped( r: Routed, e: KeyEvent, ): Boolean</ID>
-    <ID>ReturnCount:PreviewKeypad.kt$PreviewKeypad$internal fun dispatch(e: AWTEvent): Boolean</ID>
-    <ID>ReturnCount:PreviewKeypad.kt$PreviewKeypad$private fun previewTarget(focus: Component): Routed?</ID>
     <ID>ReturnCount:RcParser.kt$RcParser$private fun parseDescBody( c: Rc.Config, body: String, err: (String) -> Unit, )</ID>
     <ID>ReturnCount:RcParser.kt$RcParser$private fun parseMap( c: Rc.Config, cmd: String, rest: String, err: (String) -> Unit, )</ID>
     <ID>ReturnCount:RcParser.kt$RcParser$private fun parseRepeat( c: Rc.Config, rest: String, err: (String) -> Unit, )</ID>
     <ID>ReturnCount:Selections.kt$Selections$private fun expand( editor: Editor, st: MeowState, n: Int, )</ID>
+    <ID>ReturnCount:SpaceLeader.kt$SpaceLeader$@Suppress("UnstableApiUsage") private fun armOnSpace(e: KeyEvent): Boolean</ID>
+    <ID>ReturnCount:SpaceLeader.kt$SpaceLeader$@Suppress("UnstableApiUsage") private fun routeTyped( r: Routed, e: KeyEvent, ): Boolean</ID>
+    <ID>ReturnCount:SpaceLeader.kt$SpaceLeader$internal fun dispatch(e: AWTEvent): Boolean</ID>
+    <ID>ReturnCount:SpaceLeader.kt$SpaceLeader$internal fun nativeSpace(focus: Component): Boolean</ID>
+    <ID>ReturnCount:SpaceLeader.kt$SpaceLeader$private fun checkboxTreeOrTerminal(c: Component): Boolean</ID>
+    <ID>ReturnCount:SpaceLeader.kt$SpaceLeader$private fun leaderTarget(focus: Component): Routed?</ID>
     <ID>ReturnCount:Structures.kt$Structures$private fun join( editor: Editor, st: MeowState, )</ID>
     <ID>ReturnCount:Text.kt$internal fun nthCharTarget( text: CharSequence, ch: Char, caret: Int, n: Int, backward: Boolean, till: Boolean, ): Int</ID>
     <ID>ReturnCount:Things.kt$Things$fun pair( text: CharSequence, offset: Int, open: Char, close: Char, inner: Boolean, ): Bounds?</ID>
@@ -76,6 +77,7 @@
     <ID>TooManyFunctions:Motions.kt$Motions</ID>
     <ID>TooManyFunctions:Rc.kt$Rc</ID>
     <ID>TooManyFunctions:Selections.kt$Selections</ID>
+    <ID>TooManyFunctions:SpaceLeader.kt$SpaceLeader</ID>
     <ID>TooManyFunctions:Things.kt$Things</ID>
   </CurrentIssues>
 </SmellBaseline>

@@ -19,34 +19,42 @@ package io.github.chubbyhippo.ideameow
 import com.intellij.ide.DataManager
 import com.intellij.ide.IdeEventQueue
 import com.intellij.openapi.actionSystem.CommonDataKeys
+import com.intellij.openapi.actionSystem.PlatformDataKeys
 import com.intellij.openapi.application.WriteIntentReadAction
 import com.intellij.openapi.editor.Editor
+import com.intellij.openapi.editor.EditorFactory
 import com.intellij.openapi.fileEditor.FileEditorManager
-import com.intellij.openapi.fileEditor.TextEditorWithPreview
+import com.intellij.ui.CheckBoxList
 import java.awt.AWTEvent
 import java.awt.Component
 import java.awt.KeyboardFocusManager
+import java.awt.Window
 import java.awt.event.InputEvent
 import java.awt.event.KeyEvent
-import javax.swing.JComponent
+import javax.swing.AbstractButton
+import javax.swing.JComboBox
 import javax.swing.SwingUtilities
+import javax.swing.text.JTextComponent
 
-internal object PreviewKeypad {
+internal object SpaceLeader {
+    private const val CHECKBOX_TREE = "com.intellij.ui.CheckboxTree"
+    private const val TERMINAL_PACKAGE = "com.jediterm"
+
     private var routed: Routed? = null
     private var swallowNextTyped = false
 
     private class Routed(
         val editor: Editor,
         val state: MeowState,
-        val surface: JComponent,
+        val surface: Component,
     )
 
     internal val dispatcher =
         object : IdeEventQueue.NonLockedEventDispatcher {
-            override fun dispatch(e: AWTEvent) = this@PreviewKeypad.dispatch(e)
+            override fun dispatch(e: AWTEvent) = this@SpaceLeader.dispatch(e)
         }
 
-    fun surfaceFor(editor: Editor): JComponent? = routed?.takeIf { it.editor === editor }?.surface
+    fun surfaceFor(editor: Editor): Component? = routed?.takeIf { it.editor === editor }?.surface
 
     fun reset() {
         routed = null
@@ -56,7 +64,7 @@ internal object PreviewKeypad {
     internal fun setForTest(
         editor: Editor,
         st: MeowState,
-        surface: JComponent,
+        surface: Component,
     ) {
         routed = Routed(editor, st, surface)
     }
@@ -85,12 +93,68 @@ internal object PreviewKeypad {
         if (e.id != KeyEvent.KEY_PRESSED || e.keyCode != KeyEvent.VK_SPACE || e.modifiersEx != 0) return false
         if (IdeEventQueue.getInstance().isPopupActive) return false
         val focus = KeyboardFocusManager.getCurrentKeyboardFocusManager().focusOwner ?: return false
-        val target = previewTarget(focus) ?: return false
-        if (target.state.mode != MeowMode.NORMAL && target.state.mode != MeowMode.MOTION) return false
+        if (nativeSpace(focus) || inAnyEditor(focus)) return false
+        val target = leaderTarget(focus) ?: return false
         routed = target
         swallowNextTyped = true
-        WriteIntentReadAction.compute { Engine.handleChar(target.editor, ' ') }
+        WriteIntentReadAction.compute { openKeypad(target.editor, target.state) }
         return true
+    }
+
+    internal fun openKeypad(
+        editor: Editor,
+        st: MeowState,
+    ) {
+        if (st.mode == MeowMode.INSERT) {
+            Engine.enterKeypad(editor, st)
+        } else {
+            Engine.handleChar(editor, ' ')
+        }
+    }
+
+    internal fun nativeSpace(focus: Component): Boolean {
+        var c: Component? = focus
+        while (c != null && c !is Window) {
+            when {
+                c is JTextComponent -> return true
+
+                c is AbstractButton -> return true
+
+                c is JComboBox<*> -> return true
+
+                c is CheckBoxList<*> -> return true
+
+                checkboxTreeOrTerminal(c) -> return true
+            }
+            c = c.parent
+        }
+        return false
+    }
+
+    private fun checkboxTreeOrTerminal(c: Component): Boolean {
+        if (c.javaClass.name.startsWith(TERMINAL_PACKAGE)) return true
+        var k: Class<*>? = c.javaClass
+        while (k != null) {
+            if (k.name == CHECKBOX_TREE) return true
+            k = k.superclass
+        }
+        return false
+    }
+
+    private fun inAnyEditor(focus: Component): Boolean =
+        EditorFactory.getInstance().allEditors.any {
+            SwingUtilities.isDescendingFrom(focus, it.contentComponent)
+        }
+
+    private fun leaderTarget(focus: Component): Routed? {
+        val context = DataManager.getInstance().getDataContext(focus)
+        if (PlatformDataKeys.SPEED_SEARCH_TEXT.getData(context) != null) return null
+        val project = CommonDataKeys.PROJECT.getData(context) ?: return null
+        val editor = FileEditorManager.getInstance(project).selectedTextEditor ?: return null
+        val st = Meow.state(editor) ?: return null
+        if (st.mode == MeowMode.KEYPAD) return null
+        if (SwingUtilities.getWindowAncestor(focus) !== SwingUtilities.getWindowAncestor(editor.component)) return null
+        return Routed(editor, st, focus)
     }
 
     @Suppress("UnstableApiUsage")
@@ -119,19 +183,5 @@ internal object PreviewKeypad {
         WriteIntentReadAction.compute { Engine.handleChar(r.editor, e.keyChar) }
         if (r.state.mode != MeowMode.KEYPAD) reset()
         return true
-    }
-
-    private fun previewTarget(focus: Component): Routed? {
-        val context = DataManager.getInstance().getDataContext(focus)
-        val project = CommonDataKeys.PROJECT.getData(context) ?: return null
-        for (fileEditor in FileEditorManager.getInstance(project).allEditors) {
-            val composite = fileEditor as? TextEditorWithPreview ?: continue
-            val previewComponent = composite.previewEditor.component
-            if (!SwingUtilities.isDescendingFrom(focus, previewComponent)) continue
-            val editor = composite.textEditor.editor
-            val st = Meow.state(editor) ?: continue
-            return Routed(editor, st, previewComponent)
-        }
-        return null
     }
 }

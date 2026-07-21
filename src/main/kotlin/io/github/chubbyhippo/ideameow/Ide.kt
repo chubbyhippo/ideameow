@@ -40,7 +40,7 @@ internal object Ide {
         ActionManagerEx.getInstanceEx().tryToExecute(
             action,
             null,
-            PreviewKeypad.surfaceFor(editor) ?: editor.contentComponent,
+            SpaceLeader.surfaceFor(editor) ?: editor.contentComponent,
             "MeowPlugin",
             true,
         )
