@@ -17,13 +17,16 @@
 package io.github.chubbyhippo.ideameow
 
 import com.intellij.openapi.editor.Editor
+import com.intellij.openapi.fileEditor.FileEditorManager
+import com.intellij.openapi.fileEditor.TextEditorWithPreview
 import com.intellij.openapi.fileEditor.ex.FileEditorManagerEx
-import com.intellij.openapi.fileEditor.impl.EditorWindow
 import com.intellij.openapi.wm.IdeFocusManager
 import java.awt.FontMetrics
 import java.awt.Graphics2D
 import java.awt.Rectangle
 import javax.swing.JComponent
+import javax.swing.JLayeredPane
+import javax.swing.RootPaneContainer
 import javax.swing.SwingUtilities
 
 object AceWindow {
@@ -37,9 +40,16 @@ object AceWindow {
 
     enum class Plan { NONE, OTHER, LABELS }
 
+    class Window(
+        val rect: Rectangle,
+        val editor: Editor?,
+        val focusComponent: JComponent,
+    )
+
     class Session(
         val swap: Boolean,
-        val windows: List<Editor>,
+        val windows: List<Window>,
+        val layer: JLayeredPane?,
     ) {
         var node: Avy.Branch? = null
         val canvases = mutableListOf<JComponent>()
@@ -60,21 +70,31 @@ object AceWindow {
         st: MeowState,
         swap: Boolean,
     ) {
-        cancel(st)
         val frame = SwingUtilities.getWindowAncestor(editor.component) ?: return
-        val windows =
-            ordered(
-                (listOf(editor) + Windmove.visibleEditors(editor, frame)).mapNotNull { e ->
-                    Windmove.rectIn(frame, e.component)?.let { e to it }
-                },
-            )
+        val editors =
+            (listOf(editor) + Windmove.visibleEditors(editor, frame)).mapNotNull { e ->
+                Windmove.rectIn(frame, e.component)?.let { Window(it, e, e.contentComponent) }
+            }
+        val panels = if (swap) emptyList() else previewPanels(editor, frame)
+        val layer = (frame as? RootPaneContainer)?.rootPane?.layeredPane
+        begin(editor, st, swap, ordered((editors + panels).map { it to it.rect }), layer)
+    }
+
+    internal fun begin(
+        editor: Editor,
+        st: MeowState,
+        swap: Boolean,
+        windows: List<Window>,
+        layer: JLayeredPane? = null,
+    ) {
+        cancel(st)
         when (plan(windows.size)) {
             Plan.NONE -> return
 
-            Plan.OTHER -> perform(editor, swap, windows.first { it !== editor })
+            Plan.OTHER -> perform(editor, swap, windows.first { it.editor !== editor })
 
             Plan.LABELS -> {
-                val session = Session(swap, windows)
+                val session = Session(swap, windows, layer)
                 st.aceWindow = session
                 session.node = Avy.tree(windows.indices.toList())
                 paintLabels(session)
@@ -116,13 +136,16 @@ object AceWindow {
     private fun perform(
         editor: Editor,
         swap: Boolean,
-        target: Editor,
+        target: Window,
     ) {
-        if (target === editor) return
-        if (swap) {
-            swapWith(editor, target)
+        if (target.editor === editor) return
+        val targetEditor = target.editor
+        if (!swap) {
+            IdeFocusManager.getInstance(editor.project).requestFocus(target.focusComponent, true)
+        } else if (targetEditor == null) {
+            Ide.hint(editor, "Cannot swap with this window")
         } else {
-            IdeFocusManager.getInstance(editor.project).requestFocus(target.contentComponent, true)
+            swapWith(editor, targetEditor)
         }
     }
 
@@ -133,29 +156,39 @@ object AceWindow {
         val project = editor.project ?: return
         val fem = FileEditorManagerEx.getInstanceEx(project)
         val current = fem.currentWindow
-        val targetWindow = editorWindowOf(fem, target)?.takeIf { it !== current }
+        val targetWindow =
+            fem.windows
+                .firstOrNull { SwingUtilities.isDescendingFrom(target.component, it.tabbedPane.component) }
+                ?.takeIf { it !== current }
         if (current == null || targetWindow == null || !Windmove.exchange(fem, current, targetWindow)) {
             Ide.hint(editor, "Cannot swap with this window")
         }
     }
 
-    private fun editorWindowOf(
-        fem: FileEditorManagerEx,
-        target: Editor,
-    ): EditorWindow? =
-        fem.windows.firstOrNull {
-            SwingUtilities.isDescendingFrom(target.component, it.tabbedPane.component)
-        }
-
     private fun paintLabels(session: Session) {
         clearVisuals(session)
         val node = session.node ?: return
+        val badges = mutableListOf<Pair<Rectangle, String>>()
         for ((index, label) in Avy.labels(node)) {
             val target = session.windows.getOrNull(index) ?: continue
-            val canvas = LeadCanvas(target, label)
-            Overlay.attach(target, canvas)
-            session.canvases.add(canvas)
+            val targetEditor = target.editor
+            if (targetEditor != null) {
+                val canvas = LeadCanvas(targetEditor, label)
+                Overlay.attach(targetEditor, canvas)
+                session.canvases.add(canvas)
+            } else {
+                badges.add(target.rect to label)
+            }
         }
+        val layer = session.layer
+        if (badges.isEmpty() || layer == null) return
+        val frame = SwingUtilities.getWindowAncestor(layer) ?: return
+        session.canvases.add(
+            Overlay.badge(
+                layer,
+                badges.map { (rect, label) -> SwingUtilities.convertRectangle(frame, rect, layer) to label },
+            ),
+        )
     }
 
     private fun clearVisuals(session: Session) {
@@ -179,4 +212,22 @@ object AceWindow {
             g2.drawString(label, area.x + 1, area.y + editor.ascent)
         }
     }
+}
+
+private fun previewPanels(
+    editor: Editor,
+    frame: java.awt.Window,
+): List<AceWindow.Window> {
+    val project = editor.project ?: return emptyList()
+    return FileEditorManager
+        .getInstance(project)
+        .allEditors
+        .filterIsInstance<TextEditorWithPreview>()
+        .mapNotNull { composite ->
+            val preview = composite.previewEditor
+            if (SwingUtilities.getWindowAncestor(preview.component) !== frame) return@mapNotNull null
+            Windmove.rectIn(frame, preview.component)?.let {
+                AceWindow.Window(it, null, preview.preferredFocusedComponent ?: preview.component)
+            }
+        }
 }

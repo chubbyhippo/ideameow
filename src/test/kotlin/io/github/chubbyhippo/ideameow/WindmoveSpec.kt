@@ -23,6 +23,7 @@ import com.intellij.openapi.keymap.KeymapManager
 import java.awt.Dimension
 import java.awt.Point
 import java.awt.Rectangle
+import javax.swing.JPanel
 import javax.swing.KeyStroke
 
 class WindmoveSpec : MeowSpec() {
@@ -44,6 +45,35 @@ class WindmoveSpec : MeowSpec() {
         assertEquals(AceWindow.Plan.OTHER, AceWindow.plan(2))
         assertEquals(AceWindow.Plan.LABELS, AceWindow.plan(3))
         assertEquals(AceWindow.Plan.LABELS, AceWindow.plan(9))
+    }
+
+    private fun mixedWindows(panel: JPanel): List<AceWindow.Window> =
+        listOf(
+            AceWindow.Window(Rectangle(0, 0, 40, 24), ed, ed.contentComponent),
+            AceWindow.Window(Rectangle(40, 0, 40, 24), null, panel),
+            AceWindow.Window(Rectangle(80, 0, 40, 24), null, JPanel()),
+        )
+
+    fun `test given editor and preview windows then ace-window labels them all`() {
+        given("ace preview labels", "text")
+        AceWindow.begin(ed, st, swap = false, windows = mixedWindows(JPanel()))
+        assertEquals(3, st.aceWindow!!.windows.size)
+        assertEquals(3, Avy.labels(st.aceWindow!!.node!!).size)
+        AceWindow.cancel(st)
+    }
+
+    fun `test given a preview window pick then ace-window focuses its component`() {
+        given("ace preview focus", "text")
+        AceWindow.begin(ed, st, swap = false, windows = mixedWindows(JPanel()))
+        whenKeys("s")
+        assertNull(st.aceWindow)
+    }
+
+    fun `test given a swap pick on a preview window then ace-window hints instead of swapping`() {
+        given("ace preview swap", "text")
+        AceWindow.begin(ed, st, swap = true, windows = mixedWindows(JPanel()))
+        whenKeys("s")
+        assertNull(st.aceWindow)
     }
 
     fun `test given a stacked column when left then the window at the caret row is entered`() {

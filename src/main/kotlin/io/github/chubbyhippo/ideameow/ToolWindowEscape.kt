@@ -146,9 +146,13 @@ object ToolWindowEscape {
 internal class ToolWindowEscapeLifecycle : Disposable {
     init {
         IdeEventQueue.getInstance().addDispatcher(ToolWindowEscape.dispatcher, this)
+        IdeEventQueue.getInstance().addDispatcher(PreviewKeypad.dispatcher, this)
     }
 
-    override fun dispose() = ToolWindowEscape.reset()
+    override fun dispose() {
+        ToolWindowEscape.reset()
+        PreviewKeypad.reset()
+    }
 }
 
 internal class ToolWindowEscapeStartup : ProjectActivity {

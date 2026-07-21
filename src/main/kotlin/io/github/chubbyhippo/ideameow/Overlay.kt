@@ -18,12 +18,14 @@ package io.github.chubbyhippo.ideameow
 
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.editor.colors.EditorFontType
+import java.awt.Font
 import java.awt.FontMetrics
 import java.awt.Graphics
 import java.awt.Graphics2D
 import java.awt.Rectangle
 import java.awt.RenderingHints
 import javax.swing.JComponent
+import javax.swing.JLayeredPane
 
 internal object Overlay {
     const val LABEL_PADDING = 2
@@ -43,6 +45,42 @@ internal object Overlay {
         val parent = canvas?.parent ?: return
         parent.remove(canvas)
         parent.repaint()
+    }
+
+    fun badge(
+        layer: JLayeredPane,
+        badges: List<Pair<Rectangle, String>>,
+    ): JComponent {
+        val canvas = BadgeCanvas(badges)
+        canvas.isOpaque = false
+        canvas.bounds = Rectangle(0, 0, layer.width, layer.height)
+        layer.setLayer(canvas, JLayeredPane.DRAG_LAYER)
+        layer.add(canvas)
+        layer.repaint()
+        return canvas
+    }
+
+    private class BadgeCanvas(
+        private val badges: List<Pair<Rectangle, String>>,
+    ) : JComponent() {
+        override fun contains(
+            x: Int,
+            y: Int,
+        ): Boolean = false
+
+        override fun paintComponent(g: Graphics) {
+            val g2 = g as Graphics2D
+            g2.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON)
+            g2.font = g2.font.deriveFont(Font.BOLD)
+            val metrics = g2.fontMetrics
+            for ((rect, label) in badges) {
+                val width = metrics.stringWidth(label) + LABEL_PADDING
+                g2.color = Avy.LEAD_BG
+                g2.fillRect(rect.x, rect.y, width, metrics.height)
+                g2.color = Avy.LEAD_FG
+                g2.drawString(label, rect.x + 1, rect.y + metrics.ascent)
+            }
+        }
     }
 
     abstract class Canvas(

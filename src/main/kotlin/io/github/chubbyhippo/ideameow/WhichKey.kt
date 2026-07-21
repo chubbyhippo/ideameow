@@ -24,6 +24,7 @@ import com.intellij.ui.components.JBLabel
 import com.intellij.util.ui.JBFont
 import com.intellij.util.ui.JBUI
 import java.awt.Point
+import javax.swing.JComponent
 import javax.swing.Timer
 
 object WhichKey {
@@ -108,8 +109,9 @@ object WhichKey {
     ) {
         runCatching {
             if (rows.isEmpty() || editor.isDisposed) return
+            val host = PreviewKeypad.surfaceFor(editor) ?: editor.component
             val label =
-                JBLabel(gridHtml(editor, rows)).apply {
+                JBLabel(gridHtml(host, rows)).apply {
                     border = JBUI.Borders.empty(6, 10)
                 }
             val p =
@@ -122,7 +124,6 @@ object WhichKey {
                     .setCancelOnClickOutside(true)
                     .createPopup()
             popup = p
-            val host = editor.component
             val pref = label.preferredSize
             val y = (host.height - pref.height - JBUI.scale(BOTTOM_INSET)).coerceAtLeast(0)
             p.show(RelativePoint(host, Point(JBUI.scale(LEFT_INSET), y)))
@@ -130,12 +131,12 @@ object WhichKey {
     }
 
     private fun gridHtml(
-        editor: Editor,
+        host: JComponent,
         rows: List<Pair<String, String>>,
     ): String {
-        val metrics = editor.component.getFontMetrics(JBFont.label())
+        val metrics = host.getFontMetrics(JBFont.label())
         val entryWidth = rows.maxOf { (k, d) -> metrics.stringWidth(k + SEPARATOR + d) } + JBUI.scale(COLUMN_GAP)
-        val available = (editor.component.width - JBUI.scale(PANEL_MARGIN)).coerceAtLeast(entryWidth)
+        val available = (host.width - JBUI.scale(PANEL_MARGIN)).coerceAtLeast(entryWidth)
         val cols = (available / entryWidth).coerceIn(1, rows.size)
         val perColumn = (rows.size + cols - 1) / cols
         return buildString {
