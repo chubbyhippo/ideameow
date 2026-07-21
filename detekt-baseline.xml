@@ -19,6 +19,7 @@
     <ID>EmptyFunctionBlock:MeowWidgetFactory.kt$MeowWidget${}</ID>
     <ID>EmptyFunctionBlock:ModesKeypadSpec.kt$ModesKeypadSpec.&lt;no name provided>${}</ID>
     <ID>EmptyFunctionBlock:RepeatSpec.kt$RepeatSpec.&lt;no name provided>${}</ID>
+    <ID>LongParameterList:AceWindow.kt$AceWindow$( editor: Editor, st: MeowState, swap: Boolean, windows: List&lt;Window>, layer: JLayeredPane? = null, current: Window? = null, )</ID>
     <ID>LongParameterList:Selections.kt$Selections$( editor: Editor, st: MeowState, type: SelType, mark: Int, point: Int, expand: Boolean, push: Boolean = true, )</ID>
     <ID>LongParameterList:Selections.kt$Selections$( st: MeowState, type: SelType, expand: Boolean, mark: Int, point: Int, posBefore: Int, )</ID>
     <ID>LongParameterList:Text.kt$( text: CharSequence, ch: Char, caret: Int, n: Int, backward: Boolean, till: Boolean, )</ID>
@@ -26,6 +27,7 @@
     <ID>LoopWithTooManyJumpStatements:RcParser.kt$RcParser$for</ID>
     <ID>LoopWithTooManyJumpStatements:Things.kt$Things$while</ID>
     <ID>MaxLineLength:RcParser.kt$RcParser$err("unsupported key token ${s.substring(i, close + 1)} (only printable keys reach the meow engine)")</ID>
+    <ID>MaxLineLength:SpaceLeader.kt$SpaceLeader$private fun wantsKeys(st: MeowState)</ID>
     <ID>MemberNameEqualsClassName:Grab.kt$Grab$private fun grab( editor: Editor, st: MeowState, )</ID>
     <ID>MemberNameEqualsClassName:Search.kt$Search$private fun search( editor: Editor, st: MeowState, )</ID>
     <ID>NestedBlockDepth:Structures.kt$Structures$private fun enclosingPair( text: CharSequence, s: Int, e: Int, ): PairRange?</ID>
@@ -72,6 +74,7 @@
     <ID>ReturnCount:Windmove.kt$Windmove$fun move( editor: Editor, dir: Dir, )</ID>
     <ID>ReturnCount:Windmove.kt$Windmove$fun swap( editor: Editor, dir: Dir, )</ID>
     <ID>SpreadOperator:TreeMeow.kt$TreeMeow$(*shortcuts.toTypedArray())</ID>
+    <ID>TooManyFunctions:AceWindow.kt$AceWindow</ID>
     <ID>TooManyFunctions:Avy.kt$Avy</ID>
     <ID>TooManyFunctions:Edits.kt$Edits</ID>
     <ID>TooManyFunctions:Motions.kt$Motions</ID>

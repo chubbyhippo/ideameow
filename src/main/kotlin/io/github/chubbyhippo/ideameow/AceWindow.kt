@@ -21,8 +21,11 @@ import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.fileEditor.TextEditorWithPreview
 import com.intellij.openapi.fileEditor.ex.FileEditorManagerEx
 import com.intellij.openapi.wm.IdeFocusManager
+import com.intellij.openapi.wm.ToolWindowManager
+import java.awt.Component
 import java.awt.FontMetrics
 import java.awt.Graphics2D
+import java.awt.KeyboardFocusManager
 import java.awt.Rectangle
 import javax.swing.JComponent
 import javax.swing.JLayeredPane
@@ -44,12 +47,14 @@ object AceWindow {
         val rect: Rectangle,
         val editor: Editor?,
         val focusComponent: JComponent,
+        val container: Component = focusComponent,
     )
 
     class Session(
         val swap: Boolean,
         val windows: List<Window>,
         val layer: JLayeredPane?,
+        val current: Window?,
     ) {
         var node: Avy.Branch? = null
         val canvases = mutableListOf<JComponent>()
@@ -65,6 +70,11 @@ object AceWindow {
     fun <T> ordered(candidates: List<Pair<T, Rectangle>>): List<T> =
         candidates.sortedWith(compareBy({ it.second.x }, { it.second.y })).map { it.first }
 
+    internal fun otherWindow(
+        windows: List<Window>,
+        current: Window?,
+    ): Window = windows.first { it !== current }
+
     private fun start(
         editor: Editor,
         st: MeowState,
@@ -75,9 +85,15 @@ object AceWindow {
             (listOf(editor) + Windmove.visibleEditors(editor, frame)).mapNotNull { e ->
                 Windmove.rectIn(frame, e.component)?.let { Window(it, e, e.contentComponent) }
             }
-        val panels = if (swap) emptyList() else previewPanels(editor, frame)
+        val panels = if (swap) emptyList() else previewPanels(editor, frame) + toolWindowPanels(editor, frame, editors)
         val layer = (frame as? RootPaneContainer)?.rootPane?.layeredPane
-        begin(editor, st, swap, ordered((editors + panels).map { it to it.rect }), layer)
+        val windows = ordered((editors + panels).map { it to it.rect })
+        begin(editor, st, swap, windows, layer, focusedWindow(windows))
+    }
+
+    private fun focusedWindow(windows: List<Window>): Window? {
+        val focus = KeyboardFocusManager.getCurrentKeyboardFocusManager().focusOwner ?: return null
+        return windows.firstOrNull { SwingUtilities.isDescendingFrom(focus, it.editor?.component ?: it.container) }
     }
 
     internal fun begin(
@@ -86,15 +102,17 @@ object AceWindow {
         swap: Boolean,
         windows: List<Window>,
         layer: JLayeredPane? = null,
+        current: Window? = null,
     ) {
         cancel(st)
+        val cur = current ?: windows.firstOrNull { it.editor === editor }
         when (plan(windows.size)) {
             Plan.NONE -> return
 
-            Plan.OTHER -> perform(editor, swap, windows.first { it.editor !== editor })
+            Plan.OTHER -> perform(editor, swap, otherWindow(windows, cur), cur)
 
             Plan.LABELS -> {
-                val session = Session(swap, windows, layer)
+                val session = Session(swap, windows, layer, cur)
                 st.aceWindow = session
                 session.node = Avy.tree(windows.indices.toList())
                 paintLabels(session)
@@ -113,8 +131,9 @@ object AceWindow {
             is Avy.Leaf -> {
                 val target = session.windows.getOrNull(child.offset)
                 val swap = session.swap
+                val current = session.current
                 cancel(st)
-                if (target != null) perform(editor, swap, target)
+                if (target != null) perform(editor, swap, target, current)
             }
 
             is Avy.Branch -> {
@@ -137,8 +156,9 @@ object AceWindow {
         editor: Editor,
         swap: Boolean,
         target: Window,
+        current: Window?,
     ) {
-        if (target.editor === editor) return
+        if (target === current) return
         val targetEditor = target.editor
         if (!swap) {
             IdeFocusManager.getInstance(editor.project).requestFocus(target.focusComponent, true)
@@ -227,7 +247,28 @@ private fun previewPanels(
             val preview = composite.previewEditor
             if (SwingUtilities.getWindowAncestor(preview.component) !== frame) return@mapNotNull null
             Windmove.rectIn(frame, preview.component)?.let {
-                AceWindow.Window(it, null, preview.preferredFocusedComponent ?: preview.component)
+                AceWindow.Window(it, null, preview.preferredFocusedComponent ?: preview.component, preview.component)
             }
         }
+}
+
+private fun toolWindowPanels(
+    editor: Editor,
+    frame: java.awt.Window,
+    editors: List<AceWindow.Window>,
+): List<AceWindow.Window> {
+    val project = editor.project ?: return emptyList()
+    val manager = ToolWindowManager.getInstance(project)
+    return manager.toolWindowIds.mapNotNull { id ->
+        val toolWindow = manager.getToolWindow(id)?.takeIf { it.isVisible } ?: return@mapNotNull null
+        val component = toolWindow.component
+        if (SwingUtilities.getWindowAncestor(component) !== frame) return@mapNotNull null
+        if (editors.any { w -> w.editor != null && SwingUtilities.isDescendingFrom(w.editor.component, component) }) {
+            return@mapNotNull null
+        }
+        val focusable = toolWindow.contentManagerIfCreated?.selectedContent?.preferredFocusableComponent
+        Windmove.rectIn(frame, component)?.let {
+            AceWindow.Window(it, null, focusable ?: component, component)
+        }
+    }
 }

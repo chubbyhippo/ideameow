@@ -17,6 +17,7 @@
 package io.github.chubbyhippo.ideameow
 
 import com.intellij.ui.CheckBoxList
+import java.awt.Rectangle
 import java.awt.event.KeyEvent
 import javax.swing.JButton
 import javax.swing.JComboBox
@@ -106,6 +107,22 @@ class SpaceLeaderSpec : MeowSpec() {
             )
         assertTrue(SpaceLeader.dispatch(esc))
         thenMode(MeowMode.NORMAL)
+        assertNull(SpaceLeader.surfaceFor(ed))
+    }
+
+    fun `test given an ace-window session then leader keys route the pick and the route clears`() {
+        given("space leader ace", "text")
+        val panel = JPanel()
+        val windows =
+            listOf(
+                AceWindow.Window(Rectangle(0, 0, 40, 24), ed, ed.contentComponent),
+                AceWindow.Window(Rectangle(40, 0, 40, 24), null, panel),
+                AceWindow.Window(Rectangle(80, 0, 40, 24), null, JPanel()),
+            )
+        AceWindow.begin(ed, st, swap = false, windows = windows)
+        SpaceLeader.setForTest(ed, st, panel)
+        assertTrue(SpaceLeader.dispatch(typed(panel, 's')))
+        assertNull(st.aceWindow)
         assertNull(SpaceLeader.surfaceFor(ed))
     }
 

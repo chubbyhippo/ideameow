@@ -76,6 +76,20 @@ class WindmoveSpec : MeowSpec() {
         assertNull(st.aceWindow)
     }
 
+    fun `test given the current window then ace-window other-window picks the first non-current`() {
+        given("ace other current", "text")
+        val windows = mixedWindows(JPanel())
+        assertSame(windows[1], AceWindow.otherWindow(windows, windows[0]))
+        assertSame(windows[0], AceWindow.otherWindow(windows, windows[1]))
+    }
+
+    fun `test given a pick on the current window then ace-window stays and the session clears`() {
+        given("ace current stay", "text")
+        AceWindow.begin(ed, st, swap = false, windows = mixedWindows(JPanel()))
+        whenKeys("a")
+        assertNull(st.aceWindow)
+    }
+
     fun `test given a stacked column when left then the window at the caret row is entered`() {
         assertEquals("L1", Windmove.pick(Windmove.Dir.LEFT, r.second, 1, frame, stacked("R")))
         assertEquals("L2", Windmove.pick(Windmove.Dir.LEFT, r.second, 14, frame, stacked("R")))

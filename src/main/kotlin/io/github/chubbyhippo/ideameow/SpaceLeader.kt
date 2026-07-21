@@ -77,7 +77,7 @@ internal object SpaceLeader {
         }
         val r = routed
         if (r == null) return armOnSpace(e)
-        if (r.editor.isDisposed || r.state.mode != MeowMode.KEYPAD) {
+        if (r.editor.isDisposed || !wantsKeys(r.state)) {
             reset()
             return false
         }
@@ -111,6 +111,8 @@ internal object SpaceLeader {
             Engine.handleChar(editor, ' ')
         }
     }
+
+    private fun wantsKeys(st: MeowState) = st.mode == MeowMode.KEYPAD || st.avy != null || st.aceWindow != null || st.aceClick != null
 
     internal fun nativeSpace(focus: Component): Boolean {
         var c: Component? = focus
@@ -181,7 +183,7 @@ internal object SpaceLeader {
         val chord = InputEvent.ALT_DOWN_MASK or InputEvent.CTRL_DOWN_MASK or InputEvent.META_DOWN_MASK
         if (e.modifiersEx and chord != 0) return false
         WriteIntentReadAction.compute { Engine.handleChar(r.editor, e.keyChar) }
-        if (r.state.mode != MeowMode.KEYPAD) reset()
+        if (!wantsKeys(r.state)) reset()
         return true
     }
 }
