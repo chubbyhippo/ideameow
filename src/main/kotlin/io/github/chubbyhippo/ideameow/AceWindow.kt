@@ -23,12 +23,17 @@ import com.intellij.openapi.fileEditor.ex.FileEditorManagerEx
 import com.intellij.openapi.wm.IdeFocusManager
 import com.intellij.openapi.wm.ToolWindowManager
 import java.awt.Component
+import java.awt.Container
 import java.awt.FontMetrics
 import java.awt.Graphics2D
 import java.awt.KeyboardFocusManager
 import java.awt.Rectangle
 import javax.swing.JComponent
 import javax.swing.JLayeredPane
+import javax.swing.JList
+import javax.swing.JScrollPane
+import javax.swing.JTable
+import javax.swing.JTree
 import javax.swing.RootPaneContainer
 import javax.swing.SwingUtilities
 
@@ -259,16 +264,41 @@ private fun toolWindowPanels(
 ): List<AceWindow.Window> {
     val project = editor.project ?: return emptyList()
     val manager = ToolWindowManager.getInstance(project)
-    return manager.toolWindowIds.mapNotNull { id ->
-        val toolWindow = manager.getToolWindow(id)?.takeIf { it.isVisible } ?: return@mapNotNull null
+    return manager.toolWindowIds.flatMap { id ->
+        val toolWindow = manager.getToolWindow(id)?.takeIf { it.isVisible } ?: return@flatMap emptyList()
         val component = toolWindow.component
-        if (SwingUtilities.getWindowAncestor(component) !== frame) return@mapNotNull null
+        if (SwingUtilities.getWindowAncestor(component) !== frame) return@flatMap emptyList()
+        val paneWindows =
+            panes(component).mapNotNull { pane ->
+                Windmove.rectIn(frame, paneHost(pane))?.let { AceWindow.Window(it, null, pane, pane) }
+            }
+        if (paneWindows.isNotEmpty()) return@flatMap paneWindows
         if (editors.any { w -> w.editor != null && SwingUtilities.isDescendingFrom(w.editor.component, component) }) {
-            return@mapNotNull null
+            return@flatMap emptyList()
         }
         val focusable = toolWindow.contentManagerIfCreated?.selectedContent?.preferredFocusableComponent
-        Windmove.rectIn(frame, component)?.let {
-            AceWindow.Window(it, null, focusable ?: component, component)
-        }
+        Windmove
+            .rectIn(frame, component)
+            ?.let {
+                listOf(AceWindow.Window(it, null, focusable ?: component, component))
+            }.orEmpty()
     }
 }
+
+internal fun panes(root: Component): List<JComponent> {
+    val out = mutableListOf<JComponent>()
+    val queue = ArrayDeque<Component>()
+    queue.add(root)
+    while (queue.isNotEmpty()) {
+        val c = queue.removeFirst()
+        if (!c.isVisible) continue
+        when {
+            c is JTree || c is JTable || c is JList<*> -> out.add(c as JComponent)
+
+            c is Container -> queue += c.components
+        }
+    }
+    return out
+}
+
+internal fun paneHost(c: JComponent): Component = SwingUtilities.getAncestorOfClass(JScrollPane::class.java, c) ?: c

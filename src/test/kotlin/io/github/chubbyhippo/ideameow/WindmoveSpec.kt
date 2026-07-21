@@ -23,7 +23,14 @@ import com.intellij.openapi.keymap.KeymapManager
 import java.awt.Dimension
 import java.awt.Point
 import java.awt.Rectangle
+import javax.swing.JButton
+import javax.swing.JComponent
+import javax.swing.JLabel
+import javax.swing.JList
 import javax.swing.JPanel
+import javax.swing.JScrollPane
+import javax.swing.JTable
+import javax.swing.JTree
 import javax.swing.KeyStroke
 
 class WindmoveSpec : MeowSpec() {
@@ -88,6 +95,33 @@ class WindmoveSpec : MeowSpec() {
         AceWindow.begin(ed, st, swap = false, windows = mixedWindows(JPanel()))
         whenKeys("a")
         assertNull(st.aceWindow)
+    }
+
+    fun `test given trees tables and lists in a tool window then each pane is an ace window`() {
+        val root = JPanel()
+        val tree = JTree()
+        val table = JTable()
+        val list = JList<String>()
+        root.add(JScrollPane(tree))
+        root.add(JScrollPane(table))
+        root.add(list)
+        root.add(JButton())
+        root.add(JLabel("x"))
+        assertEquals(listOf<JComponent>(list, tree, table), panes(root))
+    }
+
+    fun `test given an invisible pane then ace-window skips it`() {
+        val root = JPanel()
+        root.add(JTree().apply { isVisible = false })
+        assertTrue(panes(root).isEmpty())
+    }
+
+    fun `test given a scrolled pane then the ace rect comes from its scroll host`() {
+        val tree = JTree()
+        val scroll = JScrollPane(tree)
+        assertSame(scroll, paneHost(tree))
+        val bare = JTree()
+        assertSame(bare, paneHost(bare))
     }
 
     fun `test given a stacked column when left then the window at the caret row is entered`() {
