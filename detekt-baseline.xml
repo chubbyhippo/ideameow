@@ -31,6 +31,7 @@
     <ID>NestedBlockDepth:Structures.kt$Structures$private fun enclosingPair( text: CharSequence, s: Int, e: Int, ): PairRange?</ID>
     <ID>NestedBlockDepth:Things.kt$Things$private fun defun( editor: Editor, offset: Int, ): Bounds?</ID>
     <ID>NestedBlockDepth:Things.kt$Things$private fun string( text: CharSequence, offset: Int, inner: Boolean, ): Bounds?</ID>
+    <ID>ReturnCount:AceClick.kt$AceClick$private fun targetOf( c: Component, layer: JLayeredPane, ): Target?</ID>
     <ID>ReturnCount:Avy.kt$Avy$private fun select( editor: Editor, st: MeowState, session: Session, c: Char, )</ID>
     <ID>ReturnCount:Edits.kt$Edits$private fun kill( editor: Editor, st: MeowState, )</ID>
     <ID>ReturnCount:Edits.kt$Edits$private fun replace( editor: Editor, st: MeowState, )</ID>

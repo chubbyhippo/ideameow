@@ -77,6 +77,8 @@ class MeowState {
 
     var aceWindow: AceWindow.Session? = null
 
+    var aceClick: AceClick.Session? = null
+
     fun takeCount(default: Int = 1): Int {
         val n = if (pendingCount == 0) default else pendingCount
         val r = if (negative) -n else n

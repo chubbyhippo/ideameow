@@ -36,6 +36,7 @@ object Engine {
             putAll(Edits.commands)
             putAll(Avy.commands)
             putAll(AceWindow.commands)
+            putAll(AceClick.commands)
             put("meow-negative-argument", MeowCommand { _, st -> st.negative = true })
             put("negative-argument", MeowCommand { _, st -> st.negative = true })
             put("meow-quit", MeowCommand { ed, _ -> Ide.act(ed, "CloseContent") })
@@ -78,6 +79,12 @@ object Engine {
         if (st.aceWindow != null) {
             AceWindow.key(editor, st, c)
             st.lastCommand = "ace-window"
+            Meow.updateWidgets()
+            return true
+        }
+        if (st.aceClick != null) {
+            AceClick.key(editor, st, c)
+            st.lastCommand = "ace-click"
             Meow.updateWidgets()
             return true
         }

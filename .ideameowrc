@@ -394,10 +394,11 @@ map <leader>ip <action>(IntroduceParameter)
 map <leader>iP <action>(refactoring.introduce.property)
 map <leader>iv <action>(IntroduceVariable)
 
-" --- SPC j — quick docs / implementations -----------------------------------------
-desc <leader>j docs / implementations
+" --- SPC j — docs / jump ------------------------------------------------------------
+desc <leader>j docs / jump
 map <leader>jd <action>(QuickJavaDoc)
 map <leader>ji <action>(QuickImplementations)
+map <leader>jj ace-click
 
 " --- SPC k — change keymap ----------------------------------------------------------
 desc <leader>k change keymap
