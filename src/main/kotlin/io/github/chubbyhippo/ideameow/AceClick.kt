@@ -60,6 +60,7 @@ object AceClick {
         val component: JComponent,
         val layer: JLayeredPane? = null,
         val screen: Rectangle = rect,
+        val rightClick: () -> Unit = {},
         val click: () -> Unit,
     )
 
@@ -132,7 +133,15 @@ object AceClick {
         val corner = screen.location
         SwingUtilities.convertPointToScreen(corner, c)
         screen.location = corner
-        return Target(SwingUtilities.convertRectangle(c, visible, layer), c, layer, screen, click)
+        val point = centerOf(visible)
+        return Target(
+            SwingUtilities.convertRectangle(c, visible, layer),
+            c,
+            layer,
+            screen,
+            click = click,
+            rightClick = { popupClick(c, point) },
+        )
     }
 
     private fun rowTargets(
@@ -193,7 +202,18 @@ object AceClick {
         val corner = screen.location
         SwingUtilities.convertPointToScreen(corner, c)
         screen.location = corner
-        return Target(SwingUtilities.convertRectangle(c, rectInComponent, layer), c, layer, screen, click)
+        val point = centerOf(rectInComponent)
+        return Target(
+            SwingUtilities.convertRectangle(c, rectInComponent, layer),
+            c,
+            layer,
+            screen,
+            click = click,
+            rightClick = {
+                click()
+                popupClick(c, point)
+            },
+        )
     }
 
     private fun selectTreeRow(
@@ -210,6 +230,18 @@ object AceClick {
     ) {
         list.selectedIndex = index
         list.ensureIndexIsVisible(index)
+    }
+
+    private fun centerOf(r: Rectangle) = Point(r.x + r.width / 2, r.y + r.height / 2)
+
+    private fun popupClick(
+        c: JComponent,
+        p: Point,
+    ) {
+        val time = System.currentTimeMillis()
+        for (id in intArrayOf(MouseEvent.MOUSE_PRESSED, MouseEvent.MOUSE_RELEASED)) {
+            c.dispatchEvent(MouseEvent(c, id, time, 0, p.x, p.y, 1, true, MouseEvent.BUTTON3))
+        }
     }
 
     internal fun clicker(c: JComponent): (() -> Unit)? {
@@ -244,17 +276,20 @@ object AceClick {
     ) {
         val session = st.aceClick ?: return
         val node = session.node ?: return
-        when (val child = node.children.firstOrNull { it.first == c }?.second) {
+        val lower = c.lowercaseChar()
+        val secondary = c != lower
+        when (val child = node.children.firstOrNull { it.first == lower }?.second) {
             is Avy.Leaf -> {
                 val target = session.targets.getOrNull(child.offset)
                 cancel(st)
                 if (target != null) {
+                    val action = if (secondary) target.rightClick else target.click
                     ApplicationManager.getApplication().invokeLater {
                         if (!editor.isDisposed && target.component.parent != null) {
                             if (target.component !is MenuElement) {
                                 MenuSelectionManager.defaultManager().clearSelectedPath()
                             }
-                            runCatching { target.click() }.onFailure { Ide.hint(editor, "Click failed") }
+                            runCatching { action() }.onFailure { Ide.hint(editor, "Click failed") }
                         }
                     }
                 }

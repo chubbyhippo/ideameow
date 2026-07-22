@@ -53,6 +53,20 @@ class AceClickSpec : MeowSpec() {
         }
     }
 
+    private fun splitClickTarget(
+        lefts: MutableList<Int>,
+        rights: MutableList<Int>,
+    ): AceClick.Target {
+        val button = JButton()
+        JPanel().add(button)
+        return AceClick.Target(
+            rect = Rectangle(0, 0, 10, 10),
+            component = button,
+            click = { lefts.add(0) },
+            rightClick = { rights.add(0) },
+        )
+    }
+
     private fun pressEsc() {
         val noop =
             object : EditorActionHandler() {
@@ -119,6 +133,30 @@ class AceClickSpec : MeowSpec() {
         assertEquals(listOf(1), clicks)
         assertNull(st.aceClick)
         thenMode(MeowMode.NORMAL)
+    }
+
+    fun `test given a plain hint key then ace-click left-clicks the target`() {
+        given("ace-click left", "text")
+        val lefts = mutableListOf<Int>()
+        val rights = mutableListOf<Int>()
+        AceClick.begin(ed, st, listOf(splitClickTarget(lefts, rights)))
+        whenKeys("a")
+        UIUtil.dispatchAllInvocationEvents()
+        assertEquals(listOf(0), lefts)
+        assertTrue(rights.isEmpty())
+        assertNull(st.aceClick)
+    }
+
+    fun `test given a shift-modified hint key then ace-click right-clicks the target`() {
+        given("ace-click right", "text")
+        val lefts = mutableListOf<Int>()
+        val rights = mutableListOf<Int>()
+        AceClick.begin(ed, st, listOf(splitClickTarget(lefts, rights)))
+        whenKeys("A")
+        UIUtil.dispatchAllInvocationEvents()
+        assertEquals(listOf(0), rights)
+        assertTrue(lefts.isEmpty())
+        assertNull(st.aceClick)
     }
 
     fun `test given a subtree key then the remaining suffixes stay pending`() {
