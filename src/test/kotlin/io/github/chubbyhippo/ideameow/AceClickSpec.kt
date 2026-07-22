@@ -28,6 +28,7 @@ import javax.swing.JButton
 import javax.swing.JComboBox
 import javax.swing.JLabel
 import javax.swing.JLayeredPane
+import javax.swing.JList
 import javax.swing.JMenu
 import javax.swing.JMenuItem
 import javax.swing.JPanel
@@ -35,6 +36,7 @@ import javax.swing.JPopupMenu
 import javax.swing.JScrollBar
 import javax.swing.JSpinner
 import javax.swing.JTextField
+import javax.swing.JTree
 import javax.swing.MenuElement
 import javax.swing.MenuSelectionManager
 
@@ -78,6 +80,11 @@ class AceClickSpec : MeowSpec() {
         assertNull(AceClick.clicker(JPanel()))
         assertNull(AceClick.clicker(JLabel("x")))
         assertNull(AceClick.clicker(JButton().apply { isEnabled = false }))
+    }
+
+    fun `test given a tree or list then ace-click routes them through row enumeration not one badge`() {
+        assertNull(AceClick.clicker(JTree()))
+        assertNull(AceClick.clicker(JList<String>()))
     }
 
     fun `test given combo spinner and scrollbar internals then ace-click skips the child buttons`() {

@@ -28,6 +28,7 @@ import com.intellij.ui.tabs.impl.TabLabel
 import java.awt.Component
 import java.awt.Container
 import java.awt.KeyboardFocusManager
+import java.awt.Point
 import java.awt.Rectangle
 import java.awt.Window
 import java.awt.event.MouseEvent
@@ -35,11 +36,13 @@ import javax.swing.AbstractButton
 import javax.swing.JComboBox
 import javax.swing.JComponent
 import javax.swing.JLayeredPane
+import javax.swing.JList
 import javax.swing.JMenu
 import javax.swing.JMenuItem
 import javax.swing.JPopupMenu
 import javax.swing.JScrollBar
 import javax.swing.JSpinner
+import javax.swing.JTree
 import javax.swing.MenuElement
 import javax.swing.MenuSelectionManager
 import javax.swing.RootPaneContainer
@@ -111,7 +114,8 @@ object AceClick {
             val c = queue.removeFirst()
             if (!c.isVisible) continue
             if (c is Container) queue += c.components
-            targetOf(c, layer)?.let { out.add(it) }
+            val rows = rowTargets(c, layer)
+            if (rows != null) out.addAll(rows) else targetOf(c, layer)?.let { out.add(it) }
         }
         return out
     }
@@ -129,6 +133,83 @@ object AceClick {
         SwingUtilities.convertPointToScreen(corner, c)
         screen.location = corner
         return Target(SwingUtilities.convertRectangle(c, visible, layer), c, layer, screen, click)
+    }
+
+    private fun rowTargets(
+        c: Component,
+        layer: JLayeredPane,
+    ): List<Target>? {
+        if (c !is JComponent || !c.isShowing) return null
+        return when (c) {
+            is JTree -> treeRows(c, layer)
+            is JList<*> -> listCells(c, layer)
+            else -> null
+        }
+    }
+
+    private fun treeRows(
+        tree: JTree,
+        layer: JLayeredPane,
+    ): List<Target> {
+        val visible = tree.visibleRect
+        if (visible.width <= 0 || visible.height <= 0 || tree.rowCount == 0) return emptyList()
+        val first = tree.getClosestRowForLocation(visible.x, visible.y).coerceAtLeast(0)
+        val last = tree.getClosestRowForLocation(visible.x, visible.y + visible.height - 1)
+        val out = mutableListOf<Target>()
+        for (row in first..last) {
+            val bounds = tree.getRowBounds(row) ?: continue
+            val clip = bounds.intersection(visible)
+            if (clip.isEmpty) continue
+            out.add(rowTarget(tree, clip, layer) { selectTreeRow(tree, row) })
+        }
+        return out
+    }
+
+    private fun listCells(
+        list: JList<*>,
+        layer: JLayeredPane,
+    ): List<Target> {
+        val visible = list.visibleRect
+        if (visible.width <= 0 || visible.height <= 0 || list.model.size == 0) return emptyList()
+        val first = list.locationToIndex(Point(visible.x, visible.y)).coerceAtLeast(0)
+        val last = list.locationToIndex(Point(visible.x, visible.y + visible.height - 1))
+        val out = mutableListOf<Target>()
+        for (index in first..last) {
+            val bounds = list.getCellBounds(index, index) ?: continue
+            val clip = bounds.intersection(visible)
+            if (clip.isEmpty) continue
+            out.add(rowTarget(list, clip, layer) { selectListCell(list, index) })
+        }
+        return out
+    }
+
+    private fun rowTarget(
+        c: JComponent,
+        rectInComponent: Rectangle,
+        layer: JLayeredPane,
+        click: () -> Unit,
+    ): Target {
+        val screen = Rectangle(rectInComponent)
+        val corner = screen.location
+        SwingUtilities.convertPointToScreen(corner, c)
+        screen.location = corner
+        return Target(SwingUtilities.convertRectangle(c, rectInComponent, layer), c, layer, screen, click)
+    }
+
+    private fun selectTreeRow(
+        tree: JTree,
+        row: Int,
+    ) {
+        tree.setSelectionRow(row)
+        tree.scrollRowToVisible(row)
+    }
+
+    private fun selectListCell(
+        list: JList<*>,
+        index: Int,
+    ) {
+        list.selectedIndex = index
+        list.ensureIndexIsVisible(index)
     }
 
     internal fun clicker(c: JComponent): (() -> Unit)? {
