@@ -18,7 +18,32 @@ package io.github.chubbyhippo.ideameow
 
 import com.intellij.notification.NotificationGroupManager
 import com.intellij.notification.NotificationType
+import java.awt.event.InputEvent
 import java.io.File
+import javax.swing.KeyStroke
+
+data class ChordKey(
+    val keyCode: Int,
+    val modifiers: Int,
+) {
+    fun hasNonShiftModifier(): Boolean = modifiers and NON_SHIFT != 0
+
+    companion object {
+        private val ALL =
+            InputEvent.SHIFT_DOWN_MASK or InputEvent.CTRL_DOWN_MASK or
+                InputEvent.ALT_DOWN_MASK or InputEvent.META_DOWN_MASK or InputEvent.ALT_GRAPH_DOWN_MASK
+        private val NON_SHIFT =
+            InputEvent.CTRL_DOWN_MASK or InputEvent.ALT_DOWN_MASK or
+                InputEvent.META_DOWN_MASK or InputEvent.ALT_GRAPH_DOWN_MASK
+
+        fun of(
+            keyCode: Int,
+            modifiers: Int,
+        ): ChordKey = ChordKey(keyCode, modifiers and ALL)
+
+        fun fromKeyStroke(ks: KeyStroke): ChordKey = of(ks.keyCode, ks.modifiers)
+    }
+}
 
 object Rc {
     const val FILE_NAME = ".ideameowrc"
@@ -37,6 +62,7 @@ object Rc {
         val motion = mutableMapOf<Char, Binding>()
         val keypad = linkedMapOf<String, Binding>()
         val keypadDesc = mutableMapOf<String, String>()
+        val chords = linkedMapOf<ChordKey, Binding>()
 
         val repeat = linkedMapOf<String, LinkedHashMap<Char, Binding>>()
         var whichKey: Boolean? = null
@@ -108,6 +134,13 @@ object Rc {
     fun keypad(): Map<String, Binding> = LinkedHashMap(defaults().keypad).apply { putAll(cfg().keypad) }
 
     fun keypadDescs(): Map<String, String> = HashMap(defaults().keypadDesc).apply { putAll(cfg().keypadDesc) }
+
+    fun chords(): Map<ChordKey, Binding> {
+        val merged = LinkedHashMap(defaults().chords)
+        merged.putAll(cfg().chords)
+        merged.values.removeIf { it.command == "ignore" }
+        return merged
+    }
 
     fun repeatGroups(): Map<String, Map<Char, Binding>> {
         val merged = LinkedHashMap<String, LinkedHashMap<Char, Binding>>()

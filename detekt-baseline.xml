@@ -23,6 +23,7 @@
     <ID>LongParameterList:Selections.kt$Selections$( editor: Editor, st: MeowState, type: SelType, mark: Int, point: Int, expand: Boolean, push: Boolean = true, )</ID>
     <ID>LongParameterList:Selections.kt$Selections$( st: MeowState, type: SelType, expand: Boolean, mark: Int, point: Int, posBefore: Int, )</ID>
     <ID>LongParameterList:Text.kt$( text: CharSequence, ch: Char, caret: Int, n: Int, backward: Boolean, till: Boolean, )</ID>
+    <ID>LoopWithTooManyJumpStatements:AceClick.kt$AceClick$for</ID>
     <ID>LoopWithTooManyJumpStatements:Grab.kt$Grab$for</ID>
     <ID>LoopWithTooManyJumpStatements:RcParser.kt$RcParser$for</ID>
     <ID>LoopWithTooManyJumpStatements:Things.kt$Things$while</ID>
@@ -36,10 +37,12 @@
     <ID>ReturnCount:AceClick.kt$AceClick$private fun targetOf( c: Component, layer: JLayeredPane, ): Target?</ID>
     <ID>ReturnCount:AceWindow.kt$AceWindow$private fun paintLabels(session: Session)</ID>
     <ID>ReturnCount:Avy.kt$Avy$private fun select( editor: Editor, st: MeowState, session: Session, c: Char, )</ID>
+    <ID>ReturnCount:ChordDispatcher.kt$ChordDispatcher$@Suppress("UnstableApiUsage") private fun handlePress(e: KeyEvent): Boolean</ID>
+    <ID>ReturnCount:ChordDispatcher.kt$ChordDispatcher$internal fun dispatch(e: AWTEvent): Boolean</ID>
     <ID>ReturnCount:Edits.kt$Edits$private fun kill( editor: Editor, st: MeowState, )</ID>
     <ID>ReturnCount:Edits.kt$Edits$private fun replace( editor: Editor, st: MeowState, )</ID>
     <ID>ReturnCount:Engine.kt$Engine$fun handleChar( editor: Editor, c: Char, ): Boolean</ID>
-    <ID>ReturnCount:Engine.kt$Engine$private fun dispatch( editor: Editor, st: MeowState, b: Rc.Binding, )</ID>
+    <ID>ReturnCount:Engine.kt$Engine$internal fun dispatch( editor: Editor, st: MeowState, b: Rc.Binding, )</ID>
     <ID>ReturnCount:Engine.kt$Engine$private fun resolve( st: MeowState, c: Char, motion: Boolean, ): Rc.Binding?</ID>
     <ID>ReturnCount:Grab.kt$Grab$fun beacon( editor: Editor, st: MeowState, )</ID>
     <ID>ReturnCount:Grab.kt$Grab$fun pop( editor: Editor, st: MeowState, ): Boolean</ID>
@@ -49,6 +52,7 @@
     <ID>ReturnCount:Meow.kt$Meow$fun statusText(project: Project): String</ID>
     <ID>ReturnCount:MeowEscapeHandler.kt$MeowEscape$fun consume( editor: Editor, st: MeowState, ): Boolean</ID>
     <ID>ReturnCount:Motions.kt$Motions$private fun gotoLine( editor: Editor, st: MeowState, )</ID>
+    <ID>ReturnCount:RcParser.kt$RcParser$private fun parseChord( c: Rc.Config, cmd: String, rest: String, err: (String) -> Unit, )</ID>
     <ID>ReturnCount:RcParser.kt$RcParser$private fun parseDescBody( c: Rc.Config, body: String, err: (String) -> Unit, )</ID>
     <ID>ReturnCount:RcParser.kt$RcParser$private fun parseMap( c: Rc.Config, cmd: String, rest: String, err: (String) -> Unit, )</ID>
     <ID>ReturnCount:RcParser.kt$RcParser$private fun parseRepeat( c: Rc.Config, rest: String, err: (String) -> Unit, )</ID>
@@ -74,6 +78,7 @@
     <ID>ReturnCount:Windmove.kt$Windmove$fun move( editor: Editor, dir: Dir, )</ID>
     <ID>ReturnCount:Windmove.kt$Windmove$fun swap( editor: Editor, dir: Dir, )</ID>
     <ID>SpreadOperator:TreeMeow.kt$TreeMeow$(*shortcuts.toTypedArray())</ID>
+    <ID>TooManyFunctions:AceClick.kt$AceClick</ID>
     <ID>TooManyFunctions:AceWindow.kt$AceWindow</ID>
     <ID>TooManyFunctions:Avy.kt$Avy</ID>
     <ID>TooManyFunctions:Edits.kt$Edits</ID>

@@ -16,16 +16,9 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package io.github.chubbyhippo.ideameow
 
-import com.intellij.openapi.actionSystem.ActionPromoter
-import com.intellij.openapi.actionSystem.ActionUpdateThread
-import com.intellij.openapi.actionSystem.AnAction
-import com.intellij.openapi.actionSystem.AnActionEvent
-import com.intellij.openapi.actionSystem.CommonDataKeys
-import com.intellij.openapi.actionSystem.DataContext
 import com.intellij.openapi.editor.Caret
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.editor.ScrollType
-import com.intellij.openapi.project.DumbAwareAction
 import com.intellij.openapi.ui.Messages
 import kotlin.math.abs
 
@@ -430,61 +423,4 @@ internal object Motions {
         st.lastFind = ch
         Selections.select(editor, st, if (till) SelType.TILL else SelType.FIND, caret, target, expand = false)
     }
-}
-
-internal sealed class EmacsChordAction(
-    private val command: String,
-) : DumbAwareAction() {
-    init {
-        isEnabledInModalContext = true
-    }
-
-    override fun getActionUpdateThread() = ActionUpdateThread.BGT
-
-    override fun update(e: AnActionEvent) {
-        val editor = e.getData(CommonDataKeys.EDITOR)
-        e.presentation.isEnabled = editor != null && Meow.state(editor)?.mode == MeowMode.NORMAL
-    }
-
-    override fun actionPerformed(e: AnActionEvent) {
-        val editor = e.getData(CommonDataKeys.EDITOR) ?: return
-        val st = Meow.state(editor) ?: return
-        Engine.COMMANDS[command]?.invoke(editor, st)
-        Meow.updateWidgets()
-    }
-}
-
-internal class EmacsForwardCharAction : EmacsChordAction("forward-char")
-
-internal class EmacsBackwardCharAction : EmacsChordAction("backward-char")
-
-internal class EmacsNextLineAction : EmacsChordAction("next-line")
-
-internal class EmacsPreviousLineAction : EmacsChordAction("previous-line")
-
-internal class EmacsBeginningOfLineAction : EmacsChordAction("move-beginning-of-line")
-
-internal class EmacsEndOfLineAction : EmacsChordAction("move-end-of-line")
-
-internal class EmacsForwardWordAction : EmacsChordAction("forward-word")
-
-internal class EmacsBackwardWordAction : EmacsChordAction("backward-word")
-
-internal class EmacsBackwardSentenceAction : EmacsChordAction("backward-sentence")
-
-internal class EmacsForwardSentenceAction : EmacsChordAction("forward-sentence")
-
-internal class EmacsBeginningOfBufferAction : EmacsChordAction("beginning-of-buffer")
-
-internal class EmacsEndOfBufferAction : EmacsChordAction("end-of-buffer")
-
-internal class EmacsBackwardParagraphAction : EmacsChordAction("backward-paragraph")
-
-internal class EmacsForwardParagraphAction : EmacsChordAction("forward-paragraph")
-
-internal class EmacsChordPromoter : ActionPromoter {
-    override fun promote(
-        actions: List<AnAction>,
-        context: DataContext,
-    ): List<AnAction> = actions.sortedByDescending { it is EmacsChordAction }
 }

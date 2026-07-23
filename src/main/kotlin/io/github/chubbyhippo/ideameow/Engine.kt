@@ -188,7 +188,7 @@ object Engine {
         repeatMap = map
     }
 
-    private fun dispatch(
+    internal fun dispatch(
         editor: Editor,
         st: MeowState,
         b: Rc.Binding,

@@ -338,11 +338,3 @@ internal object Edits {
         st.selExpand = false
     }
 }
-
-internal class EmacsUpcaseWordAction : EmacsChordAction("upcase-word")
-
-internal class EmacsDowncaseWordAction : EmacsChordAction("downcase-word")
-
-internal class EmacsCapitalizeWordAction : EmacsChordAction("capitalize-word")
-
-internal class EmacsKillWordAction : EmacsChordAction("kill-word")

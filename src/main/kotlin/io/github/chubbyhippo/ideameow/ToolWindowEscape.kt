@@ -147,11 +147,13 @@ internal class ToolWindowEscapeLifecycle : Disposable {
     init {
         IdeEventQueue.getInstance().addDispatcher(ToolWindowEscape.dispatcher, this)
         IdeEventQueue.getInstance().addDispatcher(SpaceLeader.dispatcher, this)
+        IdeEventQueue.getInstance().addDispatcher(ChordDispatcher.dispatcher, this)
     }
 
     override fun dispose() {
         ToolWindowEscape.reset()
         SpaceLeader.reset()
+        ChordDispatcher.reset()
     }
 }
 

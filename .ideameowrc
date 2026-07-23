@@ -123,6 +123,45 @@ mmap l meow-right
 mmap q <action>(HideActiveWindow)
 
 " ============================================================================
+" The Emacs chord layer — modifier-key bindings, like the vanilla Emacs keymap
+" ----------------------------------------------------------------------------
+" Unlike the single-key layout above, these are Ctrl-/Alt- CHORDS. They fire
+" only in NORMAL and, like meow's own motions, EXTEND an active selection
+" instead of replacing it (so C-f after a selection grows it). Spelling is the
+" IntelliJ keystroke format shown by SPC i d and Settings > Keymap: zero or
+" more of "control" / "alt" / "shift" / "meta", then a key name (F, COMMA,
+" OPEN_BRACKET, ...). cnoremap resolves its target through these bundled
+" defaults; cmap through your own maps. A chord bound to `ignore` is handed
+" back to the IDE — e.g. `cmap control F ignore` restores Find. Modifier
+" chords never reach the modal engine as typing, so they live here, not on the
+" nmap layout; ESC and un-mapped chords keep their native IDE meaning.
+" ============================================================================
+
+" point motions (C-f C-b C-n C-p C-a C-e, M-f M-b M-a M-e)
+cmap control F forward-char
+cmap control B backward-char
+cmap control N next-line
+cmap control P previous-line
+cmap control A move-beginning-of-line
+cmap control E move-end-of-line
+cmap alt F forward-word
+cmap alt B backward-word
+cmap alt A backward-sentence
+cmap alt E forward-sentence
+
+" buffer + paragraph (M-< M-> M-{ M-})
+cmap alt shift COMMA beginning-of-buffer
+cmap alt shift PERIOD end-of-buffer
+cmap alt shift OPEN_BRACKET backward-paragraph
+cmap alt shift CLOSE_BRACKET forward-paragraph
+
+" case + kill (M-u M-l M-c M-d)
+cmap alt U upcase-word
+cmap alt L downcase-word
+cmap alt C capitalize-word
+cmap alt D kill-word
+
+" ============================================================================
 " The keypad (SPC) table — every entry an rc line, like the layout above
 " ----------------------------------------------------------------------------
 " Group names follow the Emacs prefixes: SPC x / c / m = the C-x / C-c / M-

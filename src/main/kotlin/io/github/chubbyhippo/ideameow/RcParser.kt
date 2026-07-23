@@ -16,6 +16,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package io.github.chubbyhippo.ideameow
 
+import javax.swing.KeyStroke
+
 internal object RcParser {
     private val ACTION_RE = Regex("""(?i)<action>\(([\w.$(),=-]+)\)""")
     private val WHICHKEY_LET_RE = Regex("""^let\s+g:WhichKeyDesc\w*\s*=\s*"(.+)"$""")
@@ -55,6 +57,10 @@ internal object RcParser {
 
                 "map", "noremap", "nmap", "nnoremap", "mmap", "mnoremap" -> {
                     parseMap(c, cmd, rest, ::err)
+                }
+
+                "cmap", "cnoremap" -> {
+                    parseChord(c, cmd, rest, ::err)
                 }
 
                 "repeat" -> {
@@ -159,6 +165,33 @@ internal object RcParser {
                 (if (motion) c.motion else c.normal)[keys[0]] = binding
             }
         }
+    }
+
+    private fun parseChord(
+        c: Rc.Config,
+        cmd: String,
+        rest: String,
+        err: (String) -> Unit,
+    ) {
+        val tokens = rest.trim().split(Regex("\\s+")).filter { it.isNotEmpty() }
+        if (tokens.size < 2) {
+            err("$cmd needs a chord keystroke and a target")
+            return
+        }
+        val target = tokens.last()
+        val keystroke = tokens.dropLast(1).joinToString(" ")
+        val ks = KeyStroke.getKeyStroke(keystroke)
+        if (ks == null || ks.keyCode == 0) {
+            err("$cmd: cannot parse chord '$keystroke' (use e.g. 'control F', 'alt shift COMMA')")
+            return
+        }
+        val key = ChordKey.fromKeyStroke(ks)
+        if (!key.hasNonShiftModifier()) {
+            err("$cmd: chord '$keystroke' needs a Ctrl, Alt or Meta modifier")
+            return
+        }
+        val binding = parseTarget(target, recursive = cmd == "cmap", "$cmd $rest", err) ?: return
+        c.chords[key] = binding
     }
 
     private fun parseTarget(

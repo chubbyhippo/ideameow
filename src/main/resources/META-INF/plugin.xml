@@ -29,7 +29,6 @@
         <notificationGroup id="ideameow" displayType="BALLOON"/>
         <editorFloatingToolbarProvider implementation="io.github.chubbyhippo.ideameow.RcReloadFloatingToolbar"/>
         <actionPromoter implementation="io.github.chubbyhippo.ideameow.WindmovePromoter"/>
-        <actionPromoter implementation="io.github.chubbyhippo.ideameow.EmacsChordPromoter"/>
     </extensions>
     <applicationListeners>
         <listener class="io.github.chubbyhippo.ideameow.MeowActionIdListener"
@@ -82,95 +81,5 @@
         <action id="Ideameow.WindmoveSwapDown" class="io.github.chubbyhippo.ideameow.WindmoveSwapDownAction"
                 text="Windmove Swap Down"
                 description="Swap the current editor window with the one below (Emacs windmove-swap-states-down)"/>
-        <action id="Ideameow.EmacsForwardChar" class="io.github.chubbyhippo.ideameow.EmacsForwardCharAction"
-                text="Emacs Forward Char"
-                description="Move forward one character; extend the meow selection if one is active (Emacs forward-char)">
-            <keyboard-shortcut keymap="$default" first-keystroke="control F"/>
-        </action>
-        <action id="Ideameow.EmacsBackwardChar" class="io.github.chubbyhippo.ideameow.EmacsBackwardCharAction"
-                text="Emacs Backward Char"
-                description="Move backward one character; extend the meow selection if one is active (Emacs backward-char)">
-            <keyboard-shortcut keymap="$default" first-keystroke="control B"/>
-        </action>
-        <action id="Ideameow.EmacsNextLine" class="io.github.chubbyhippo.ideameow.EmacsNextLineAction"
-                text="Emacs Next Line"
-                description="Move to the next line; extend the meow selection if one is active (Emacs next-line)">
-            <keyboard-shortcut keymap="$default" first-keystroke="control N"/>
-        </action>
-        <action id="Ideameow.EmacsPreviousLine" class="io.github.chubbyhippo.ideameow.EmacsPreviousLineAction"
-                text="Emacs Previous Line"
-                description="Move to the previous line; extend the meow selection if one is active (Emacs previous-line)">
-            <keyboard-shortcut keymap="$default" first-keystroke="control P"/>
-        </action>
-        <action id="Ideameow.EmacsBeginningOfLine" class="io.github.chubbyhippo.ideameow.EmacsBeginningOfLineAction"
-                text="Emacs Beginning Of Line"
-                description="Move to the beginning of the line; extend the meow selection if one is active (Emacs move-beginning-of-line)">
-            <keyboard-shortcut keymap="$default" first-keystroke="control A"/>
-        </action>
-        <action id="Ideameow.EmacsEndOfLine" class="io.github.chubbyhippo.ideameow.EmacsEndOfLineAction"
-                text="Emacs End Of Line"
-                description="Move to the end of the line; extend the meow selection if one is active (Emacs move-end-of-line)">
-            <keyboard-shortcut keymap="$default" first-keystroke="control E"/>
-        </action>
-        <action id="Ideameow.EmacsForwardWord" class="io.github.chubbyhippo.ideameow.EmacsForwardWordAction"
-                text="Emacs Forward Word"
-                description="Move forward one word; extend the meow selection if one is active (Emacs forward-word)">
-            <keyboard-shortcut keymap="$default" first-keystroke="alt F"/>
-        </action>
-        <action id="Ideameow.EmacsBackwardWord" class="io.github.chubbyhippo.ideameow.EmacsBackwardWordAction"
-                text="Emacs Backward Word"
-                description="Move backward one word; extend the meow selection if one is active (Emacs backward-word)">
-            <keyboard-shortcut keymap="$default" first-keystroke="alt B"/>
-        </action>
-        <action id="Ideameow.EmacsBackwardSentence" class="io.github.chubbyhippo.ideameow.EmacsBackwardSentenceAction"
-                text="Emacs Backward Sentence"
-                description="Move backward one sentence; extend the meow selection if one is active (Emacs backward-sentence)">
-            <keyboard-shortcut keymap="$default" first-keystroke="alt A"/>
-        </action>
-        <action id="Ideameow.EmacsForwardSentence" class="io.github.chubbyhippo.ideameow.EmacsForwardSentenceAction"
-                text="Emacs Forward Sentence"
-                description="Move forward one sentence; extend the meow selection if one is active (Emacs forward-sentence)">
-            <keyboard-shortcut keymap="$default" first-keystroke="alt E"/>
-        </action>
-        <action id="Ideameow.EmacsBeginningOfBuffer" class="io.github.chubbyhippo.ideameow.EmacsBeginningOfBufferAction"
-                text="Emacs Beginning Of Buffer"
-                description="Move to the beginning of the buffer, a count landing N/10 of the way in; extend the meow selection if one is active (Emacs beginning-of-buffer)">
-            <keyboard-shortcut keymap="$default" first-keystroke="alt shift COMMA"/>
-        </action>
-        <action id="Ideameow.EmacsEndOfBuffer" class="io.github.chubbyhippo.ideameow.EmacsEndOfBufferAction"
-                text="Emacs End Of Buffer"
-                description="Move to the end of the buffer, a count landing N/10 of the way back; extend the meow selection if one is active (Emacs end-of-buffer)">
-            <keyboard-shortcut keymap="$default" first-keystroke="alt shift PERIOD"/>
-        </action>
-        <action id="Ideameow.EmacsBackwardParagraph" class="io.github.chubbyhippo.ideameow.EmacsBackwardParagraphAction"
-                text="Emacs Backward Paragraph"
-                description="Move backward to the paragraph start; extend the meow selection if one is active (Emacs backward-paragraph)">
-            <keyboard-shortcut keymap="$default" first-keystroke="alt shift OPEN_BRACKET"/>
-        </action>
-        <action id="Ideameow.EmacsForwardParagraph" class="io.github.chubbyhippo.ideameow.EmacsForwardParagraphAction"
-                text="Emacs Forward Paragraph"
-                description="Move forward to the paragraph end; extend the meow selection if one is active (Emacs forward-paragraph)">
-            <keyboard-shortcut keymap="$default" first-keystroke="alt shift CLOSE_BRACKET"/>
-        </action>
-        <action id="Ideameow.EmacsUpcaseWord" class="io.github.chubbyhippo.ideameow.EmacsUpcaseWordAction"
-                text="Emacs Upcase Word"
-                description="Upcase from the caret to the end of the word, a negative count reaching back without moving (Emacs upcase-word)">
-            <keyboard-shortcut keymap="$default" first-keystroke="alt U"/>
-        </action>
-        <action id="Ideameow.EmacsDowncaseWord" class="io.github.chubbyhippo.ideameow.EmacsDowncaseWordAction"
-                text="Emacs Downcase Word"
-                description="Downcase from the caret to the end of the word, a negative count reaching back without moving (Emacs downcase-word)">
-            <keyboard-shortcut keymap="$default" first-keystroke="alt L"/>
-        </action>
-        <action id="Ideameow.EmacsCapitalizeWord" class="io.github.chubbyhippo.ideameow.EmacsCapitalizeWordAction"
-                text="Emacs Capitalize Word"
-                description="Capitalize from the caret to the end of the word, a negative count reaching back without moving (Emacs capitalize-word)">
-            <keyboard-shortcut keymap="$default" first-keystroke="alt C"/>
-        </action>
-        <action id="Ideameow.EmacsKillWord" class="io.github.chubbyhippo.ideameow.EmacsKillWordAction"
-                text="Emacs Kill Word"
-                description="Kill forward to the end of the word into the clipboard, a negative count killing backward (Emacs kill-word)">
-            <keyboard-shortcut keymap="$default" first-keystroke="alt D"/>
-        </action>
     </actions>
 </idea-plugin>
