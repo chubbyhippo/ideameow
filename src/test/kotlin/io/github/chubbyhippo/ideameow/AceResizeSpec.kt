@@ -112,6 +112,52 @@ class AceResizeSpec : MeowSpec() {
         assertNotNull(st.aceResize)
     }
 
+    fun `test given each axis then accepts admits only its directions`() {
+        assertTrue(AceResize.accepts(AceResize.Axis.HORIZONTAL, AceResize.Dir.LEFT))
+        assertTrue(AceResize.accepts(AceResize.Axis.HORIZONTAL, AceResize.Dir.RIGHT))
+        assertFalse(AceResize.accepts(AceResize.Axis.HORIZONTAL, AceResize.Dir.UP))
+        assertFalse(AceResize.accepts(AceResize.Axis.HORIZONTAL, AceResize.Dir.DOWN))
+        assertTrue(AceResize.accepts(AceResize.Axis.VERTICAL, AceResize.Dir.UP))
+        assertTrue(AceResize.accepts(AceResize.Axis.VERTICAL, AceResize.Dir.DOWN))
+        assertFalse(AceResize.accepts(AceResize.Axis.VERTICAL, AceResize.Dir.LEFT))
+        assertFalse(AceResize.accepts(AceResize.Axis.VERTICAL, AceResize.Dir.RIGHT))
+        assertTrue(AceResize.accepts(AceResize.Axis.BOTH, AceResize.Dir.UP))
+    }
+
+    fun `test given a horizontal divider then only h and l resize it and j k stay held`() {
+        given("ace-resize horizontal hold", "text")
+        val moves = mutableListOf<AceResize.Dir>()
+        AceResize.begin(
+            ed,
+            st,
+            listOf(AceResize.Target(Rectangle(0, 0, 10, 10), AceResize.Axis.HORIZONTAL) { moves.add(it) }),
+        )
+        whenKeys("a")
+        whenKeys("l")
+        whenKeys("h")
+        whenKeys("j")
+        whenKeys("k")
+        assertEquals(listOf(AceResize.Dir.RIGHT, AceResize.Dir.LEFT), moves)
+        assertNotNull(st.aceResize)
+    }
+
+    fun `test given a vertical divider then only j and k resize it and h l stay held`() {
+        given("ace-resize vertical hold", "text")
+        val moves = mutableListOf<AceResize.Dir>()
+        AceResize.begin(
+            ed,
+            st,
+            listOf(AceResize.Target(Rectangle(0, 0, 10, 10), AceResize.Axis.VERTICAL) { moves.add(it) }),
+        )
+        whenKeys("a")
+        whenKeys("j")
+        whenKeys("k")
+        whenKeys("h")
+        whenKeys("l")
+        assertEquals(listOf(AceResize.Dir.DOWN, AceResize.Dir.UP), moves)
+        assertNotNull(st.aceResize)
+    }
+
     fun `test given any non-hjkl key during the hold then ace-resize exits`() {
         given("ace-resize exit", "text")
         val moves = mutableListOf<AceResize.Dir>()

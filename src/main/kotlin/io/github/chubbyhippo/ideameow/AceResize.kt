@@ -102,6 +102,16 @@ object AceResize {
             Dir.UP -> "ResizeToolWindowUp"
         }
 
+    fun accepts(
+        axis: Axis,
+        dir: Dir,
+    ): Boolean =
+        when (axis) {
+            Axis.HORIZONTAL -> dir == Dir.LEFT || dir == Dir.RIGHT
+            Axis.VERTICAL -> dir == Dir.UP || dir == Dir.DOWN
+            Axis.BOTH -> true
+        }
+
     private fun start(
         editor: Editor,
         st: MeowState,
@@ -185,11 +195,12 @@ private fun hold(
     c: Char,
 ) {
     val dir = AceResize.dirOf(c)
-    if (dir == null) {
+    val target = session.picked
+    if (dir == null || target == null) {
         AceResize.cancel(st)
         return
     }
-    session.picked?.resize?.invoke(dir)
+    if (AceResize.accepts(target.axis, dir)) target.resize(dir)
 }
 
 private fun paintLabels(session: AceResize.Session) {
@@ -258,7 +269,13 @@ private fun toolWindowTargets(
         val component = toolWindow.component
         if (!component.isShowing || SwingUtilities.getWindowAncestor(component) !== frame) return@mapNotNull null
         val edge = innerEdge(component.width, component.height, toolWindow.anchor)
-        resizeTarget(component, edge, layer, AceResize.Axis.BOTH) { dir ->
+        val axis =
+            when (toolWindow.anchor) {
+                ToolWindowAnchor.LEFT, ToolWindowAnchor.RIGHT -> AceResize.Axis.HORIZONTAL
+                ToolWindowAnchor.TOP, ToolWindowAnchor.BOTTOM -> AceResize.Axis.VERTICAL
+                else -> AceResize.Axis.BOTH
+            }
+        resizeTarget(component, edge, layer, axis) { dir ->
             Ide.actOn(component, AceResize.toolWindowAction(dir))
         }
     }
