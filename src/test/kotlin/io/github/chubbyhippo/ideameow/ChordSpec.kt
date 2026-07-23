@@ -124,4 +124,27 @@ class ChordSpec : MeowSpec() {
         thenCaretAt(1)
         thenNoSelection()
     }
+
+    fun `test given the bundled defaults then SPC m exposes the M- motion and edit layer`() {
+        val k = Rc.keypad()
+        assertEquals("backward-sentence", k["ma"]?.command)
+        assertEquals("backward-word", k["mb"]?.command)
+        assertEquals("capitalize-word", k["mc"]?.command)
+        assertEquals("kill-word", k["md"]?.command)
+        assertEquals("forward-sentence", k["me"]?.command)
+        assertEquals("forward-word", k["mf"]?.command)
+        assertEquals("downcase-word", k["ml"]?.command)
+        assertEquals("upcase-word", k["mu"]?.command)
+        assertEquals("beginning-of-buffer", k["m<"]?.command)
+        assertEquals("end-of-buffer", k["m>"]?.command)
+        assertEquals("backward-paragraph", k["m{"]?.command)
+        assertEquals("forward-paragraph", k["m}"]?.command)
+    }
+
+    fun `test given the SPC m keypad then a meta word motion runs and returns to NORMAL`() {
+        given("meta keypad motion", "<caret>one two")
+        whenKeys(" mf")
+        assertTrue("M-f (forward-word) advanced the caret", ed.caretModel.offset > 0)
+        thenMode(MeowMode.NORMAL)
+    }
 }
