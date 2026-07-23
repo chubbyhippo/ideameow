@@ -89,9 +89,9 @@ object AceResize {
 
     fun holdLabel(axis: Axis): String =
         when (axis) {
-            Axis.HORIZONTAL -> "h l"
-            Axis.VERTICAL -> "j k"
-            Axis.BOTH -> "hjkl"
+            Axis.HORIZONTAL -> "← →"
+            Axis.VERTICAL -> "↓ ↑"
+            Axis.BOTH -> "←→↓↑"
         }
 
     fun toolWindowAction(dir: Dir): String =
@@ -144,6 +144,15 @@ object AceResize {
     ) {
         val session = st.aceResize ?: return
         if (session.phase == Phase.HOLD) hold(st, session, c) else pick(editor, st, session, c)
+    }
+
+    fun holdArrow(
+        st: MeowState,
+        dir: Dir,
+    ): Boolean {
+        val target = st.aceResize?.takeIf { it.phase == Phase.HOLD }?.picked ?: return false
+        if (accepts(target.axis, dir)) target.resize(dir)
+        return true
     }
 
     fun cancel(st: MeowState) {

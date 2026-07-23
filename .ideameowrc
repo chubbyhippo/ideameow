@@ -282,8 +282,8 @@ map <leader>wm <action>(UnsplitAll)
 map <leader>ww ace-window
 map <leader>wW ace-swap-window
 " r: ace-resize — label every divider (editor splits AND tool-window edges),
-" pick one, then h/l (side dividers) or j/k (top/bottom) nudge it; any
-" non-hjkl key or ESC ends the hold
+" pick one, then h/l or Left/Right resize side dividers, j/k or Down/Up
+" resize top/bottom; ESC or any other key ends the hold
 map <leader>wr ace-resize
 " n/p (aliases . and ,): cycle editor tabs (C-x <right>/<left>); the tab
 " repeat group below keeps a bare n/p/./, walking afterwards

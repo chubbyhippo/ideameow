@@ -148,6 +148,7 @@ internal class ToolWindowEscapeLifecycle : Disposable {
         IdeEventQueue.getInstance().addDispatcher(ToolWindowEscape.dispatcher, this)
         IdeEventQueue.getInstance().addDispatcher(SpaceLeader.dispatcher, this)
         IdeEventQueue.getInstance().addDispatcher(ChordDispatcher.dispatcher, this)
+        IdeEventQueue.getInstance().addDispatcher(AceResizeArrows.dispatcher, this)
     }
 
     override fun dispose() {

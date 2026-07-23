@@ -22,9 +22,17 @@ import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.editor.actionSystem.EditorActionHandler
 import com.intellij.openapi.editor.ex.EditorEx
 import java.awt.Rectangle
+import java.awt.event.InputEvent
+import java.awt.event.KeyEvent
+import javax.swing.JPanel
 
 class AceResizeSpec : MeowSpec() {
     private fun targets(count: Int): List<AceResize.Target> = (0 until count).map { AceResize.Target(Rectangle(it * 10, 0, 10, 10)) {} }
+
+    private fun pressed(
+        keyCode: Int,
+        mods: Int = 0,
+    ) = KeyEvent(JPanel(), KeyEvent.KEY_PRESSED, System.currentTimeMillis(), mods, keyCode, KeyEvent.CHAR_UNDEFINED)
 
     private fun pressEsc() {
         val noop =
@@ -66,10 +74,10 @@ class AceResizeSpec : MeowSpec() {
         assertEquals(0.05, AceResize.nudge(false, AceResize.Dir.LEFT, 0.07f, 0.05f)!!.toDouble(), 1e-5)
     }
 
-    fun `test given each axis then holdLabel names the live keys`() {
-        assertEquals("h l", AceResize.holdLabel(AceResize.Axis.HORIZONTAL))
-        assertEquals("j k", AceResize.holdLabel(AceResize.Axis.VERTICAL))
-        assertEquals("hjkl", AceResize.holdLabel(AceResize.Axis.BOTH))
+    fun `test given each axis then holdLabel shows the arrow glyphs`() {
+        assertEquals("← →", AceResize.holdLabel(AceResize.Axis.HORIZONTAL))
+        assertEquals("↓ ↑", AceResize.holdLabel(AceResize.Axis.VERTICAL))
+        assertEquals("←→↓↑", AceResize.holdLabel(AceResize.Axis.BOTH))
     }
 
     fun `test given each direction then toolWindowAction maps to the platform id`() {
@@ -156,6 +164,39 @@ class AceResizeSpec : MeowSpec() {
         whenKeys("l")
         assertEquals(listOf(AceResize.Dir.DOWN, AceResize.Dir.UP), moves)
         assertNotNull(st.aceResize)
+    }
+
+    fun `test given plain arrow presses then arrowDir maps them and modified or non-arrow keys are null`() {
+        assertEquals(AceResize.Dir.LEFT, AceResizeArrows.arrowDir(pressed(KeyEvent.VK_LEFT)))
+        assertEquals(AceResize.Dir.RIGHT, AceResizeArrows.arrowDir(pressed(KeyEvent.VK_RIGHT)))
+        assertEquals(AceResize.Dir.DOWN, AceResizeArrows.arrowDir(pressed(KeyEvent.VK_DOWN)))
+        assertEquals(AceResize.Dir.UP, AceResizeArrows.arrowDir(pressed(KeyEvent.VK_UP)))
+        assertNull(AceResizeArrows.arrowDir(pressed(KeyEvent.VK_LEFT, InputEvent.SHIFT_DOWN_MASK)))
+        assertNull(AceResizeArrows.arrowDir(pressed(KeyEvent.VK_A)))
+    }
+
+    fun `test given a held horizontal divider then holdArrow resizes on axis and stays held`() {
+        given("ace-resize arrows hold", "text")
+        val moves = mutableListOf<AceResize.Dir>()
+        AceResize.begin(
+            ed,
+            st,
+            listOf(AceResize.Target(Rectangle(0, 0, 10, 10), AceResize.Axis.HORIZONTAL) { moves.add(it) }),
+        )
+        whenKeys("a")
+        assertTrue(AceResize.holdArrow(st, AceResize.Dir.RIGHT))
+        assertTrue(AceResize.holdArrow(st, AceResize.Dir.UP))
+        assertTrue(AceResize.holdArrow(st, AceResize.Dir.LEFT))
+        assertEquals(listOf(AceResize.Dir.RIGHT, AceResize.Dir.LEFT), moves)
+        assertNotNull(st.aceResize)
+    }
+
+    fun `test given no hold or the pick phase then holdArrow does not consume`() {
+        given("ace-resize arrows idle", "text")
+        assertFalse(AceResize.holdArrow(st, AceResize.Dir.LEFT))
+        AceResize.begin(ed, st, targets(3))
+        assertEquals(AceResize.Phase.PICK, st.aceResize!!.phase)
+        assertFalse(AceResize.holdArrow(st, AceResize.Dir.LEFT))
     }
 
     fun `test given any non-hjkl key during the hold then ace-resize exits`() {
