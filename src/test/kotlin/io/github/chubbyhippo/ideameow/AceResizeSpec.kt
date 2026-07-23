@@ -21,6 +21,7 @@ import com.intellij.openapi.editor.Caret
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.editor.actionSystem.EditorActionHandler
 import com.intellij.openapi.editor.ex.EditorEx
+import java.awt.Point
 import java.awt.Rectangle
 import java.awt.event.InputEvent
 import java.awt.event.KeyEvent
@@ -72,6 +73,11 @@ class AceResizeSpec : MeowSpec() {
     fun `test given a proportion near the edge then nudge clamps to the min band`() {
         assertEquals(0.95, AceResize.nudge(false, AceResize.Dir.RIGHT, 0.93f, 0.05f)!!.toDouble(), 1e-5)
         assertEquals(0.05, AceResize.nudge(false, AceResize.Dir.LEFT, 0.07f, 0.05f)!!.toDouble(), 1e-5)
+    }
+
+    fun `test given a target then its center defaults to the rect centre`() {
+        val target = AceResize.Target(Rectangle(10, 20, 4, 6)) {}
+        assertEquals(Point(12, 23), target.center())
     }
 
     fun `test given each axis then holdLabel shows the arrow glyphs`() {

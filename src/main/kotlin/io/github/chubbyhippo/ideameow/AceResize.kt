@@ -17,12 +17,18 @@
 package io.github.chubbyhippo.ideameow
 
 import com.intellij.openapi.editor.Editor
+import com.intellij.openapi.fileEditor.ex.FileEditorManagerEx
 import com.intellij.openapi.ui.Splitter
 import com.intellij.openapi.wm.ToolWindowAnchor
 import com.intellij.openapi.wm.ToolWindowManager
 import java.awt.Component
 import java.awt.Container
+import java.awt.Font
+import java.awt.Graphics
+import java.awt.Graphics2D
+import java.awt.Point
 import java.awt.Rectangle
+import java.awt.RenderingHints
 import java.awt.Window
 import javax.swing.JComponent
 import javax.swing.JLayeredPane
@@ -49,6 +55,7 @@ object AceResize {
         val axis: Axis = Axis.BOTH,
         val layer: JLayeredPane? = null,
         val screen: Rectangle = rect,
+        val center: () -> Point? = { Point(rect.x + rect.width / 2, rect.y + rect.height / 2) },
         val resize: (Dir) -> Unit,
     )
 
@@ -150,8 +157,12 @@ object AceResize {
         st: MeowState,
         dir: Dir,
     ): Boolean {
-        val target = st.aceResize?.takeIf { it.phase == Phase.HOLD }?.picked ?: return false
-        if (accepts(target.axis, dir)) target.resize(dir)
+        val session = st.aceResize?.takeIf { it.phase == Phase.HOLD } ?: return false
+        val target = session.picked
+        if (target != null && accepts(target.axis, dir)) {
+            target.resize(dir)
+            session.canvases.forEach { it.repaint() }
+        }
         return true
     }
 
@@ -209,7 +220,10 @@ private fun hold(
         AceResize.cancel(st)
         return
     }
-    if (AceResize.accepts(target.axis, dir)) target.resize(dir)
+    if (AceResize.accepts(target.axis, dir)) {
+        target.resize(dir)
+        session.canvases.forEach { it.repaint() }
+    }
 }
 
 private fun paintLabels(session: AceResize.Session) {
@@ -220,9 +234,10 @@ private fun paintLabels(session: AceResize.Session) {
         .labels(node)
         .mapNotNull { (index, label) -> session.targets.getOrNull(index)?.let { it to label } }
         .groupBy { (target, _) -> target.layer }
-        .forEach { (layer, badges) ->
+        .forEach { (layer, entries) ->
             if (layer != null) {
-                session.canvases += Overlay.badge(layer, badges.map { (target, label) -> target.rect to label })
+                val badges = ResizeBadges(entries.map { (target, label) -> target.center to label })
+                session.canvases += Overlay.layerCanvas(layer, badges)
             }
         }
 }
@@ -232,7 +247,8 @@ private fun paintHold(session: AceResize.Session) {
     session.canvases.clear()
     val target = session.picked ?: return
     val layer = target.layer ?: return
-    session.canvases += Overlay.badge(layer, listOf(target.rect to AceResize.holdLabel(target.axis)))
+    val badges = ResizeBadges(listOf(target.center to AceResize.holdLabel(target.axis)))
+    session.canvases += Overlay.layerCanvas(layer, badges)
 }
 
 private fun splitterTargets(
@@ -257,11 +273,23 @@ private fun splitterTarget(
     splitter: Splitter,
     layer: JLayeredPane?,
 ): AceResize.Target? {
-    val divider = splitter.divider
-    if (!divider.isShowing || divider.width <= 0 || divider.height <= 0) return null
+    val first = splitter.firstComponent?.takeIf { splitter.isShowing } ?: return null
     val axis = if (splitter.isVertical) AceResize.Axis.VERTICAL else AceResize.Axis.HORIZONTAL
-    val spot = Rectangle(divider.width / 2, divider.height / 2, 1, 1)
-    return resizeTarget(divider, spot, layer, axis) { dir ->
+    val center = {
+        if (splitter.isShowing && layer != null) {
+            val spot =
+                if (splitter.isVertical) {
+                    Rectangle(0, first.y + first.height, splitter.width, 1)
+                } else {
+                    Rectangle(first.x + first.width, 0, 1, splitter.height)
+                }
+            val r = SwingUtilities.convertRectangle(splitter, spot, layer)
+            Point(r.x + r.width / 2, r.y + r.height / 2)
+        } else {
+            null
+        }
+    }
+    return resizeTarget(layer, axis, center) { dir ->
         AceResize.nudge(splitter.isVertical, dir, splitter.proportion, AceResize.STEP)?.let { splitter.proportion = it }
     }
 }
@@ -273,47 +301,86 @@ private fun toolWindowTargets(
 ): List<AceResize.Target> {
     val project = editor.project ?: return emptyList()
     val manager = ToolWindowManager.getInstance(project)
+    val area = FileEditorManagerEx.getInstanceEx(project).splitters
     return manager.toolWindowIds.mapNotNull { id ->
         val toolWindow = manager.getToolWindow(id)?.takeIf { it.isVisible } ?: return@mapNotNull null
         val component = toolWindow.component
         if (!component.isShowing || SwingUtilities.getWindowAncestor(component) !== frame) return@mapNotNull null
-        val edge = innerEdge(component.width, component.height, toolWindow.anchor)
+        val anchor = toolWindow.anchor
         val axis =
-            when (toolWindow.anchor) {
+            when (anchor) {
                 ToolWindowAnchor.LEFT, ToolWindowAnchor.RIGHT -> AceResize.Axis.HORIZONTAL
                 ToolWindowAnchor.TOP, ToolWindowAnchor.BOTTOM -> AceResize.Axis.VERTICAL
                 else -> AceResize.Axis.BOTH
             }
-        resizeTarget(component, edge, layer, axis) { dir ->
+        resizeTarget(layer, axis, { toolWindowBoundary(area, component, anchor, layer) }) { dir ->
             Ide.actOn(component, AceResize.toolWindowAction(dir))
         }
     }
 }
 
-private fun innerEdge(
-    width: Int,
-    height: Int,
+private fun toolWindowBoundary(
+    area: JComponent,
+    toolWindow: Component,
     anchor: ToolWindowAnchor,
-): Rectangle =
-    when (anchor) {
-        ToolWindowAnchor.LEFT -> Rectangle(width - 1, height / 2, 1, 1)
-        ToolWindowAnchor.RIGHT -> Rectangle(0, height / 2, 1, 1)
-        ToolWindowAnchor.TOP -> Rectangle(width / 2, height - 1, 1, 1)
-        ToolWindowAnchor.BOTTOM -> Rectangle(width / 2, 0, 1, 1)
-        else -> Rectangle(width / 2, height / 2, 1, 1)
+    layer: JLayeredPane?,
+): Point? {
+    if (layer == null || !area.isShowing || !toolWindow.isShowing) return null
+    val areaRect = SwingUtilities.convertRectangle(area, Rectangle(0, 0, area.width, area.height), layer)
+    val tw = SwingUtilities.convertRectangle(toolWindow, Rectangle(0, 0, toolWindow.width, toolWindow.height), layer)
+    return when (anchor) {
+        ToolWindowAnchor.LEFT -> Point(areaRect.x, tw.y + tw.height / 2)
+        ToolWindowAnchor.RIGHT -> Point(areaRect.x + areaRect.width, tw.y + tw.height / 2)
+        ToolWindowAnchor.TOP -> Point(tw.x + tw.width / 2, areaRect.y)
+        ToolWindowAnchor.BOTTOM -> Point(tw.x + tw.width / 2, areaRect.y + areaRect.height)
+        else -> Point(tw.x + tw.width / 2, tw.y + tw.height / 2)
     }
+}
 
 private fun resizeTarget(
-    source: Component,
-    rectInSource: Rectangle,
     layer: JLayeredPane?,
     axis: AceResize.Axis,
+    center: () -> Point?,
     resize: (AceResize.Dir) -> Unit,
-): AceResize.Target? {
-    if (layer == null || !source.isShowing) return null
-    val screen = Rectangle(rectInSource)
-    val corner = screen.location
-    SwingUtilities.convertPointToScreen(corner, source)
-    screen.location = corner
-    return AceResize.Target(SwingUtilities.convertRectangle(source, rectInSource, layer), axis, layer, screen, resize)
+): AceResize.Target? =
+    layer?.let { pane ->
+        center()?.let { here ->
+            val screen = Point(here)
+            SwingUtilities.convertPointToScreen(screen, pane)
+            AceResize.Target(
+                Rectangle(here.x, here.y, 0, 0),
+                axis,
+                pane,
+                Rectangle(screen.x, screen.y, 0, 0),
+                center,
+                resize,
+            )
+        }
+    }
+
+private class ResizeBadges(
+    private val entries: List<Pair<() -> Point?, String>>,
+) : JComponent() {
+    override fun contains(
+        x: Int,
+        y: Int,
+    ): Boolean = false
+
+    override fun paintComponent(g: Graphics) {
+        val g2 = g as Graphics2D
+        g2.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON)
+        g2.font = g2.font.deriveFont(Font.BOLD)
+        val metrics = g2.fontMetrics
+        for ((center, label) in entries) {
+            val p = center() ?: continue
+            val width = metrics.stringWidth(label) + Overlay.LABEL_PADDING
+            val height = metrics.height
+            val x = p.x - width / 2
+            val y = p.y - height / 2
+            g2.color = Avy.LEAD_BG
+            g2.fillRect(x, y, width, height)
+            g2.color = Avy.LEAD_FG
+            g2.drawString(label, x + 1, y + metrics.ascent)
+        }
+    }
 }

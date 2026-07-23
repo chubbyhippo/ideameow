@@ -60,6 +60,18 @@ internal object Overlay {
         return canvas
     }
 
+    fun layerCanvas(
+        layer: JLayeredPane,
+        canvas: JComponent,
+    ): JComponent {
+        canvas.isOpaque = false
+        canvas.bounds = Rectangle(0, 0, layer.width, layer.height)
+        layer.setLayer(canvas, JLayeredPane.DRAG_LAYER)
+        layer.add(canvas)
+        layer.repaint()
+        return canvas
+    }
+
     private class BadgeCanvas(
         private val badges: List<Pair<Rectangle, String>>,
     ) : JComponent() {
