@@ -39,7 +39,9 @@ import javax.swing.text.JTextComponent
 
 internal object SpaceLeader {
     private const val CHECKBOX_TREE = "com.intellij.ui.CheckboxTree"
+    private const val CHANGES_TREE = "com.intellij.openapi.vcs.changes.ui.ChangesTree"
     private const val TERMINAL_PACKAGE = "com.jediterm"
+    internal val SPACE_TREES = listOf(CHECKBOX_TREE, CHANGES_TREE)
 
     private var routed: Routed? = null
     private var swallowNextTyped = false
@@ -139,18 +141,20 @@ internal object SpaceLeader {
 
                 c is CheckBoxList<*> -> return true
 
-                checkboxTreeOrTerminal(c) -> return true
+                nativeSpaceTreeOrTerminal(c) -> return true
             }
             c = c.parent
         }
         return false
     }
 
-    private fun checkboxTreeOrTerminal(c: Component): Boolean {
-        if (c.javaClass.name.startsWith(TERMINAL_PACKAGE)) return true
-        var k: Class<*>? = c.javaClass
+    private fun nativeSpaceTreeOrTerminal(c: Component): Boolean =
+        c.javaClass.name.startsWith(TERMINAL_PACKAGE) || treeConsumesSpace(c.javaClass)
+
+    internal fun treeConsumesSpace(start: Class<*>): Boolean {
+        var k: Class<*>? = start
         while (k != null) {
-            if (k.name == CHECKBOX_TREE) return true
+            if (k.name in SPACE_TREES) return true
             k = k.superclass
         }
         return false

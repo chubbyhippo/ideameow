@@ -52,6 +52,12 @@ class SpaceLeaderSpec : MeowSpec() {
         assertTrue(SpaceLeader.nativeSpace(CheckBoxList<String>()))
     }
 
+    fun `test given a VCS changes tree then space stays native`() {
+        assertTrue("com.intellij.openapi.vcs.changes.ui.ChangesTree" in SpaceLeader.SPACE_TREES)
+        assertTrue("com.intellij.ui.CheckboxTree" in SpaceLeader.SPACE_TREES)
+        assertFalse(SpaceLeader.treeConsumesSpace(JTree::class.java))
+    }
+
     fun `test given a component nested in a native-space ancestor then space stays native`() {
         assertTrue(SpaceLeader.nativeSpace(JPanel().also { JComboBox<String>().add(it) }))
     }
