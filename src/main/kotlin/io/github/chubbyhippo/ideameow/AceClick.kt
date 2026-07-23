@@ -52,7 +52,7 @@ import javax.swing.text.JTextComponent
 object AceClick {
     val commands: Map<String, MeowCommand> =
         mapOf(
-            "ace-click" to MeowCommand { ed, st -> start(ed, st) },
+            "ace-click" to MeowCommand { editor, state -> start(editor, state) },
         )
 
     class Target(
@@ -73,14 +73,14 @@ object AceClick {
 
     private fun start(
         editor: Editor,
-        st: MeowState,
+        state: MeowState,
     ) {
         val focus = KeyboardFocusManager.getCurrentKeyboardFocusManager().focusOwner
         val base =
             focus?.let(SwingUtilities::getWindowAncestor)
                 ?: SwingUtilities.getWindowAncestor(editor.component)
                 ?: return
-        begin(editor, st, (listOf(base) + menuWindows()).distinct().flatMap(::collect))
+        begin(editor, state, (listOf(base) + menuWindows()).distinct().flatMap(::collect))
     }
 
     private fun menuWindows(): List<Window> =
@@ -92,16 +92,16 @@ object AceClick {
 
     internal fun begin(
         editor: Editor,
-        st: MeowState,
+        state: MeowState,
         targets: List<Target>,
     ) {
-        cancel(st)
+        cancel(state)
         if (targets.isEmpty()) {
             Ide.hint(editor, "No clickable components")
             return
         }
         val session = Session(AceWindow.ordered(targets.map { it to it.screen }))
-        st.aceClick = session
+        state.aceClick = session
         session.node = Avy.tree(session.targets.indices.toList())
         paintLabels(session)
     }
@@ -271,17 +271,17 @@ object AceClick {
 
     fun key(
         editor: Editor,
-        st: MeowState,
+        state: MeowState,
         c: Char,
     ) {
-        val session = st.aceClick ?: return
+        val session = state.aceClick ?: return
         val node = session.node ?: return
         val lower = c.lowercaseChar()
         val secondary = c != lower
         when (val child = node.children.firstOrNull { it.first == lower }?.second) {
             is Avy.Leaf -> {
                 val target = session.targets.getOrNull(child.offset)
-                cancel(st)
+                cancel(state)
                 if (target != null) {
                     val action = if (secondary) target.rightClick else target.click
                     ApplicationManager.getApplication().invokeLater {
@@ -306,9 +306,9 @@ object AceClick {
         }
     }
 
-    fun cancel(st: MeowState) {
-        st.aceClick?.canvases?.forEach { Overlay.detach(it) }
-        st.aceClick = null
+    fun cancel(state: MeowState) {
+        state.aceClick?.canvases?.forEach { Overlay.detach(it) }
+        state.aceClick = null
     }
 
     private fun paintLabels(session: Session) {

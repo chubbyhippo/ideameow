@@ -24,25 +24,25 @@ internal object Search {
 
     val commands: Map<String, MeowCommand> =
         mapOf(
-            "meow-search" to MeowCommand { ed, st -> search(ed, st) },
-            "meow-visit" to MeowCommand { ed, st -> visit(ed, st) },
+            "meow-search" to MeowCommand { editor, state -> search(editor, state) },
+            "meow-visit" to MeowCommand { editor, state -> visit(editor, state) },
         )
 
     fun push(
-        st: MeowState,
+        state: MeowState,
         re: Regex,
     ) {
-        st.searchHistory.removeAll { it.pattern == re.pattern }
-        st.searchHistory.addLast(re)
-        while (st.searchHistory.size > SEARCH_RING_MAX) st.searchHistory.removeFirst()
+        state.searchHistory.removeAll { it.pattern == re.pattern }
+        state.searchHistory.addLast(re)
+        while (state.searchHistory.size > SEARCH_RING_MAX) state.searchHistory.removeFirst()
     }
 
     private fun search(
         editor: Editor,
-        st: MeowState,
+        state: MeowState,
     ) {
         val sm = editor.selectionModel
-        var re = st.searchHistory.lastOrNull()
+        var re = state.searchHistory.lastOrNull()
         if (sm.hasSelection()) {
             val selText =
                 editor.document.charsSequence
@@ -50,21 +50,21 @@ internal object Search {
                     .toString()
             if (selText.isNotEmpty() && (re == null || !re.matches(selText))) {
                 re = Regex(Regex.escape(selText))
-                push(st, re)
+                push(state, re)
             }
         }
         if (re == null) {
             Ide.hint(editor, "No search pattern")
             return
         }
-        searchWith(editor, st, re, backward = st.takeCount(1) < 0 || Selections.backwardP(editor))
+        searchWith(editor, state, re, backward = state.takeCount(1) < 0 || Selections.backwardP(editor))
     }
 
     private fun visit(
         editor: Editor,
-        st: MeowState,
+        state: MeowState,
     ) {
-        val backward = st.takeCount(1) < 0
+        val backward = state.takeCount(1) < 0
         val input = Messages.showInputDialog(editor.project, "Visit (regexp):", "Meow Visit", null)
         if (input.isNullOrEmpty()) return
         val re =
@@ -73,13 +73,13 @@ internal object Search {
             } catch (_: Exception) {
                 Regex(Regex.escape(input))
             }
-        push(st, re)
-        searchWith(editor, st, re, backward)
+        push(state, re)
+        searchWith(editor, state, re, backward)
     }
 
     private fun searchWith(
         editor: Editor,
-        st: MeowState,
+        state: MeowState,
         re: Regex,
         backward: Boolean,
     ) {
@@ -115,6 +115,6 @@ internal object Search {
             } else {
                 m.range.first to m.range.last + 1
             }
-        Selections.select(editor, st, SelType.VISIT, mark, point, expand = false)
+        Selections.select(editor, state, SelType.VISIT, mark, point, expand = false)
     }
 }

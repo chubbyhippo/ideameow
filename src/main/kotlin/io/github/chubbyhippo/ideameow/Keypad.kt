@@ -26,49 +26,49 @@ import com.intellij.openapi.ui.Messages
 object Keypad {
     fun key(
         editor: Editor,
-        st: MeowState,
+        state: MeowState,
         c: Char,
     ) {
         WhichKey.hide()
         val bindings = Rc.keypad()
-        val buf = st.keypad.toString()
+        val buf = state.keypad.toString()
 
         if (buf == "/") {
             describe(editor, c)
-            exit(editor, st)
+            exit(editor, state)
             return
         }
         if (buf.isEmpty()) {
             when (c) {
                 in '0'..'9' -> {
-                    st.pendingCount = st.pendingCount * 10 + (c - '0')
-                    exit(editor, st)
+                    state.pendingCount = state.pendingCount * 10 + (c - '0')
+                    exit(editor, state)
                     return
                 }
 
                 '?' -> {
-                    exit(editor, st)
+                    exit(editor, state)
                     Messages.showInfoMessage(editor.project, CHEATSHEET, "Meow Cheatsheet")
                     return
                 }
 
                 '/' -> {
-                    st.keypad.append('/')
+                    state.keypad.append('/')
                     return
                 }
             }
         }
 
-        st.keypad.append(c)
-        val cur = st.keypad.toString()
+        state.keypad.append(c)
+        val cur = state.keypad.toString()
         val binding = bindings[cur]
         if (binding != null) {
-            exit(editor, st)
-            Engine.runBinding(editor, st, binding)
+            exit(editor, state)
+            Engine.runBinding(editor, state, binding)
             return
         }
         if (bindings.keys.none { it.startsWith(cur) }) {
-            exit(editor, st)
+            exit(editor, state)
             Ide.hint(editor, "SPC ${cur.toCharArray().joinToString(" ")} is undefined")
         } else {
             WhichKey.scheduleKeypad(editor, cur)
@@ -77,10 +77,10 @@ object Keypad {
 
     fun exit(
         editor: Editor,
-        st: MeowState,
+        state: MeowState,
     ) {
         WhichKey.hide()
-        Meow.setMode(editor, st, st.keypadPreviousMode)
+        Meow.setMode(editor, state, state.keypadPreviousMode)
     }
 
     private fun describe(
@@ -174,7 +174,7 @@ internal class KeypadAction : DumbAwareAction() {
 
     override fun actionPerformed(e: AnActionEvent) {
         val editor = e.getData(CommonDataKeys.EDITOR) ?: return
-        val st = Meow.state(editor)
-        if (st != null && st.mode != MeowMode.KEYPAD) Engine.enterKeypad(editor, st)
+        val state = Meow.state(editor)
+        if (state != null && state.mode != MeowMode.KEYPAD) Engine.enterKeypad(editor, state)
     }
 }

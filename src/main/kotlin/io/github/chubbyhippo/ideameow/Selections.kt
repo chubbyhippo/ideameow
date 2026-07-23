@@ -25,10 +25,10 @@ internal object Selections {
 
     val commands: Map<String, MeowCommand> =
         buildMap {
-            for (n in 0..9) put("meow-expand-$n", MeowCommand { ed, st -> expandOrCount(ed, st, n) })
-            put("meow-reverse", MeowCommand { ed, _ -> reverse(ed) })
-            put("meow-cancel-selection", MeowCommand { ed, st -> cancelAll(ed, st) })
-            put("meow-pop-selection", MeowCommand { ed, st -> pop(ed, st) })
+            for (n in 0..9) put("meow-expand-$n", MeowCommand { editor, state -> expandOrCount(editor, state, n) })
+            put("meow-reverse", MeowCommand { editor, _ -> reverse(editor) })
+            put("meow-cancel-selection", MeowCommand { editor, state -> cancelAll(editor, state) })
+            put("meow-pop-selection", MeowCommand { editor, state -> pop(editor, state) })
         }
 
     private val EXPANDABLE =
@@ -65,22 +65,22 @@ internal object Selections {
         }
 
     fun recordSelect(
-        st: MeowState,
+        state: MeowState,
         type: SelType,
         expand: Boolean,
         mark: Int,
         point: Int,
         posBefore: Int,
     ) {
-        val prev = st.lastSelection ?: SavedSelection(null, false, posBefore, posBefore)
-        if (st.selectionHistory.lastOrNull() != prev) st.selectionHistory.addLast(prev)
-        while (st.selectionHistory.size > SELECTION_HISTORY_MAX) st.selectionHistory.removeFirst()
-        st.lastSelection = SavedSelection(type, expand, mark, point)
+        val prev = state.lastSelection ?: SavedSelection(null, false, posBefore, posBefore)
+        if (state.selectionHistory.lastOrNull() != prev) state.selectionHistory.addLast(prev)
+        while (state.selectionHistory.size > SELECTION_HISTORY_MAX) state.selectionHistory.removeFirst()
+        state.lastSelection = SavedSelection(type, expand, mark, point)
     }
 
     fun select(
         editor: Editor,
-        st: MeowState,
+        state: MeowState,
         type: SelType,
         mark: Int,
         point: Int,
@@ -92,47 +92,47 @@ internal object Selections {
         val p = point.coerceIn(0, len)
         val sm = editor.selectionModel
         if (push) {
-            recordSelect(st, type, expand, m, p, editor.caretModel.offset)
+            recordSelect(state, type, expand, m, p, editor.caretModel.offset)
         } else {
-            st.lastSelection = SavedSelection(type, expand, m, p)
+            state.lastSelection = SavedSelection(type, expand, m, p)
         }
-        st.selType = type
-        st.selExpand = expand
+        state.selType = type
+        state.selExpand = expand
         editor.caretModel.moveToOffset(p)
         sm.setSelection(minOf(m, p), maxOf(m, p))
         editor.scrollingModel.scrollToCaret(ScrollType.RELATIVE)
-        Grab.beacon(editor, st)
-        ExpandHints.show(editor, st)
+        Grab.beacon(editor, state)
+        ExpandHints.show(editor, state)
     }
 
-    fun resetSelectionMemory(st: MeowState) {
-        st.selectionHistory.clear()
-        st.lastSelection = null
+    fun resetSelectionMemory(state: MeowState) {
+        state.selectionHistory.clear()
+        state.lastSelection = null
     }
 
     fun collapse(
         editor: Editor,
-        st: MeowState,
+        state: MeowState,
     ) {
         editor.selectionModel.removeSelection()
-        st.selType = SelType.NONE
-        st.selExpand = false
+        state.selType = SelType.NONE
+        state.selExpand = false
     }
 
     fun cancel(
         editor: Editor,
-        st: MeowState,
+        state: MeowState,
     ) {
-        collapse(editor, st)
-        resetSelectionMemory(st)
+        collapse(editor, state)
+        resetSelectionMemory(state)
     }
 
     fun cancelAll(
         editor: Editor,
-        st: MeowState,
+        state: MeowState,
     ) {
         if (editor.caretModel.caretCount > 1) editor.caretModel.removeSecondaryCarets()
-        cancel(editor, st)
+        cancel(editor, state)
     }
 
     private fun reverse(editor: Editor) {
@@ -148,37 +148,37 @@ internal object Selections {
 
     private fun pop(
         editor: Editor,
-        st: MeowState,
+        state: MeowState,
     ) {
         if (editor.selectionModel.hasSelection()) {
-            val entry = st.selectionHistory.removeLastOrNull() ?: return
+            val entry = state.selectionHistory.removeLastOrNull() ?: return
             if (entry.type == null) {
                 editor.caretModel.moveToOffset(entry.point)
-                cancel(editor, st)
+                cancel(editor, state)
                 Ide.hint(editor, "No previous selection")
             } else {
-                select(editor, st, entry.type, entry.mark, entry.point, entry.expand, push = false)
+                select(editor, state, entry.type, entry.mark, entry.point, entry.expand, push = false)
             }
-        } else if (!Grab.pop(editor, st)) {
+        } else if (!Grab.pop(editor, state)) {
             Ide.hint(editor, "No previous selection")
         }
     }
 
     private fun expandOrCount(
         editor: Editor,
-        st: MeowState,
+        state: MeowState,
         n: Int,
     ) {
-        if (editor.selectionModel.hasSelection() && st.selType in EXPANDABLE) {
-            expand(editor, st, if (n == 0) 10 else n)
+        if (editor.selectionModel.hasSelection() && state.selType in EXPANDABLE) {
+            expand(editor, state, if (n == 0) 10 else n)
         } else {
-            st.pendingCount = st.pendingCount * 10 + n
+            state.pendingCount = state.pendingCount * 10 + n
         }
     }
 
     private fun expand(
         editor: Editor,
-        st: MeowState,
+        state: MeowState,
         n: Int,
     ) {
         val text = editor.document.charsSequence
@@ -186,21 +186,21 @@ internal object Selections {
         val back = backwardP(editor)
         val caret = editor.caretModel.offset
         val target: Int =
-            when (st.selType) {
+            when (state.selType) {
                 SelType.CHAR -> {
                     caret + if (back) -n else n
                 }
 
                 SelType.WORD, SelType.SYMBOL -> {
-                    val p = charPred(st.selType == SelType.SYMBOL)
+                    val p = charPred(state.selType == SelType.SYMBOL)
                     if (back) Words.prevStart(text, caret, n, p) else Words.nextEnd(text, caret, n, p)
                 }
 
                 SelType.LINE -> lineExpandPoint(doc, doc.getLineNumber(caret), n, back)
 
                 SelType.FIND, SelType.TILL -> {
-                    val ch = st.lastFind ?: return
-                    val t = nthCharTarget(text, ch, caret, n, backward = back, till = st.selType == SelType.TILL)
+                    val ch = state.lastFind ?: return
+                    val t = nthCharTarget(text, ch, caret, n, backward = back, till = state.selType == SelType.TILL)
                     if (t < 0) return
                     t
                 }
@@ -209,6 +209,6 @@ internal object Selections {
                     return
                 }
             }
-        select(editor, st, st.selType, mark(editor), target, expand = false)
+        select(editor, state, state.selType, mark(editor), target, expand = false)
     }
 }

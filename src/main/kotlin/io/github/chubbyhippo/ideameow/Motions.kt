@@ -25,53 +25,92 @@ import kotlin.math.abs
 internal object Motions {
     val commands: Map<String, MeowCommand> =
         buildMap {
-            put("meow-left", MeowCommand { ed, st -> moveChar(ed, st, -st.takeCount(1)) })
-            put("meow-right", MeowCommand { ed, st -> moveChar(ed, st, st.takeCount(1)) })
-            put("meow-next", MeowCommand { ed, st -> moveLine(ed, st, st.takeCount(1)) })
-            put("meow-prev", MeowCommand { ed, st -> moveLine(ed, st, -st.takeCount(1)) })
-            put("meow-left-expand", MeowCommand { ed, st -> moveExpand(ed, st, dx = -st.takeCount(1), dy = 0) })
-            put("meow-right-expand", MeowCommand { ed, st -> moveExpand(ed, st, dx = st.takeCount(1), dy = 0) })
-            put("meow-next-expand", MeowCommand { ed, st -> moveExpand(ed, st, dx = 0, dy = st.takeCount(1)) })
-            put("meow-prev-expand", MeowCommand { ed, st -> moveExpand(ed, st, dx = 0, dy = -st.takeCount(1)) })
-            put("meow-next-word", MeowCommand { ed, st -> wordMotion(ed, st, symbol = false, n = st.takeCount(1)) })
-            put("meow-next-symbol", MeowCommand { ed, st -> wordMotion(ed, st, symbol = true, n = st.takeCount(1)) })
-            put("meow-back-word", MeowCommand { ed, st -> wordMotion(ed, st, symbol = false, n = -st.takeCount(1)) })
-            put("meow-back-symbol", MeowCommand { ed, st -> wordMotion(ed, st, symbol = true, n = -st.takeCount(1)) })
-            put("meow-mark-word", MeowCommand { ed, st -> markWord(ed, st, symbol = false) })
-            put("meow-mark-symbol", MeowCommand { ed, st -> markWord(ed, st, symbol = true) })
-            put("meow-line", MeowCommand { ed, st -> line(ed, st) })
-            put("meow-goto-line", MeowCommand { ed, st -> gotoLine(ed, st) })
-            put("meow-find", MeowCommand { _, st -> st.pending = Pending.FIND })
-            put("meow-till", MeowCommand { _, st -> st.pending = Pending.TILL })
-            put("forward-char", MeowCommand { ed, st -> charOrExpand(ed, st, st.takeCount(1)) })
-            put("backward-char", MeowCommand { ed, st -> charOrExpand(ed, st, -st.takeCount(1)) })
+            put("meow-left", MeowCommand { editor, state -> moveChar(editor, state, -state.takeCount(1)) })
+            put("meow-right", MeowCommand { editor, state -> moveChar(editor, state, state.takeCount(1)) })
+            put("meow-next", MeowCommand { editor, state -> moveLine(editor, state, state.takeCount(1)) })
+            put("meow-prev", MeowCommand { editor, state -> moveLine(editor, state, -state.takeCount(1)) })
+            put(
+                "meow-left-expand",
+                MeowCommand { editor, state -> moveExpand(editor, state, dx = -state.takeCount(1), dy = 0) },
+            )
+            put(
+                "meow-right-expand",
+                MeowCommand { editor, state -> moveExpand(editor, state, dx = state.takeCount(1), dy = 0) },
+            )
+            put(
+                "meow-next-expand",
+                MeowCommand { editor, state -> moveExpand(editor, state, dx = 0, dy = state.takeCount(1)) },
+            )
+            put(
+                "meow-prev-expand",
+                MeowCommand { editor, state -> moveExpand(editor, state, dx = 0, dy = -state.takeCount(1)) },
+            )
+            put(
+                "meow-next-word",
+                MeowCommand { editor, state -> wordMotion(editor, state, symbol = false, n = state.takeCount(1)) },
+            )
+            put(
+                "meow-next-symbol",
+                MeowCommand { editor, state -> wordMotion(editor, state, symbol = true, n = state.takeCount(1)) },
+            )
+            put(
+                "meow-back-word",
+                MeowCommand { editor, state -> wordMotion(editor, state, symbol = false, n = -state.takeCount(1)) },
+            )
+            put(
+                "meow-back-symbol",
+                MeowCommand { editor, state -> wordMotion(editor, state, symbol = true, n = -state.takeCount(1)) },
+            )
+            put("meow-mark-word", MeowCommand { editor, state -> markWord(editor, state, symbol = false) })
+            put("meow-mark-symbol", MeowCommand { editor, state -> markWord(editor, state, symbol = true) })
+            put("meow-line", MeowCommand { editor, state -> line(editor, state) })
+            put("meow-goto-line", MeowCommand { editor, state -> gotoLine(editor, state) })
+            put("meow-find", MeowCommand { _, state -> state.pending = Pending.FIND })
+            put("meow-till", MeowCommand { _, state -> state.pending = Pending.TILL })
+            put("forward-char", MeowCommand { editor, state -> charOrExpand(editor, state, state.takeCount(1)) })
+            put("backward-char", MeowCommand { editor, state -> charOrExpand(editor, state, -state.takeCount(1)) })
             put(
                 "next-line",
-                MeowCommand { ed, st ->
-                    lineOrExpand(ed, st, st.takeCount(1))
-                    st.lastCommand = "next-line"
+                MeowCommand { editor, state ->
+                    lineOrExpand(editor, state, state.takeCount(1))
+                    state.lastCommand = "next-line"
                 },
             )
             put(
                 "previous-line",
-                MeowCommand { ed, st ->
-                    lineOrExpand(ed, st, -st.takeCount(1))
-                    st.lastCommand = "previous-line"
+                MeowCommand { editor, state ->
+                    lineOrExpand(editor, state, -state.takeCount(1))
+                    state.lastCommand = "previous-line"
                 },
             )
             put(
                 "move-beginning-of-line",
-                MeowCommand { ed, st -> moveToOrExpand(ed, st, SelType.CHAR, ::lineStartOffset) },
+                MeowCommand { editor, state -> moveToOrExpand(editor, state, SelType.CHAR, ::lineStartOffset) },
             )
-            put("move-end-of-line", MeowCommand { ed, st -> moveToOrExpand(ed, st, SelType.CHAR, ::lineEndOffset) })
-            put("forward-word", MeowCommand { ed, st -> wordOrExpand(ed, st, st.takeCount(1)) })
-            put("backward-word", MeowCommand { ed, st -> wordOrExpand(ed, st, -st.takeCount(1)) })
-            put("forward-sentence", MeowCommand { ed, st -> sentenceOrExpand(ed, st, st.takeCount(1)) })
-            put("backward-sentence", MeowCommand { ed, st -> sentenceOrExpand(ed, st, -st.takeCount(1)) })
-            put("beginning-of-buffer", MeowCommand { ed, st -> bufferBoundary(ed, st, top = true) })
-            put("end-of-buffer", MeowCommand { ed, st -> bufferBoundary(ed, st, top = false) })
-            put("forward-paragraph", MeowCommand { ed, st -> paragraphOrExpand(ed, st, st.takeCount(1)) })
-            put("backward-paragraph", MeowCommand { ed, st -> paragraphOrExpand(ed, st, -st.takeCount(1)) })
+            put(
+                "move-end-of-line",
+                MeowCommand { editor, state -> moveToOrExpand(editor, state, SelType.CHAR, ::lineEndOffset) },
+            )
+            put("forward-word", MeowCommand { editor, state -> wordOrExpand(editor, state, state.takeCount(1)) })
+            put("backward-word", MeowCommand { editor, state -> wordOrExpand(editor, state, -state.takeCount(1)) })
+            put(
+                "forward-sentence",
+                MeowCommand { editor, state -> sentenceOrExpand(editor, state, state.takeCount(1)) },
+            )
+            put(
+                "backward-sentence",
+                MeowCommand { editor, state -> sentenceOrExpand(editor, state, -state.takeCount(1)) },
+            )
+            put("beginning-of-buffer", MeowCommand { editor, state -> bufferBoundary(editor, state, top = true) })
+            put("end-of-buffer", MeowCommand { editor, state -> bufferBoundary(editor, state, top = false) })
+            put(
+                "forward-paragraph",
+                MeowCommand { editor, state -> paragraphOrExpand(editor, state, state.takeCount(1)) },
+            )
+            put(
+                "backward-paragraph",
+                MeowCommand { editor, state -> paragraphOrExpand(editor, state, -state.takeCount(1)) },
+            )
         }
 
     private fun wordType(symbol: Boolean) = if (symbol) SelType.SYMBOL else SelType.WORD
@@ -81,19 +120,19 @@ internal object Motions {
 
     private fun charSelActive(
         editor: Editor,
-        st: MeowState,
-    ) = st.selType == SelType.CHAR && editor.selectionModel.hasSelection()
+        state: MeowState,
+    ) = state.selType == SelType.CHAR && editor.selectionModel.hasSelection()
 
     private fun goalColumn(
         editor: Editor,
-        st: MeowState,
+        state: MeowState,
     ): Int {
-        if (st.goalColumn == null || st.lastCommand !in VERTICAL) {
+        if (state.goalColumn == null || state.lastCommand !in VERTICAL) {
             val doc = editor.document
             val off = editor.caretModel.offset
-            st.goalColumn = off - doc.getLineStartOffset(doc.getLineNumber(off))
+            state.goalColumn = off - doc.getLineStartOffset(doc.getLineNumber(off))
         }
-        return st.goalColumn!!
+        return state.goalColumn!!
     }
 
     private fun movedLineOffset(
@@ -123,11 +162,11 @@ internal object Motions {
 
     private fun moveChar(
         editor: Editor,
-        st: MeowState,
+        state: MeowState,
         dx: Int,
     ) {
-        val extend = charSelActive(editor, st)
-        if (!extend && editor.selectionModel.hasSelection()) Selections.cancel(editor, st)
+        val extend = charSelActive(editor, state)
+        if (!extend && editor.selectionModel.hasSelection()) Selections.cancel(editor, state)
         val len = editor.document.textLength
         for (caret in editor.caretModel.allCarets) {
             val target = (caret.offset + dx).coerceIn(0, len)
@@ -138,12 +177,12 @@ internal object Motions {
 
     private fun moveLine(
         editor: Editor,
-        st: MeowState,
+        state: MeowState,
         dy: Int,
     ) {
-        val extend = charSelActive(editor, st)
-        if (!extend) Selections.cancel(editor, st)
-        val goal = goalColumn(editor, st)
+        val extend = charSelActive(editor, state)
+        if (!extend) Selections.cancel(editor, state)
+        val goal = goalColumn(editor, state)
         for (caret in editor.caretModel.allCarets) {
             val target = movedLineOffset(editor, caret.offset, dy, columnFor(editor, caret, goal))
             applyCaretMove(caret, target, extend)
@@ -178,12 +217,12 @@ internal object Motions {
 
     private fun moveExpand(
         editor: Editor,
-        st: MeowState,
+        state: MeowState,
         dx: Int,
         dy: Int,
     ) {
         val posBefore = editor.caretModel.offset
-        val goal = if (dy != 0) goalColumn(editor, st) else 0
+        val goal = if (dy != 0) goalColumn(editor, state) else 0
         val len = editor.document.textLength
         for (caret in editor.caretModel.allCarets) {
             val target =
@@ -194,37 +233,37 @@ internal object Motions {
                 }
             applyCaretMove(caret, target, extend = true)
         }
-        recordExpandedSelection(editor, st, SelType.CHAR, posBefore)
+        recordExpandedSelection(editor, state, SelType.CHAR, posBefore)
         editor.scrollingModel.scrollToCaret(ScrollType.RELATIVE)
     }
 
     private fun recordExpandedSelection(
         editor: Editor,
-        st: MeowState,
+        state: MeowState,
         type: SelType,
         posBefore: Int,
     ) {
         val primary = editor.caretModel.primaryCaret
-        Selections.recordSelect(st, type, expand = true, primary.leadSelectionOffset, primary.offset, posBefore)
-        st.selType = type
-        st.selExpand = true
-        Grab.beacon(editor, st)
+        Selections.recordSelect(state, type, expand = true, primary.leadSelectionOffset, primary.offset, posBefore)
+        state.selType = type
+        state.selExpand = true
+        Grab.beacon(editor, state)
     }
 
     private fun charOrExpand(
         editor: Editor,
-        st: MeowState,
+        state: MeowState,
         dx: Int,
     ) {
-        if (editor.selectionModel.hasSelection()) moveExpand(editor, st, dx, dy = 0) else moveChar(editor, st, dx)
+        if (editor.selectionModel.hasSelection()) moveExpand(editor, state, dx, dy = 0) else moveChar(editor, state, dx)
     }
 
     private fun lineOrExpand(
         editor: Editor,
-        st: MeowState,
+        state: MeowState,
         dy: Int,
     ) {
-        if (editor.selectionModel.hasSelection()) moveExpand(editor, st, dx = 0, dy) else moveLine(editor, st, dy)
+        if (editor.selectionModel.hasSelection()) moveExpand(editor, state, dx = 0, dy) else moveLine(editor, state, dy)
     }
 
     private fun lineStartOffset(
@@ -245,7 +284,7 @@ internal object Motions {
 
     private fun moveToOrExpand(
         editor: Editor,
-        st: MeowState,
+        state: MeowState,
         type: SelType,
         target: (Editor, Int) -> Int,
     ) {
@@ -254,57 +293,57 @@ internal object Motions {
         for (caret in editor.caretModel.allCarets) {
             applyCaretMove(caret, target(editor, caret.offset), extend)
         }
-        if (extend) recordExpandedSelection(editor, st, type, posBefore)
+        if (extend) recordExpandedSelection(editor, state, type, posBefore)
         editor.scrollingModel.scrollToCaret(ScrollType.RELATIVE)
     }
 
     private fun wordOrExpand(
         editor: Editor,
-        st: MeowState,
+        state: MeowState,
         n: Int,
     ) {
         val text = editor.document.charsSequence
         val pred = charPred(symbol = false)
-        moveToOrExpand(editor, st, SelType.WORD) { _, offset -> Words.move(text, offset, n, pred) }
+        moveToOrExpand(editor, state, SelType.WORD) { _, offset -> Words.move(text, offset, n, pred) }
     }
 
     private fun sentenceOrExpand(
         editor: Editor,
-        st: MeowState,
+        state: MeowState,
         n: Int,
     ) {
         val text = editor.document.charsSequence
-        moveToOrExpand(editor, st, SelType.CHAR) { _, offset ->
+        moveToOrExpand(editor, state, SelType.CHAR) { _, offset ->
             if (n >= 0) nextSentenceEnd(text, offset, n) else prevSentenceStart(text, offset, -n)
         }
     }
 
     private fun paragraphOrExpand(
         editor: Editor,
-        st: MeowState,
+        state: MeowState,
         n: Int,
     ) {
         val text = editor.document.charsSequence
-        moveToOrExpand(editor, st, SelType.CHAR) { _, offset ->
+        moveToOrExpand(editor, state, SelType.CHAR) { _, offset ->
             if (n >= 0) Paragraphs.nextEnd(text, offset, n) else Paragraphs.prevStart(text, offset, -n)
         }
     }
 
     private fun bufferBoundary(
         editor: Editor,
-        st: MeowState,
+        state: MeowState,
         top: Boolean,
     ) {
-        val counted = st.pendingCount != 0 || st.negative
-        val n = st.takeCount(1)
-        moveToOrExpand(editor, st, SelType.CHAR) { ed, _ ->
-            val len = ed.document.textLength
+        val counted = state.pendingCount != 0 || state.negative
+        val n = state.takeCount(1)
+        moveToOrExpand(editor, state, SelType.CHAR) { editor, _ ->
+            val len = editor.document.textLength
             if (!counted) {
                 if (top) 0 else len
             } else {
                 val tenth = len * n / 10
                 val raw = (if (top) tenth else len - tenth).coerceIn(0, len)
-                nextLineStart(ed, raw)
+                nextLineStart(editor, raw)
             }
         }
     }
@@ -321,7 +360,7 @@ internal object Motions {
 
     private fun wordMotion(
         editor: Editor,
-        st: MeowState,
+        state: MeowState,
         symbol: Boolean,
         n: Int,
     ) {
@@ -330,8 +369,8 @@ internal object Motions {
         val type = wordType(symbol)
         val pred = charPred(symbol)
         val sm = editor.selectionModel
-        if (!(sm.hasSelection() && st.selType == type)) Selections.cancel(editor, st)
-        val extend = st.selExpand && st.selType == type && sm.hasSelection()
+        if (!(sm.hasSelection() && state.selType == type)) Selections.cancel(editor, state)
+        val extend = state.selExpand && state.selType == type && sm.hasSelection()
         val from =
             when {
                 extend && n < 0 -> sm.selectionStart
@@ -348,15 +387,15 @@ internal object Motions {
 
                 else -> Words.fixSelectionMark(text, target, from, pred)
             }
-        Selections.select(editor, st, type, anchor, target, expand = extend)
+        Selections.select(editor, state, type, anchor, target, expand = extend)
     }
 
     private fun markWord(
         editor: Editor,
-        st: MeowState,
+        state: MeowState,
         symbol: Boolean,
     ) {
-        val neg = st.takeCount(1) < 0
+        val neg = state.takeCount(1) < 0
         val text = editor.document.charsSequence
         val b =
             Words.boundsAt(text, editor.caretModel.offset, charPred(symbol))
@@ -366,23 +405,23 @@ internal object Motions {
                 }
         val (s, e) = b
         val (mark, point) = if (neg) e to s else s to e
-        Selections.select(editor, st, wordType(symbol), mark, point, expand = true)
+        Selections.select(editor, state, wordType(symbol), mark, point, expand = true)
         val quoted = Regex.escape(text.subSequence(s, e).toString())
         val pattern = if (symbol) "(?<![\\w$])$quoted(?![\\w$])" else "\\b$quoted\\b"
-        Search.push(st, Regex(pattern))
+        Search.push(state, Regex(pattern))
     }
 
     private fun line(
         editor: Editor,
-        st: MeowState,
+        state: MeowState,
     ) {
         val doc = editor.document
         if (doc.textLength == 0) return
-        val n = st.takeCount(1)
+        val n = state.takeCount(1)
         val ln = doc.getLineNumber(editor.caretModel.offset)
-        if (st.selType == SelType.LINE && st.selExpand && editor.selectionModel.hasSelection()) {
+        if (state.selType == SelType.LINE && state.selExpand && editor.selectionModel.hasSelection()) {
             val point = Selections.lineExpandPoint(doc, ln, abs(n), Selections.backwardP(editor))
-            Selections.select(editor, st, SelType.LINE, Selections.mark(editor), point, expand = true)
+            Selections.select(editor, state, SelType.LINE, Selections.mark(editor), point, expand = true)
             return
         }
         val (mark, point) =
@@ -391,28 +430,35 @@ internal object Motions {
             } else {
                 doc.getLineStartOffset(ln) to doc.getLineEndOffset((ln + n - 1).coerceAtMost(doc.lineCount - 1))
             }
-        Selections.select(editor, st, SelType.LINE, mark, point, expand = true)
+        Selections.select(editor, state, SelType.LINE, mark, point, expand = true)
     }
 
     private fun gotoLine(
         editor: Editor,
-        st: MeowState,
+        state: MeowState,
     ) {
         val input = Messages.showInputDialog(editor.project, "Goto line:", "Meow", null) ?: return
         val doc = editor.document
         if (doc.textLength == 0) return
         val ln = parsedLineNumber(input, doc.lineCount) ?: return
-        Selections.select(editor, st, SelType.LINE, doc.getLineStartOffset(ln), doc.getLineEndOffset(ln), expand = true)
+        Selections.select(
+            editor,
+            state,
+            SelType.LINE,
+            doc.getLineStartOffset(ln),
+            doc.getLineEndOffset(ln),
+            expand = true,
+        )
         editor.scrollingModel.scrollToCaret(ScrollType.CENTER)
     }
 
     fun findTill(
         editor: Editor,
-        st: MeowState,
+        state: MeowState,
         ch: Char,
         till: Boolean,
     ) {
-        val n = st.takeCount(1)
+        val n = state.takeCount(1)
         val text = editor.document.charsSequence
         val caret = editor.caretModel.offset
         val target = nthCharTarget(text, ch, caret, abs(n), backward = n < 0, till = till)
@@ -420,7 +466,7 @@ internal object Motions {
             Ide.hint(editor, "char not found: $ch")
             return
         }
-        st.lastFind = ch
-        Selections.select(editor, st, if (till) SelType.TILL else SelType.FIND, caret, target, expand = false)
+        state.lastFind = ch
+        Selections.select(editor, state, if (till) SelType.TILL else SelType.FIND, caret, target, expand = false)
     }
 }

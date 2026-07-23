@@ -40,8 +40,8 @@ import javax.swing.SwingUtilities
 object AceWindow {
     val commands: Map<String, MeowCommand> =
         mapOf(
-            "ace-window" to MeowCommand { ed, st -> start(ed, st, swap = false) },
-            "ace-swap-window" to MeowCommand { ed, st -> start(ed, st, swap = true) },
+            "ace-window" to MeowCommand { editor, state -> start(editor, state, swap = false) },
+            "ace-swap-window" to MeowCommand { editor, state -> start(editor, state, swap = true) },
         )
 
     const val LABEL_THRESHOLD = 2
@@ -82,7 +82,7 @@ object AceWindow {
 
     private fun start(
         editor: Editor,
-        st: MeowState,
+        state: MeowState,
         swap: Boolean,
     ) {
         val frame = SwingUtilities.getWindowAncestor(editor.component) ?: return
@@ -93,7 +93,7 @@ object AceWindow {
         val panels = if (swap) emptyList() else previewPanels(editor, frame) + toolWindowPanels(editor, frame, editors)
         val layer = (frame as? RootPaneContainer)?.rootPane?.layeredPane
         val windows = ordered((editors + panels).map { it to it.rect })
-        begin(editor, st, swap, windows, layer, focusedWindow(windows))
+        begin(editor, state, swap, windows, layer, focusedWindow(windows))
     }
 
     private fun focusedWindow(windows: List<Window>): Window? {
@@ -103,13 +103,13 @@ object AceWindow {
 
     internal fun begin(
         editor: Editor,
-        st: MeowState,
+        state: MeowState,
         swap: Boolean,
         windows: List<Window>,
         layer: JLayeredPane? = null,
         current: Window? = null,
     ) {
-        cancel(st)
+        cancel(state)
         val cur = current ?: windows.firstOrNull { it.editor === editor }
         when (plan(windows.size)) {
             Plan.NONE -> return
@@ -118,7 +118,7 @@ object AceWindow {
 
             Plan.LABELS -> {
                 val session = Session(swap, windows, layer, cur)
-                st.aceWindow = session
+                state.aceWindow = session
                 session.node = Avy.tree(windows.indices.toList())
                 paintLabels(session)
             }
@@ -127,17 +127,17 @@ object AceWindow {
 
     fun key(
         editor: Editor,
-        st: MeowState,
+        state: MeowState,
         c: Char,
     ) {
-        val session = st.aceWindow ?: return
+        val session = state.aceWindow ?: return
         val node = session.node ?: return
         when (val child = node.children.firstOrNull { it.first == c }?.second) {
             is Avy.Leaf -> {
                 val target = session.windows.getOrNull(child.offset)
                 val swap = session.swap
                 val current = session.current
-                cancel(st)
+                cancel(state)
                 if (target != null) perform(editor, swap, target, current)
             }
 
@@ -152,9 +152,9 @@ object AceWindow {
         }
     }
 
-    fun cancel(st: MeowState) {
-        st.aceWindow?.let { clearVisuals(it) }
-        st.aceWindow = null
+    fun cancel(state: MeowState) {
+        state.aceWindow?.let { clearVisuals(it) }
+        state.aceWindow = null
     }
 
     private fun perform(
@@ -226,15 +226,15 @@ object AceWindow {
         private val label: String,
     ) : Overlay.Canvas(editor) {
         override fun paintLabels(
-            g2: Graphics2D,
+            graphics: Graphics2D,
             metrics: FontMetrics,
         ) {
             val area = editor.scrollingModel.visibleArea
             val width = metrics.stringWidth(label) + Overlay.LABEL_PADDING
-            g2.color = Avy.LEAD_BG
-            g2.fillRect(area.x, area.y, width, editor.lineHeight)
-            g2.color = Avy.LEAD_FG
-            g2.drawString(label, area.x + 1, area.y + editor.ascent)
+            graphics.color = Avy.LEAD_BG
+            graphics.fillRect(area.x, area.y, width, editor.lineHeight)
+            graphics.color = Avy.LEAD_FG
+            graphics.drawString(label, area.x + 1, area.y + editor.ascent)
         }
     }
 }

@@ -66,10 +66,10 @@ internal object SpaceLeader {
 
     internal fun setForTest(
         editor: Editor,
-        st: MeowState,
+        state: MeowState,
         surface: Component,
     ) {
-        routed = Routed(editor, st, surface)
+        routed = Routed(editor, state, surface)
     }
 
     internal fun dispatch(e: AWTEvent): Boolean {
@@ -113,21 +113,21 @@ internal object SpaceLeader {
 
     internal fun openKeypad(
         editor: Editor,
-        st: MeowState,
+        state: MeowState,
     ) {
-        if (st.mode == MeowMode.INSERT) {
-            Engine.enterKeypad(editor, st)
+        if (state.mode == MeowMode.INSERT) {
+            Engine.enterKeypad(editor, state)
         } else {
             Engine.handleChar(editor, ' ')
         }
     }
 
-    private fun wantsKeys(st: MeowState) =
-        st.mode == MeowMode.KEYPAD ||
-            st.avy != null ||
-            st.aceWindow != null ||
-            st.aceClick != null ||
-            st.aceResize != null
+    private fun wantsKeys(state: MeowState) =
+        state.mode == MeowMode.KEYPAD ||
+            state.avy != null ||
+            state.aceWindow != null ||
+            state.aceClick != null ||
+            state.aceResize != null
 
     internal fun nativeSpace(focus: Component): Boolean {
         var c: Component? = focus
@@ -170,11 +170,11 @@ internal object SpaceLeader {
         if (PlatformDataKeys.SPEED_SEARCH_TEXT.getData(context) != null) return null
         val project = CommonDataKeys.PROJECT.getData(context) ?: return null
         val editor = FileEditorManager.getInstance(project).selectedTextEditor ?: return null
-        val st = Meow.state(editor) ?: return null
-        if (st.mode == MeowMode.KEYPAD) return null
+        val state = Meow.state(editor) ?: return null
+        if (state.mode == MeowMode.KEYPAD) return null
         val editorWindow = SwingUtilities.getWindowAncestor(editor.component)
         if (!windowChainContains(SwingUtilities.getWindowAncestor(focus), editorWindow)) return null
-        return Routed(editor, st, focus)
+        return Routed(editor, state, focus)
     }
 
     private fun windowChainContains(

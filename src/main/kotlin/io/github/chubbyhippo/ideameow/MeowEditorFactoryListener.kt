@@ -44,20 +44,20 @@ class MeowEditorFactoryListener : EditorFactoryListener {
 
     override fun editorReleased(event: EditorFactoryEvent) {
         val editor = event.editor
-        val st = Meow.state(editor) ?: return
-        Avy.cancel(editor, st)
-        AceClick.cancel(st)
+        val state = Meow.state(editor) ?: return
+        Avy.cancel(editor, state)
+        AceClick.cancel(state)
         WhichKey.hide()
-        ExpandHints.clear(st)
-        Grab.clear(editor, st)
-        st.savedBlockCursor?.let { editor.settings.isBlockCursor = it }
+        ExpandHints.clear(state)
+        Grab.clear(editor, state)
+        state.savedBlockCursor?.let { editor.settings.isBlockCursor = it }
         editor.putUserData(Meow.KEY, null)
     }
 
     private fun attach(editor: Editor) {
-        val st = MeowState()
-        st.savedBlockCursor = editor.settings.isBlockCursor
-        editor.putUserData(Meow.KEY, st)
+        val state = MeowState()
+        state.savedBlockCursor = editor.settings.isBlockCursor
+        editor.putUserData(Meow.KEY, state)
         editor.settings.isBlockCursor = true
         Meow.updateWidgets()
     }

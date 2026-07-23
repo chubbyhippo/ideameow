@@ -21,27 +21,27 @@ import com.intellij.openapi.editor.Editor
 internal object Structures {
     val commands: Map<String, MeowCommand> =
         mapOf(
-            "meow-inner-of-thing" to MeowCommand { ed, st -> pendThing(ed, st, Pending.INNER) },
-            "meow-bounds-of-thing" to MeowCommand { ed, st -> pendThing(ed, st, Pending.BOUNDS) },
-            "meow-beginning-of-thing" to MeowCommand { ed, st -> pendThing(ed, st, Pending.BEGIN) },
-            "meow-end-of-thing" to MeowCommand { ed, st -> pendThing(ed, st, Pending.END) },
-            "meow-block" to MeowCommand { ed, st -> block(ed, st) },
-            "meow-to-block" to MeowCommand { ed, st -> toBlock(ed, st) },
-            "meow-join" to MeowCommand { ed, st -> join(ed, st) },
+            "meow-inner-of-thing" to MeowCommand { editor, state -> pendThing(editor, state, Pending.INNER) },
+            "meow-bounds-of-thing" to MeowCommand { editor, state -> pendThing(editor, state, Pending.BOUNDS) },
+            "meow-beginning-of-thing" to MeowCommand { editor, state -> pendThing(editor, state, Pending.BEGIN) },
+            "meow-end-of-thing" to MeowCommand { editor, state -> pendThing(editor, state, Pending.END) },
+            "meow-block" to MeowCommand { editor, state -> block(editor, state) },
+            "meow-to-block" to MeowCommand { editor, state -> toBlock(editor, state) },
+            "meow-join" to MeowCommand { editor, state -> join(editor, state) },
         )
 
     private fun pendThing(
         editor: Editor,
-        st: MeowState,
+        state: MeowState,
         p: Pending,
     ) {
-        st.pending = p
+        state.pending = p
         WhichKey.scheduleThings(editor)
     }
 
     fun thingSelect(
         editor: Editor,
-        st: MeowState,
+        state: MeowState,
         kind: Pending,
         ch: Char,
     ) {
@@ -62,7 +62,7 @@ internal object Structures {
                 Pending.END -> off to b.end
                 else -> return
             }
-        Selections.select(editor, st, SelType.TRANSIENT, mark, point, expand = false)
+        Selections.select(editor, state, SelType.TRANSIENT, mark, point, expand = false)
     }
 
     private data class PairRange(
@@ -118,13 +118,13 @@ internal object Structures {
 
     private fun block(
         editor: Editor,
-        st: MeowState,
+        state: MeowState,
     ) {
         val sm = editor.selectionModel
         val text = editor.document.charsSequence
-        val back = Selections.backwardP(editor) != (st.takeCount(1) < 0)
+        val back = Selections.backwardP(editor) != (state.takeCount(1) < 0)
         val (s, e) =
-            if (st.selType == SelType.BLOCK && sm.hasSelection()) {
+            if (state.selType == SelType.BLOCK && sm.hasSelection()) {
                 sm.selectionStart to sm.selectionEnd
             } else {
                 editor.caretModel.offset to editor.caretModel.offset
@@ -135,34 +135,34 @@ internal object Structures {
                 return
             }
         if (back) {
-            Selections.select(editor, st, SelType.BLOCK, p.close + 1, p.open, expand = true)
+            Selections.select(editor, state, SelType.BLOCK, p.close + 1, p.open, expand = true)
         } else {
-            Selections.select(editor, st, SelType.BLOCK, p.open, p.close + 1, expand = true)
+            Selections.select(editor, state, SelType.BLOCK, p.open, p.close + 1, expand = true)
         }
     }
 
     private fun toBlock(
         editor: Editor,
-        st: MeowState,
+        state: MeowState,
     ) {
         val text = editor.document.charsSequence
-        val back = (st.selType == SelType.BLOCK && Selections.backwardP(editor)) || st.takeCount(1) < 0
+        val back = (state.selType == SelType.BLOCK && Selections.backwardP(editor)) || state.takeCount(1) < 0
         val caret = editor.caretModel.offset
         val p =
             enclosingPair(text, caret, caret) ?: run {
                 Ide.hint(editor, "No enclosing block")
                 return
             }
-        Selections.select(editor, st, SelType.BLOCK, caret, if (back) p.open else p.close + 1, expand = true)
+        Selections.select(editor, state, SelType.BLOCK, caret, if (back) p.open else p.close + 1, expand = true)
     }
 
     private fun join(
         editor: Editor,
-        st: MeowState,
+        state: MeowState,
     ) {
         val doc = editor.document
         if (doc.textLength == 0) return
-        val n = st.takeCount(1)
+        val n = state.takeCount(1)
         val text = doc.charsSequence
 
         fun blank(l: Int) = text.subSequence(doc.getLineStartOffset(l), doc.getLineEndOffset(l)).isBlank()
@@ -187,6 +187,6 @@ internal object Structures {
         var p = doc.getLineStartOffset(pointLine)
         val eol = doc.getLineEndOffset(pointLine)
         while (p < eol && text[p].isWhitespace()) p++
-        Selections.select(editor, st, SelType.JOIN, m, p, expand = true)
+        Selections.select(editor, state, SelType.JOIN, m, p, expand = true)
     }
 }

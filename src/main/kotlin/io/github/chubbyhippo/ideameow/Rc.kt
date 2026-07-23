@@ -83,7 +83,7 @@ object Rc {
     @Volatile
     private var defaultConfig: Config = Config()
 
-    fun cfg(): Config {
+    fun config(): Config {
         if (!loaded) load()
         return config
     }
@@ -131,13 +131,13 @@ object Rc {
         }
     }
 
-    fun keypad(): Map<String, Binding> = LinkedHashMap(defaults().keypad).apply { putAll(cfg().keypad) }
+    fun keypad(): Map<String, Binding> = LinkedHashMap(defaults().keypad).apply { putAll(config().keypad) }
 
-    fun keypadDescs(): Map<String, String> = HashMap(defaults().keypadDesc).apply { putAll(cfg().keypadDesc) }
+    fun keypadDescs(): Map<String, String> = HashMap(defaults().keypadDesc).apply { putAll(config().keypadDesc) }
 
     fun chords(): Map<ChordKey, Binding> {
         val merged = LinkedHashMap(defaults().chords)
-        merged.putAll(cfg().chords)
+        merged.putAll(config().chords)
         merged.values.removeIf { it.command == "ignore" }
         return merged
     }
@@ -145,7 +145,7 @@ object Rc {
     fun repeatGroups(): Map<String, Map<Char, Binding>> {
         val merged = LinkedHashMap<String, LinkedHashMap<Char, Binding>>()
         for ((group, members) in defaults().repeat) merged.getOrPut(group) { LinkedHashMap() }.putAll(members)
-        for ((group, members) in cfg().repeat) merged.getOrPut(group) { LinkedHashMap() }.putAll(members)
+        for ((group, members) in config().repeat) merged.getOrPut(group) { LinkedHashMap() }.putAll(members)
         for (members in merged.values) members.values.removeIf { it.command == "ignore" }
         merged.values.removeIf { it.isEmpty() }
         return merged
@@ -156,9 +156,9 @@ object Rc {
             members.values.any { it.action == b.action && it.command == b.command && it.keys == b.keys }
         }
 
-    fun whichKeyEnabled(): Boolean = cfg().whichKey ?: defaults().whichKey ?: true
+    fun whichKeyEnabled(): Boolean = config().whichKey ?: defaults().whichKey ?: true
 
-    fun whichKeyDelayMs(): Int = cfg().whichKeyDelayMs ?: defaults().whichKeyDelayMs ?: DEFAULT_WHICH_KEY_DELAY_MS
+    fun whichKeyDelayMs(): Int = config().whichKeyDelayMs ?: defaults().whichKeyDelayMs ?: DEFAULT_WHICH_KEY_DELAY_MS
 
     fun notify(
         text: String,

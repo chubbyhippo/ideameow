@@ -42,9 +42,9 @@ internal object AceResizeArrows {
     @Suppress("UnstableApiUsage")
     private fun dispatch(e: AWTEvent): Boolean {
         val dir = arrowDir(e) ?: return false
-        val st = holdState()
-        if (st != null) WriteIntentReadAction.compute { AceResize.holdArrow(st, dir) }
-        return st != null
+        val state = holdState()
+        if (state != null) WriteIntentReadAction.compute { AceResize.holdArrow(state, dir) }
+        return state != null
     }
 
     private fun holdState(): MeowState? =

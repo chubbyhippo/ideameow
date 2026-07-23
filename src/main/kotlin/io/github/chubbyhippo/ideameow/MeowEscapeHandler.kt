@@ -25,56 +25,56 @@ import com.intellij.openapi.editor.actionSystem.EditorActionHandler
 internal object MeowEscape {
     fun wants(
         editor: Editor,
-        st: MeowState,
+        state: MeowState,
     ): Boolean =
-        st.avy != null ||
-            st.aceWindow != null ||
-            st.aceClick != null ||
-            st.aceResize != null ||
-            st.pending != null ||
+        state.avy != null ||
+            state.aceWindow != null ||
+            state.aceClick != null ||
+            state.aceResize != null ||
+            state.pending != null ||
             Engine.repeatMap != null ||
-            st.mode == MeowMode.INSERT ||
-            st.mode == MeowMode.KEYPAD ||
+            state.mode == MeowMode.INSERT ||
+            state.mode == MeowMode.KEYPAD ||
             editor.caretModel.caretCount > 1 ||
             editor.selectionModel.hasSelection()
 
     fun consume(
         editor: Editor,
-        st: MeowState,
+        state: MeowState,
     ): Boolean {
-        if (st.avy != null) {
-            Avy.cancel(editor, st)
+        if (state.avy != null) {
+            Avy.cancel(editor, state)
             Meow.updateWidgets()
             return true
         }
-        if (st.aceWindow != null) {
-            AceWindow.cancel(st)
+        if (state.aceWindow != null) {
+            AceWindow.cancel(state)
             Meow.updateWidgets()
             return true
         }
-        if (st.aceClick != null) {
-            AceClick.cancel(st)
+        if (state.aceClick != null) {
+            AceClick.cancel(state)
             Meow.updateWidgets()
             return true
         }
-        if (st.aceResize != null) {
-            AceResize.cancel(st)
+        if (state.aceResize != null) {
+            AceResize.cancel(state)
             Meow.updateWidgets()
             return true
         }
-        val hadTransient = st.pending != null || Engine.repeatMap != null
-        st.pending = null
+        val hadTransient = state.pending != null || Engine.repeatMap != null
+        state.pending = null
         Engine.repeatMap = null
         WhichKey.hide()
-        ExpandHints.clear(st)
+        ExpandHints.clear(state)
         return when {
-            st.mode == MeowMode.INSERT -> {
-                Meow.setMode(editor, st, MeowMode.NORMAL)
+            state.mode == MeowMode.INSERT -> {
+                Meow.setMode(editor, state, MeowMode.NORMAL)
                 true
             }
 
-            st.mode == MeowMode.KEYPAD -> {
-                Keypad.exit(editor, st)
+            state.mode == MeowMode.KEYPAD -> {
+                Keypad.exit(editor, state)
                 true
             }
 
@@ -102,8 +102,8 @@ class MeowEscapeHandler(
         caret: Caret?,
         dataContext: DataContext?,
     ) {
-        val st = Meow.state(editor)
-        if (st == null || LookupManager.getActiveLookup(editor) != null || !MeowEscape.consume(editor, st)) {
+        val state = Meow.state(editor)
+        if (state == null || LookupManager.getActiveLookup(editor) != null || !MeowEscape.consume(editor, state)) {
             original.execute(editor, caret, dataContext)
         }
     }

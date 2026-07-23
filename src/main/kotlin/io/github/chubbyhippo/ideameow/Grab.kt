@@ -32,31 +32,31 @@ internal object Grab {
 
     val commands: Map<String, MeowCommand> =
         mapOf(
-            "meow-grab" to MeowCommand { ed, st -> grab(ed, st) },
-            "meow-sync-grab" to MeowCommand { ed, st -> sync(ed, st) },
-            "meow-swap-grab" to MeowCommand { ed, st -> swap(ed, st) },
+            "meow-grab" to MeowCommand { editor, state -> grab(editor, state) },
+            "meow-sync-grab" to MeowCommand { editor, state -> sync(editor, state) },
+            "meow-swap-grab" to MeowCommand { editor, state -> swap(editor, state) },
         )
 
     fun clear(
         editor: Editor,
-        st: MeowState,
+        state: MeowState,
     ) {
-        st.grab?.dispose()
-        st.grab = null
-        st.grabHighlighter?.let { editor.markupModel.removeHighlighter(it) }
-        st.grabHighlighter = null
+        state.grab?.dispose()
+        state.grab = null
+        state.grabHighlighter?.let { editor.markupModel.removeHighlighter(it) }
+        state.grabHighlighter = null
     }
 
     private fun set(
         editor: Editor,
-        st: MeowState,
+        state: MeowState,
         s: Int,
         e: Int,
     ) {
-        st.grab = editor.document.createRangeMarker(s, e)
+        state.grab = editor.document.createRangeMarker(s, e)
         if (e > s) {
             val attrs = TextAttributes(null, BG, null, null, Font.PLAIN)
-            st.grabHighlighter =
+            state.grabHighlighter =
                 editor.markupModel.addRangeHighlighter(
                     s,
                     e,
@@ -69,34 +69,34 @@ internal object Grab {
 
     private fun grab(
         editor: Editor,
-        st: MeowState,
+        state: MeowState,
     ) {
-        clear(editor, st)
+        clear(editor, state)
         val sm = editor.selectionModel
-        if (sm.hasSelection()) set(editor, st, sm.selectionStart, sm.selectionEnd)
-        Selections.cancel(editor, st)
+        if (sm.hasSelection()) set(editor, state, sm.selectionStart, sm.selectionEnd)
+        Selections.cancel(editor, state)
     }
 
     private fun sync(
         editor: Editor,
-        st: MeowState,
+        state: MeowState,
     ) {
         val sm = editor.selectionModel
         if (!sm.hasSelection()) {
             Ide.hint(editor, "meow-sync-grab needs a selection")
             return
         }
-        clear(editor, st)
-        set(editor, st, sm.selectionStart, sm.selectionEnd)
-        Selections.cancel(editor, st)
+        clear(editor, state)
+        set(editor, state, sm.selectionStart, sm.selectionEnd)
+        Selections.cancel(editor, state)
     }
 
     private fun swap(
         editor: Editor,
-        st: MeowState,
+        state: MeowState,
     ) {
         if (Edits.blockedReadOnly(editor)) return
-        val g = st.grab
+        val g = state.grab
         val sm = editor.selectionModel
         if (g == null || !g.isValid) {
             Ide.hint(editor, "No grab")
@@ -118,43 +118,43 @@ internal object Grab {
         val grabText = text.subSequence(gs, ge).toString()
         val selText = text.subSequence(ss, se).toString()
         Ide.runWrite(editor, "Meow Swap Grab") {
-            clear(editor, st)
+            clear(editor, state)
             if (gs <= ss) {
                 editor.document.replaceString(ss, se, grabText)
                 editor.document.replaceString(gs, ge, selText)
                 val delta = selText.length - (ge - gs)
-                set(editor, st, gs, gs + selText.length)
+                set(editor, state, gs, gs + selText.length)
                 editor.caretModel.moveToOffset(ss + delta + grabText.length)
             } else {
                 editor.document.replaceString(gs, ge, selText)
                 editor.document.replaceString(ss, se, grabText)
                 val delta = grabText.length - (se - ss)
-                set(editor, st, gs + delta, gs + delta + selText.length)
+                set(editor, state, gs + delta, gs + delta + selText.length)
                 editor.caretModel.moveToOffset(ss + grabText.length)
             }
             sm.removeSelection()
-            st.selType = SelType.NONE
+            state.selType = SelType.NONE
         }
     }
 
     fun pop(
         editor: Editor,
-        st: MeowState,
+        state: MeowState,
     ): Boolean {
-        val g = st.grab ?: return false
+        val g = state.grab ?: return false
         if (!g.isValid) return false
         val s = g.startOffset
         val e = g.endOffset
-        clear(editor, st)
-        Selections.select(editor, st, SelType.TRANSIENT, s, e, expand = false)
+        clear(editor, state)
+        Selections.select(editor, state, SelType.TRANSIENT, s, e, expand = false)
         return true
     }
 
     fun beacon(
         editor: Editor,
-        st: MeowState,
+        state: MeowState,
     ) {
-        val g = st.grab ?: return
+        val g = state.grab ?: return
         if (!g.isValid || g.endOffset <= g.startOffset) return
         val sm = editor.selectionModel
         if (!sm.hasSelection()) return
@@ -174,12 +174,12 @@ internal object Grab {
                 editor.offsetToLogicalPosition(e),
             ),
         )
-        when (st.selType) {
+        when (state.selType) {
             SelType.WORD, SelType.SYMBOL, SelType.VISIT, SelType.FIND, SelType.TILL, SelType.CHAR -> {
                 val sel = text.subSequence(ss, se).toString()
                 if (sel.isBlank()) return
                 val re =
-                    if (st.selType == SelType.WORD || st.selType == SelType.SYMBOL) {
+                    if (state.selType == SelType.WORD || state.selType == SelType.SYMBOL) {
                         Regex("\\b" + Regex.escape(sel) + "\\b")
                     } else {
                         Regex(Regex.escape(sel))

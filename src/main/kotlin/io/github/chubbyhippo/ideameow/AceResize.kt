@@ -41,7 +41,7 @@ object AceResize {
 
     val commands: Map<String, MeowCommand> =
         mapOf(
-            "ace-resize" to MeowCommand { ed, st -> start(ed, st) },
+            "ace-resize" to MeowCommand { editor, state -> start(editor, state) },
         )
 
     enum class Dir { LEFT, RIGHT, DOWN, UP }
@@ -121,43 +121,43 @@ object AceResize {
 
     private fun start(
         editor: Editor,
-        st: MeowState,
+        state: MeowState,
     ) {
         val frame = SwingUtilities.getWindowAncestor(editor.component) ?: return
         val layer = (frame as? RootPaneContainer)?.rootPane?.layeredPane
-        begin(editor, st, splitterTargets(frame, layer) + toolWindowTargets(editor, frame, layer))
+        begin(editor, state, splitterTargets(frame, layer) + toolWindowTargets(editor, frame, layer))
     }
 
     internal fun begin(
         editor: Editor,
-        st: MeowState,
+        state: MeowState,
         targets: List<Target>,
     ) {
-        cancel(st)
+        cancel(state)
         if (targets.isEmpty()) {
             Ide.hint(editor, "No resizable dividers")
             return
         }
         val session = Session(AceWindow.ordered(targets.map { it to it.screen }))
-        st.aceResize = session
+        state.aceResize = session
         session.node = Avy.tree(session.targets.indices.toList())
         paintLabels(session)
     }
 
     fun key(
         editor: Editor,
-        st: MeowState,
+        state: MeowState,
         c: Char,
     ) {
-        val session = st.aceResize ?: return
-        if (session.phase == Phase.HOLD) hold(st, session, c) else pick(editor, st, session, c)
+        val session = state.aceResize ?: return
+        if (session.phase == Phase.HOLD) hold(state, session, c) else pick(editor, state, session, c)
     }
 
     fun holdArrow(
-        st: MeowState,
+        state: MeowState,
         dir: Dir,
     ): Boolean {
-        val session = st.aceResize?.takeIf { it.phase == Phase.HOLD } ?: return false
+        val session = state.aceResize?.takeIf { it.phase == Phase.HOLD } ?: return false
         val target = session.picked
         if (target != null && accepts(target.axis, dir)) {
             target.resize(dir)
@@ -166,21 +166,21 @@ object AceResize {
         return true
     }
 
-    fun cancel(st: MeowState) {
-        st.aceResize?.canvases?.forEach { Overlay.detach(it) }
-        st.aceResize = null
+    fun cancel(state: MeowState) {
+        state.aceResize?.canvases?.forEach { Overlay.detach(it) }
+        state.aceResize = null
     }
 }
 
 private fun pick(
     editor: Editor,
-    st: MeowState,
+    state: MeowState,
     session: AceResize.Session,
     c: Char,
 ) {
     val node = session.node ?: return
     when (val child = node.children.firstOrNull { it.first == c }?.second) {
-        is Avy.Leaf -> enterHold(editor, st, session, child.offset)
+        is Avy.Leaf -> enterHold(editor, state, session, child.offset)
 
         is Avy.Branch -> {
             session.node = child
@@ -193,13 +193,13 @@ private fun pick(
 
 private fun enterHold(
     editor: Editor,
-    st: MeowState,
+    state: MeowState,
     session: AceResize.Session,
     offset: Int,
 ) {
     val target = session.targets.getOrNull(offset)
     if (target == null) {
-        AceResize.cancel(st)
+        AceResize.cancel(state)
         return
     }
     session.phase = AceResize.Phase.HOLD
@@ -210,14 +210,14 @@ private fun enterHold(
 }
 
 private fun hold(
-    st: MeowState,
+    state: MeowState,
     session: AceResize.Session,
     c: Char,
 ) {
     val dir = AceResize.dirOf(c)
     val target = session.picked
     if (dir == null || target == null) {
-        AceResize.cancel(st)
+        AceResize.cancel(state)
         return
     }
     if (AceResize.accepts(target.axis, dir)) {
@@ -367,20 +367,20 @@ private class ResizeBadges(
     ): Boolean = false
 
     override fun paintComponent(g: Graphics) {
-        val g2 = g as Graphics2D
-        g2.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON)
-        g2.font = g2.font.deriveFont(Font.BOLD)
-        val metrics = g2.fontMetrics
+        val graphics = g as Graphics2D
+        graphics.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON)
+        graphics.font = graphics.font.deriveFont(Font.BOLD)
+        val metrics = graphics.fontMetrics
         for ((center, label) in entries) {
             val p = center() ?: continue
             val width = metrics.stringWidth(label) + Overlay.LABEL_PADDING
             val height = metrics.height
             val x = p.x - width / 2
             val y = p.y - height / 2
-            g2.color = Avy.LEAD_BG
-            g2.fillRect(x, y, width, height)
-            g2.color = Avy.LEAD_FG
-            g2.drawString(label, x + 1, y + metrics.ascent)
+            graphics.color = Avy.LEAD_BG
+            graphics.fillRect(x, y, width, height)
+            graphics.color = Avy.LEAD_FG
+            graphics.drawString(label, x + 1, y + metrics.ascent)
         }
     }
 }

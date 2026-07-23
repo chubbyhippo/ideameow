@@ -45,8 +45,8 @@ object TreeMeow {
         )
 
     fun boundChars(): Set<Char> =
-        (Rc.defaults().motion.keys + Rc.cfg().motion.keys).filterTo(mutableSetOf()) { c ->
-            (Rc.cfg().motion[c] ?: Rc.defaults().motion[c])?.command != "ignore"
+        (Rc.defaults().motion.keys + Rc.config().motion.keys).filterTo(mutableSetOf()) { c ->
+            (Rc.config().motion[c] ?: Rc.defaults().motion[c])?.command != "ignore"
         }
 
     fun dispatch(
@@ -55,7 +55,7 @@ object TreeMeow {
         noremap: Boolean = false,
         depth: Int = 0,
     ) {
-        val b = (if (noremap) null else Rc.cfg().motion[c]) ?: Rc.defaults().motion[c] ?: return
+        val b = (if (noremap) null else Rc.config().motion[c]) ?: Rc.defaults().motion[c] ?: return
         val command = b.command
         if (command != null) {
             SWING_MOTIONS[command]?.let { swing(tree, it) }

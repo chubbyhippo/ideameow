@@ -108,11 +108,11 @@ object ToolWindowEscape {
         context: DataContext,
         e: KeyEvent,
     ): Boolean {
-        val (editor, st) = focusedMeowEditor(component, context) ?: return false
+        val (editor, state) = focusedMeowEditor(component, context) ?: return false
         if (LookupManager.getActiveLookup(editor) != null) return false
         val consumed =
             try {
-                MeowEscape.wants(editor, st) && MeowEscape.consume(editor, st)
+                MeowEscape.wants(editor, state) && MeowEscape.consume(editor, state)
             } catch (_: RuntimeException) {
                 false
             }
@@ -128,12 +128,12 @@ object ToolWindowEscape {
     ): Pair<Editor, MeowState>? {
         val focus = KeyboardFocusManager.getCurrentKeyboardFocusManager().focusOwner
         for (editor in EditorFactory.getInstance().allEditors) {
-            val st = Meow.state(editor) ?: continue
+            val state = Meow.state(editor) ?: continue
             val content = editor.contentComponent
-            if (isWithin(content, component) || isWithin(content, focus)) return editor to st
+            if (isWithin(content, component) || isWithin(content, focus)) return editor to state
         }
         val fromData = CommonDataKeys.EDITOR.getData(context) ?: CommonDataKeys.EDITOR_EVEN_IF_INACTIVE.getData(context)
-        return fromData?.let { ed -> Meow.state(ed)?.let { ed to it } }
+        return fromData?.let { editor -> Meow.state(editor)?.let { editor to it } }
     }
 
     private fun isWithin(

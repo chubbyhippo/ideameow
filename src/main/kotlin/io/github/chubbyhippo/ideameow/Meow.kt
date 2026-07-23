@@ -30,11 +30,11 @@ object Meow {
 
     fun setMode(
         editor: Editor,
-        st: MeowState,
+        state: MeowState,
         mode: MeowMode,
     ) {
-        st.mode = mode
-        if (mode != MeowMode.KEYPAD) st.keypad.setLength(0)
+        state.mode = mode
+        if (mode != MeowMode.KEYPAD) state.keypad.setLength(0)
         editor.settings.isBlockCursor = mode != MeowMode.INSERT
         updateWidgets()
     }
@@ -47,19 +47,19 @@ object Meow {
 
     fun statusText(project: Project): String {
         val editor = FileEditorManager.getInstance(project).selectedTextEditor ?: return ""
-        val st = state(editor) ?: return ""
+        val state = state(editor) ?: return ""
         val beacon = editor.caretModel.caretCount > 1
         val repeat = Engine.repeatMap
         return when {
-            st.mode == MeowMode.KEYPAD -> "MEOW KEYPAD  SPC ${st.keypad.toString().toCharArray().joinToString(" ")}"
+            state.mode == MeowMode.KEYPAD -> "MEOW KEYPAD  SPC ${state.keypad.chunked(1).joinToString(" ")}"
 
-            beacon && st.mode == MeowMode.INSERT -> "MEOW BEACON-INSERT"
+            beacon && state.mode == MeowMode.INSERT -> "MEOW BEACON-INSERT"
 
             beacon -> "MEOW BEACON"
 
-            repeat != null -> "MEOW ${st.mode} [repeat ${repeat.keys.joinToString(" ")}]"
+            repeat != null -> "MEOW ${state.mode} [repeat ${repeat.keys.joinToString(" ")}]"
 
-            else -> "MEOW ${st.mode}"
+            else -> "MEOW ${state.mode}"
         }
     }
 }

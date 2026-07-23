@@ -184,7 +184,7 @@ class RcSpec : MeowSpec() {
             assertEquals(
                 "the document edit is what got loaded",
                 "meow-goto-line",
-                Rc.cfg().normal['Q']?.command,
+                Rc.config().normal['Q']?.command,
             )
             assertFalse("the document was flushed to disk", FileDocumentManager.getInstance().isDocumentUnsaved(doc))
         } finally {
@@ -258,7 +258,7 @@ class RcSpec : MeowSpec() {
                 assertEquals(
                     "the unsaved edit is what got loaded",
                     "meow-goto-line",
-                    Rc.cfg().normal['Q']?.command,
+                    Rc.config().normal['Q']?.command,
                 )
                 action.update(e)
                 assertEquals("No Changes in ~/${Rc.FILE_NAME}", e.presentation.text)

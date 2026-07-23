@@ -81,16 +81,16 @@ internal object Overlay {
         ): Boolean = false
 
         override fun paintComponent(g: Graphics) {
-            val g2 = g as Graphics2D
-            g2.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON)
-            g2.font = g2.font.deriveFont(Font.BOLD)
-            val metrics = g2.fontMetrics
+            val graphics = g as Graphics2D
+            graphics.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON)
+            graphics.font = graphics.font.deriveFont(Font.BOLD)
+            val metrics = graphics.fontMetrics
             for ((rect, label) in badges) {
                 val width = metrics.stringWidth(label) + LABEL_PADDING
-                g2.color = Avy.LEAD_BG
-                g2.fillRect(rect.x, rect.y, width, metrics.height)
-                g2.color = Avy.LEAD_FG
-                g2.drawString(label, rect.x + 1, rect.y + metrics.ascent)
+                graphics.color = Avy.LEAD_BG
+                graphics.fillRect(rect.x, rect.y, width, metrics.height)
+                graphics.color = Avy.LEAD_FG
+                graphics.drawString(label, rect.x + 1, rect.y + metrics.ascent)
             }
         }
     }
@@ -100,15 +100,15 @@ internal object Overlay {
     ) : JComponent() {
         override fun paintComponent(g: Graphics) {
             if (editor.isDisposed) return
-            val g2 = g as Graphics2D
-            g2.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON)
+            val graphics = g as Graphics2D
+            graphics.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON)
             val font = editor.colorsScheme.getFont(EditorFontType.BOLD)
-            g2.font = font
-            paintLabels(g2, editor.contentComponent.getFontMetrics(font))
+            graphics.font = font
+            paintLabels(graphics, editor.contentComponent.getFontMetrics(font))
         }
 
         protected abstract fun paintLabels(
-            g2: Graphics2D,
+            graphics: Graphics2D,
             metrics: FontMetrics,
         )
     }

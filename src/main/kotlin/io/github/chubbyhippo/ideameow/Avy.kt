@@ -41,8 +41,8 @@ object Avy {
 
     val commands: Map<String, MeowCommand> =
         mapOf(
-            "avy-goto-char-timer" to MeowCommand { ed, st -> startCharTimer(ed, st) },
-            "avy-goto-line" to MeowCommand { ed, st -> startGotoLine(ed, st) },
+            "avy-goto-char-timer" to MeowCommand { editor, state -> startCharTimer(editor, state) },
+            "avy-goto-line" to MeowCommand { editor, state -> startGotoLine(editor, state) },
         )
 
     enum class Phase { COLLECTING, SELECTING }
@@ -117,19 +117,19 @@ object Avy {
 
     private fun startCharTimer(
         editor: Editor,
-        st: MeowState,
+        state: MeowState,
     ) {
-        cancel(editor, st)
-        st.avy = Session(gotoLine = false)
+        cancel(editor, state)
+        state.avy = Session(gotoLine = false)
     }
 
     private fun startGotoLine(
         editor: Editor,
-        st: MeowState,
+        state: MeowState,
     ) {
-        cancel(editor, st)
+        cancel(editor, state)
         val session = Session(gotoLine = true)
-        st.avy = session
+        state.avy = session
         val doc = editor.document
         val (first, last) = Ide.visibleLines(editor)
         val candidates = (first..last).map { doc.getLineStartOffset(it) }
@@ -138,26 +138,26 @@ object Avy {
 
     fun key(
         editor: Editor,
-        st: MeowState,
+        state: MeowState,
         c: Char,
     ) {
-        val session = st.avy ?: return
+        val session = state.avy ?: return
         when (session.phase) {
-            Phase.COLLECTING -> collect(editor, st, session, c)
-            Phase.SELECTING -> select(editor, st, session, c)
+            Phase.COLLECTING -> collect(editor, state, session, c)
+            Phase.SELECTING -> select(editor, state, session, c)
         }
     }
 
     private fun collect(
         editor: Editor,
-        st: MeowState,
+        state: MeowState,
         session: Session,
         c: Char,
     ) {
         session.input += c
         session.timer?.stop()
         session.timer =
-            Timer(TIMEOUT_MS) { finishInput(editor, st) }.apply {
+            Timer(TIMEOUT_MS) { finishInput(editor, state) }.apply {
                 isRepeats = false
                 start()
             }
@@ -166,21 +166,21 @@ object Avy {
 
     fun finishInput(
         editor: Editor,
-        st: MeowState,
+        state: MeowState,
     ) {
-        val session = st.avy ?: return
+        val session = state.avy ?: return
         if (session.phase != Phase.COLLECTING) return
         session.timer?.stop()
         session.timer = null
         val candidates = matches(editor, session.input)
         when {
             candidates.isEmpty() -> {
-                cancel(editor, st)
+                cancel(editor, state)
                 Ide.hint(editor, "zero candidates")
             }
 
             candidates.size == 1 -> {
-                cancel(editor, st)
+                cancel(editor, state)
                 jump(editor, candidates[0])
             }
 
@@ -203,12 +203,12 @@ object Avy {
 
     private fun select(
         editor: Editor,
-        st: MeowState,
+        state: MeowState,
         session: Session,
         c: Char,
     ) {
         if (session.gotoLine && c.isDigit()) {
-            cancel(editor, st)
+            cancel(editor, state)
             val input =
                 Messages.showInputDialog(
                     editor.project,
@@ -226,7 +226,7 @@ object Avy {
         val node = session.node ?: return
         when (val child = node.children.firstOrNull { it.first == c }?.second) {
             is Leaf -> {
-                cancel(editor, st)
+                cancel(editor, state)
                 jump(editor, child.offset)
             }
 
@@ -258,14 +258,14 @@ object Avy {
 
     fun cancel(
         editor: Editor,
-        st: MeowState,
+        state: MeowState,
     ) {
-        st.avy?.let { session ->
+        state.avy?.let { session ->
             session.timer?.stop()
             session.timer = null
             clearVisuals(editor, session)
         }
-        st.avy = null
+        state.avy = null
     }
 
     private fun matches(
@@ -337,7 +337,7 @@ object Avy {
         private val labels: List<Pair<Int, String>>,
     ) : Overlay.Canvas(editor) {
         override fun paintLabels(
-            g2: Graphics2D,
+            graphics: Graphics2D,
             metrics: FontMetrics,
         ) {
             val text = editor.document.charsSequence
@@ -356,10 +356,10 @@ object Avy {
                     } else {
                         metrics.stringWidth(label) + Overlay.LABEL_PADDING
                     }
-                g2.color = LEAD_BG
-                g2.fillRect(p.x, p.y, width, editor.lineHeight)
-                g2.color = LEAD_FG
-                g2.drawString(label, p.x + 1, p.y + editor.ascent)
+                graphics.color = LEAD_BG
+                graphics.fillRect(p.x, p.y, width, editor.lineHeight)
+                graphics.color = LEAD_FG
+                graphics.drawString(label, p.x + 1, p.y + editor.ascent)
             }
         }
     }

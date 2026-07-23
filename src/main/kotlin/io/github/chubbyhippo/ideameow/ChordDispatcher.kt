@@ -55,10 +55,10 @@ internal object ChordDispatcher {
         if (IdeEventQueue.getInstance().isPopupActive) return false
         val focus = KeyboardFocusManager.getCurrentKeyboardFocusManager().focusOwner ?: return false
         val editor = normalEditorAt(focus) ?: return false
-        val st = Meow.state(editor) ?: return false
+        val state = Meow.state(editor) ?: return false
         swallowNextTyped = true
         WriteIntentReadAction.compute {
-            Engine.dispatch(editor, st, binding)
+            Engine.dispatch(editor, state, binding)
             Meow.updateWidgets()
         }
         return true
@@ -73,9 +73,9 @@ internal object ChordDispatcher {
     }
 
     internal fun claims(
-        st: MeowState,
+        state: MeowState,
         e: KeyEvent,
-    ): Boolean = st.mode == MeowMode.NORMAL && bindingFor(e) != null
+    ): Boolean = state.mode == MeowMode.NORMAL && bindingFor(e) != null
 
     private fun normalEditorAt(focus: Component): Editor? =
         EditorFactory.getInstance().allEditors.firstOrNull {
