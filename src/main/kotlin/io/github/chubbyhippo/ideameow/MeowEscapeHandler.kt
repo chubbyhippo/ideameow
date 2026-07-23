@@ -30,6 +30,7 @@ internal object MeowEscape {
         st.avy != null ||
             st.aceWindow != null ||
             st.aceClick != null ||
+            st.aceResize != null ||
             st.pending != null ||
             Engine.repeatMap != null ||
             st.mode == MeowMode.INSERT ||
@@ -53,6 +54,11 @@ internal object MeowEscape {
         }
         if (st.aceClick != null) {
             AceClick.cancel(st)
+            Meow.updateWidgets()
+            return true
+        }
+        if (st.aceResize != null) {
+            AceResize.cancel(st)
             Meow.updateWidgets()
             return true
         }

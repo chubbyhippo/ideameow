@@ -37,6 +37,7 @@ object Engine {
             putAll(Avy.commands)
             putAll(AceWindow.commands)
             putAll(AceClick.commands)
+            putAll(AceResize.commands)
             put("meow-negative-argument", MeowCommand { _, st -> st.negative = true })
             put("negative-argument", MeowCommand { _, st -> st.negative = true })
             put("meow-quit", MeowCommand { ed, _ -> Ide.act(ed, "CloseContent") })
@@ -58,35 +59,49 @@ object Engine {
         WhichKey.scheduleKeypad(editor, "")
     }
 
+    private fun routeSession(
+        editor: Editor,
+        st: MeowState,
+        c: Char,
+    ): Boolean {
+        when {
+            st.mode == MeowMode.KEYPAD -> {
+                Keypad.key(editor, st, c)
+                st.lastCommand = "keypad"
+            }
+
+            st.avy != null -> {
+                Avy.key(editor, st, c)
+                st.lastCommand = "avy"
+            }
+
+            st.aceWindow != null -> {
+                AceWindow.key(editor, st, c)
+                st.lastCommand = "ace-window"
+            }
+
+            st.aceClick != null -> {
+                AceClick.key(editor, st, c)
+                st.lastCommand = "ace-click"
+            }
+
+            st.aceResize != null -> {
+                AceResize.key(editor, st, c)
+                st.lastCommand = "ace-resize"
+            }
+
+            else -> return false
+        }
+        Meow.updateWidgets()
+        return true
+    }
+
     fun handleChar(
         editor: Editor,
         c: Char,
     ): Boolean {
         val st = Meow.state(editor) ?: return false
-        if (st.mode == MeowMode.KEYPAD) {
-            Keypad.key(editor, st, c)
-            st.lastCommand = "keypad"
-            Meow.updateWidgets()
-            return true
-        }
-        if (st.avy != null) {
-            Avy.key(editor, st, c)
-            st.lastCommand = "avy"
-            Meow.updateWidgets()
-            return true
-        }
-        if (st.aceWindow != null) {
-            AceWindow.key(editor, st, c)
-            st.lastCommand = "ace-window"
-            Meow.updateWidgets()
-            return true
-        }
-        if (st.aceClick != null) {
-            AceClick.key(editor, st, c)
-            st.lastCommand = "ace-click"
-            Meow.updateWidgets()
-            return true
-        }
+        if (routeSession(editor, st, c)) return true
         if (st.mode == MeowMode.INSERT) return false
 
         WhichKey.hide()
