@@ -81,6 +81,9 @@ class MeowState {
 
     var aceResize: AceResize.Session? = null
 
+    val hasActiveOverlaySession: Boolean
+        get() = avy != null || aceWindow != null || aceClick != null || aceResize != null
+
     fun takeCount(default: Int = 1): Int {
         val magnitude = if (pendingCount == 0) default else pendingCount
         val signed = if (negative) -magnitude else magnitude

@@ -124,12 +124,7 @@ internal object SpaceLeader {
         }
     }
 
-    private fun wantsKeys(state: MeowState) =
-        state.mode == MeowMode.KEYPAD ||
-            state.avy != null ||
-            state.aceWindow != null ||
-            state.aceClick != null ||
-            state.aceResize != null
+    private fun wantsKeys(state: MeowState) = state.mode == MeowMode.KEYPAD || state.hasActiveOverlaySession
 
     internal fun nativeSpace(focus: Component): Boolean {
         var component: Component? = focus

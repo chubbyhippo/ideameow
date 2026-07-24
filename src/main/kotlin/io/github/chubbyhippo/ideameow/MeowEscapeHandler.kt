@@ -27,10 +27,7 @@ internal object MeowEscape {
         editor: Editor,
         state: MeowState,
     ): Boolean =
-        state.avy != null ||
-            state.aceWindow != null ||
-            state.aceClick != null ||
-            state.aceResize != null ||
+        state.hasActiveOverlaySession ||
             state.pending != null ||
             Engine.repeatMap != null ||
             state.mode == MeowMode.INSERT ||

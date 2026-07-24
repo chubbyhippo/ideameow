@@ -266,7 +266,13 @@ private fun parseSet(
     }
 }
 
-private val COLOR_SET_KEYS = setOf("overlay-color", "overlay-text-color", "expand-hint-color", "grab-color")
+private val COLOR_SETTERS: Map<String, (Rc.Config, Color) -> Unit> =
+    mapOf(
+        "overlay-color" to { config, color -> config.overlayColor = color },
+        "overlay-text-color" to { config, color -> config.overlayTextColor = color },
+        "expand-hint-color" to { config, color -> config.expandHintColor = color },
+        "grab-color" to { config, color -> config.grabColor = color },
+    )
 
 private val HEX_COLOR_REGEX = Regex("[0-9a-fA-F]{6}")
 
@@ -276,19 +282,14 @@ private fun parseSetColor(
     err: (String) -> Unit,
 ) {
     val key = rest.substringBefore("=").trim()
-    if (key !in COLOR_SET_KEYS) return
+    val setColor = COLOR_SETTERS[key] ?: return
     val raw = rest.substringAfter("=", "").trim()
     val color = parseHexColor(raw)
     if (color == null) {
         err("set $key: invalid color '$raw' (expected #RRGGBB)")
         return
     }
-    when (key) {
-        "overlay-color" -> config.overlayColor = color
-        "overlay-text-color" -> config.overlayTextColor = color
-        "expand-hint-color" -> config.expandHintColor = color
-        "grab-color" -> config.grabColor = color
-    }
+    setColor(config, color)
 }
 
 private fun parseHexColor(text: String): Color? {

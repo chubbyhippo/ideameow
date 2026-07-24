@@ -115,12 +115,6 @@ internal object Search {
             last = current
             current = current.next()
         }
-        if (last != null) return last
-        var tail: MatchResult? = current
-        while (true) {
-            val next = tail?.next() ?: break
-            tail = next
-        }
-        return tail
+        return last ?: generateSequence(current) { it.next() }.lastOrNull()
     }
 }

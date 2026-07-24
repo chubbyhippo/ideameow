@@ -50,15 +50,7 @@ internal object Overlay {
     fun badge(
         layer: JLayeredPane,
         badges: List<Pair<Rectangle, String>>,
-    ): JComponent {
-        val canvas = BadgeCanvas(badges)
-        canvas.isOpaque = false
-        canvas.bounds = Rectangle(0, 0, layer.width, layer.height)
-        layer.setLayer(canvas, JLayeredPane.DRAG_LAYER)
-        layer.add(canvas)
-        layer.repaint()
-        return canvas
-    }
+    ): JComponent = layerCanvas(layer, BadgeCanvas(badges))
 
     fun layerCanvas(
         layer: JLayeredPane,
