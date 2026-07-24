@@ -48,8 +48,13 @@ internal object RcFileState {
             config.keypad,
             config.keypadDesc,
             config.repeat,
+            config.chords,
             config.whichKey,
             config.whichKeyDelayMs,
+            config.overlayColor,
+            config.overlayTextColor,
+            config.expandHintColor,
+            config.grabColor,
         ).hashCode()
 
     fun saveParsed(config: Rc.Config) {

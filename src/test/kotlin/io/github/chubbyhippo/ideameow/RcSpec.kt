@@ -252,6 +252,26 @@ class RcSpec : MeowSpec() {
         }
     }
 
+    fun `test given a color-only or chord-only rc edit then the reload button sees a change`() {
+        val home = Files.createTempDirectory("meow-home").toFile()
+        val oldHome = System.getProperty("user.home")
+        System.setProperty("user.home", home.path)
+        try {
+            Rc.rcFile().writeText("nmap Z ,b\n")
+            Rc.load()
+            val vf = LocalFileSystem.getInstance().refreshAndFindFileByIoFile(Rc.rcFile())!!
+            val doc = FileDocumentManager.getInstance().getDocument(vf)!!
+            WriteCommandAction.runWriteCommandAction(project) { doc.setText("nmap Z ,b\nset overlay-color=#123456\n") }
+            assertFalse("an overlay-color change demands a reload", RcFileState.equalTo(doc))
+            WriteCommandAction.runWriteCommandAction(project) { doc.setText("nmap Z ,b\ncmap alt shift COMMA meow-line\n") }
+            assertFalse("a chord change demands a reload", RcFileState.equalTo(doc))
+        } finally {
+            System.setProperty("user.home", oldHome)
+            Rc.setForTest(Rc.Config())
+            home.deleteRecursively()
+        }
+    }
+
     fun `test given a non-rc editor then the floating reload action is hidden`() {
         given("word", "ab<caret>cd")
         val action = ReloadRcFloatingAction()
