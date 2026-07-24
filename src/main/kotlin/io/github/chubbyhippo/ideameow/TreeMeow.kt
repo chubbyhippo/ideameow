@@ -45,30 +45,30 @@ object TreeMeow {
         )
 
     fun boundChars(): Set<Char> =
-        (Rc.defaults().motion.keys + Rc.config().motion.keys).filterTo(mutableSetOf()) { c ->
-            (Rc.config().motion[c] ?: Rc.defaults().motion[c])?.command != "ignore"
+        (Rc.defaults().motion.keys + Rc.config().motion.keys).filterTo(mutableSetOf()) { char ->
+            (Rc.config().motion[char] ?: Rc.defaults().motion[char])?.command != "ignore"
         }
 
     fun dispatch(
         tree: JTree,
-        c: Char,
+        char: Char,
         noremap: Boolean = false,
         depth: Int = 0,
     ) {
-        val b = (if (noremap) null else Rc.config().motion[c]) ?: Rc.defaults().motion[c] ?: return
-        val command = b.command
+        val binding = (if (noremap) null else Rc.config().motion[char]) ?: Rc.defaults().motion[char] ?: return
+        val command = binding.command
         if (command != null) {
             SWING_MOTIONS[command]?.let { swing(tree, it) }
             return
         }
-        val actionId = b.action
+        val actionId = binding.action
         if (actionId != null) {
             Ide.actOn(tree, actionId)
             return
         }
-        val keys = b.keys ?: return
+        val keys = binding.keys ?: return
         if (depth >= Rc.MAX_MAPPING_DEPTH) return
-        for (k in keys) dispatch(tree, k, noremap || !b.recursive, depth + 1)
+        for (key in keys) dispatch(tree, key, noremap || !binding.recursive, depth + 1)
     }
 
     private fun swing(
@@ -88,26 +88,26 @@ object TreeMeow {
 
             override fun getActionUpdateThread() = ActionUpdateThread.BGT
 
-            override fun update(e: AnActionEvent) {
-                e.presentation.isEnabled =
-                    e.getData(PlatformDataKeys.SPEED_SEARCH_TEXT) == null &&
-                    e.getData(PlatformDataKeys.CONTEXT_COMPONENT) is JTree
+            override fun update(event: AnActionEvent) {
+                event.presentation.isEnabled =
+                    event.getData(PlatformDataKeys.SPEED_SEARCH_TEXT) == null &&
+                    event.getData(PlatformDataKeys.CONTEXT_COMPONENT) is JTree
             }
 
-            override fun actionPerformed(e: AnActionEvent) {
-                val tree = e.getData(PlatformDataKeys.CONTEXT_COMPONENT) as? JTree ?: return
-                val c = (e.inputEvent as? KeyEvent)?.keyChar ?: return
-                if (c == KeyEvent.CHAR_UNDEFINED) return
-                dispatch(tree, c)
+            override fun actionPerformed(event: AnActionEvent) {
+                val tree = event.getData(PlatformDataKeys.CONTEXT_COMPONENT) as? JTree ?: return
+                val char = (event.inputEvent as? KeyEvent)?.keyChar ?: return
+                if (char == KeyEvent.CHAR_UNDEFINED) return
+                dispatch(tree, char)
             }
         }
 
     private val installed = AtomicBoolean()
 
     private val focusListener =
-        PropertyChangeListener { evt ->
-            (evt.oldValue as? JTree)?.let { dispatcher.unregisterCustomShortcutSet(it) }
-            (evt.newValue as? JTree)?.let { register(it) }
+        PropertyChangeListener { event ->
+            (event.oldValue as? JTree)?.let { dispatcher.unregisterCustomShortcutSet(it) }
+            (event.newValue as? JTree)?.let { register(it) }
         }
 
     fun install() {
@@ -119,9 +119,9 @@ object TreeMeow {
 
     fun uninstall() {
         if (!installed.compareAndSet(true, false)) return
-        val kfm = KeyboardFocusManager.getCurrentKeyboardFocusManager()
-        kfm.removePropertyChangeListener("focusOwner", focusListener)
-        (kfm.focusOwner as? JTree)?.let { dispatcher.unregisterCustomShortcutSet(it) }
+        val keyboardFocusManager = KeyboardFocusManager.getCurrentKeyboardFocusManager()
+        keyboardFocusManager.removePropertyChangeListener("focusOwner", focusListener)
+        (keyboardFocusManager.focusOwner as? JTree)?.let { dispatcher.unregisterCustomShortcutSet(it) }
     }
 
     fun refresh() {

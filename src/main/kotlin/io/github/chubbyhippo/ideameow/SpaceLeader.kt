@@ -72,28 +72,30 @@ internal object SpaceLeader {
         routed = Routed(editor, state, surface)
     }
 
-    internal fun dispatch(e: AWTEvent): Boolean {
-        if (e !is KeyEvent || e.isConsumed) return false
-        if (e.id == KeyEvent.KEY_TYPED && swallowNextTyped) {
+    internal fun dispatch(event: AWTEvent): Boolean {
+        if (event !is KeyEvent || event.isConsumed) return false
+        if (event.id == KeyEvent.KEY_TYPED && swallowNextTyped) {
             swallowNextTyped = false
             return true
         }
-        val r = routed
-        if (r == null) return armOnSpace(e)
-        if (r.editor.isDisposed || !wantsKeys(r.state)) {
+        val active = routed
+        if (active == null) return armOnSpace(event)
+        if (active.editor.isDisposed || !wantsKeys(active.state)) {
             reset()
             return false
         }
-        return when (e.id) {
-            KeyEvent.KEY_PRESSED -> routePressed(r, e)
-            KeyEvent.KEY_TYPED -> routeTyped(r, e)
+        return when (event.id) {
+            KeyEvent.KEY_PRESSED -> routePressed(active, event)
+            KeyEvent.KEY_TYPED -> routeTyped(active, event)
             else -> false
         }
     }
 
     @Suppress("UnstableApiUsage")
-    private fun armOnSpace(e: KeyEvent): Boolean {
-        if (e.id != KeyEvent.KEY_PRESSED || e.keyCode != KeyEvent.VK_SPACE || e.modifiersEx != 0) return false
+    private fun armOnSpace(event: KeyEvent): Boolean {
+        if (event.id != KeyEvent.KEY_PRESSED || event.keyCode != KeyEvent.VK_SPACE || event.modifiersEx != 0) {
+            return false
+        }
         if (IdeEventQueue.getInstance().isPopupActive) return false
         val focus = KeyboardFocusManager.getCurrentKeyboardFocusManager().focusOwner ?: return false
         if (blocksArming(menuOpen(), focus)) return false
@@ -130,32 +132,32 @@ internal object SpaceLeader {
             state.aceResize != null
 
     internal fun nativeSpace(focus: Component): Boolean {
-        var c: Component? = focus
-        while (c != null && c !is Window) {
+        var component: Component? = focus
+        while (component != null && component !is Window) {
             when {
-                c is JTextComponent -> return true
+                component is JTextComponent -> return true
 
-                c is AbstractButton -> return true
+                component is AbstractButton -> return true
 
-                c is JComboBox<*> -> return true
+                component is JComboBox<*> -> return true
 
-                c is CheckBoxList<*> -> return true
+                component is CheckBoxList<*> -> return true
 
-                nativeSpaceTreeOrTerminal(c) -> return true
+                nativeSpaceTreeOrTerminal(component) -> return true
             }
-            c = c.parent
+            component = component.parent
         }
         return false
     }
 
-    private fun nativeSpaceTreeOrTerminal(c: Component): Boolean =
-        c.javaClass.name.startsWith(TERMINAL_PACKAGE) || treeConsumesSpace(c.javaClass)
+    private fun nativeSpaceTreeOrTerminal(component: Component): Boolean =
+        component.javaClass.name.startsWith(TERMINAL_PACKAGE) || treeConsumesSpace(component.javaClass)
 
     internal fun treeConsumesSpace(start: Class<*>): Boolean {
-        var k: Class<*>? = start
-        while (k != null) {
-            if (k.name in SPACE_TREES) return true
-            k = k.superclass
+        var current: Class<*>? = start
+        while (current != null) {
+            if (current.name in SPACE_TREES) return true
+            current = current.superclass
         }
         return false
     }
@@ -184,29 +186,29 @@ internal object SpaceLeader {
 
     @Suppress("UnstableApiUsage")
     private fun routePressed(
-        r: Routed,
-        e: KeyEvent,
+        active: Routed,
+        event: KeyEvent,
     ): Boolean {
-        if (e.keyCode == KeyEvent.VK_ESCAPE && e.modifiersEx == 0) {
+        if (event.keyCode == KeyEvent.VK_ESCAPE && event.modifiersEx == 0) {
             swallowNextTyped = true
-            WriteIntentReadAction.compute { MeowEscape.consume(r.editor, r.state) }
+            WriteIntentReadAction.compute { MeowEscape.consume(active.editor, active.state) }
             reset()
             return true
         }
-        return e.keyChar != KeyEvent.CHAR_UNDEFINED &&
-            (e.modifiersEx == 0 || e.modifiersEx == InputEvent.SHIFT_DOWN_MASK)
+        return event.keyChar != KeyEvent.CHAR_UNDEFINED &&
+            (event.modifiersEx == 0 || event.modifiersEx == InputEvent.SHIFT_DOWN_MASK)
     }
 
     @Suppress("UnstableApiUsage")
     private fun routeTyped(
-        r: Routed,
-        e: KeyEvent,
+        active: Routed,
+        event: KeyEvent,
     ): Boolean {
-        if (e.keyChar == KeyEvent.CHAR_UNDEFINED) return false
+        if (event.keyChar == KeyEvent.CHAR_UNDEFINED) return false
         val chord = InputEvent.ALT_DOWN_MASK or InputEvent.CTRL_DOWN_MASK or InputEvent.META_DOWN_MASK
-        if (e.modifiersEx and chord != 0) return false
-        WriteIntentReadAction.compute { Engine.handleChar(r.editor, e.keyChar) }
-        if (!wantsKeys(r.state)) reset()
+        if (event.modifiersEx and chord != 0) return false
+        WriteIntentReadAction.compute { Engine.handleChar(active.editor, event.keyChar) }
+        if (!wantsKeys(active.state)) reset()
         return true
     }
 }

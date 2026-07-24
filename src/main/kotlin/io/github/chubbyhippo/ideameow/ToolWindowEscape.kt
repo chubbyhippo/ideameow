@@ -70,35 +70,35 @@ object ToolWindowEscape {
         }
 
     @Suppress("UnstableApiUsage")
-    private fun dispatch(e: AWTEvent): Boolean {
-        if (e !is KeyEvent || e.isConsumed) return false
-        if (e.id == KeyEvent.KEY_TYPED) return swallowTypedEscape(e)
-        if (e.id != KeyEvent.KEY_PRESSED || e.keyCode != KeyEvent.VK_ESCAPE) return false
-        return WriteIntentReadAction.compute { handleEscapePress(e) }
+    private fun dispatch(event: AWTEvent): Boolean {
+        if (event !is KeyEvent || event.isConsumed) return false
+        if (event.id == KeyEvent.KEY_TYPED) return swallowTypedEscape(event)
+        if (event.id != KeyEvent.KEY_PRESSED || event.keyCode != KeyEvent.VK_ESCAPE) return false
+        return WriteIntentReadAction.compute { handleEscapePress(event) }
     }
 
-    private fun swallowTypedEscape(e: KeyEvent): Boolean {
-        if (e.keyChar.code != ESC_CHAR || e.`when` > swallowTypedUntil) return false
+    private fun swallowTypedEscape(event: KeyEvent): Boolean {
+        if (event.keyChar.code != ESC_CHAR || event.`when` > swallowTypedUntil) return false
         swallowTypedUntil = 0L
         return true
     }
 
-    private fun handleEscapePress(e: KeyEvent): Boolean {
-        if (e.modifiersEx != 0 || IdeEventQueue.getInstance().isPopupActive) {
+    private fun handleEscapePress(event: KeyEvent): Boolean {
+        if (event.modifiersEx != 0 || IdeEventQueue.getInstance().isPopupActive) {
             reset()
             return false
         }
-        val component = e.component ?: return false
+        val component = event.component ?: return false
         val context = DataManager.getInstance().getDataContext(component)
-        if (consumeForMeow(component, context, e)) return true
+        if (consumeForMeow(component, context, event)) return true
         val project = CommonDataKeys.PROJECT.getData(context)
         if (project == null) {
             reset()
             return false
         }
         val toolWindows = ToolWindowManager.getInstance(project)
-        if (!onEscape(toolWindows.activeToolWindowId, e.`when`)) return false
-        swallowTypedUntil = e.`when` + TYPED_ESC_SWALLOW_MS
+        if (!onEscape(toolWindows.activeToolWindowId, event.`when`)) return false
+        swallowTypedUntil = event.`when` + TYPED_ESC_SWALLOW_MS
         toolWindows.activateEditorComponent()
         return true
     }
@@ -106,7 +106,7 @@ object ToolWindowEscape {
     private fun consumeForMeow(
         component: Component,
         context: DataContext,
-        e: KeyEvent,
+        event: KeyEvent,
     ): Boolean {
         val (editor, state) = focusedMeowEditor(component, context) ?: return false
         if (LookupManager.getActiveLookup(editor) != null) return false
@@ -118,7 +118,7 @@ object ToolWindowEscape {
             }
         if (!consumed) return false
         reset()
-        swallowTypedUntil = e.`when` + TYPED_ESC_SWALLOW_MS
+        swallowTypedUntil = event.`when` + TYPED_ESC_SWALLOW_MS
         return true
     }
 
@@ -138,8 +138,8 @@ object ToolWindowEscape {
 
     private fun isWithin(
         ancestor: Component,
-        c: Component?,
-    ): Boolean = c != null && (ancestor === c || SwingUtilities.isDescendingFrom(c, ancestor))
+        candidate: Component?,
+    ): Boolean = candidate != null && (ancestor === candidate || SwingUtilities.isDescendingFrom(candidate, ancestor))
 }
 
 @Service(Service.Level.APP)

@@ -82,10 +82,10 @@ class MeowState {
     var aceResize: AceResize.Session? = null
 
     fun takeCount(default: Int = 1): Int {
-        val n = if (pendingCount == 0) default else pendingCount
-        val r = if (negative) -n else n
+        val magnitude = if (pendingCount == 0) default else pendingCount
+        val signed = if (negative) -magnitude else magnitude
         pendingCount = 0
         negative = false
-        return r
+        return signed
     }
 }

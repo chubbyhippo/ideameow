@@ -28,9 +28,9 @@ internal object AceResizeArrows {
             override fun dispatch(e: AWTEvent) = this@AceResizeArrows.dispatch(e)
         }
 
-    internal fun arrowDir(e: AWTEvent): AceResize.Dir? {
-        if (e !is KeyEvent || e.id != KeyEvent.KEY_PRESSED || e.modifiersEx != 0) return null
-        return when (e.keyCode) {
+    internal fun arrowDir(event: AWTEvent): AceResize.Dir? {
+        if (event !is KeyEvent || event.id != KeyEvent.KEY_PRESSED || event.modifiersEx != 0) return null
+        return when (event.keyCode) {
             KeyEvent.VK_LEFT -> AceResize.Dir.LEFT
             KeyEvent.VK_RIGHT -> AceResize.Dir.RIGHT
             KeyEvent.VK_DOWN -> AceResize.Dir.DOWN
@@ -40,8 +40,8 @@ internal object AceResizeArrows {
     }
 
     @Suppress("UnstableApiUsage")
-    private fun dispatch(e: AWTEvent): Boolean {
-        val dir = arrowDir(e) ?: return false
+    private fun dispatch(event: AWTEvent): Boolean {
+        val dir = arrowDir(event) ?: return false
         val state = holdState()
         if (state != null) WriteIntentReadAction.compute { AceResize.holdArrow(state, dir) }
         return state != null

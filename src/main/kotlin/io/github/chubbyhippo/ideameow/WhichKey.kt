@@ -63,18 +63,18 @@ object WhichKey {
     fun scheduleThings(editor: Editor) = schedule(editor) { THINGS }
 
     fun keypadRows(buffer: String): List<Pair<String, String>> {
-        val descs = Rc.keypadDescs()
+        val descriptions = Rc.keypadDescs()
         val rows = sortedMapOf<String, String>()
-        for ((seq, b) in Rc.keypad()) {
+        for ((seq, binding) in Rc.keypad()) {
             if (!seq.startsWith(buffer) || seq == buffer) continue
             val child = buffer + seq[buffer.length]
             val label =
                 if (seq == child) {
-                    descs[seq] ?: b.action ?: b.command ?: b.keys.orEmpty()
+                    descriptions[seq] ?: binding.action ?: binding.command ?: binding.keys.orEmpty()
                 } else {
-                    descs[child] ?: "+more"
+                    descriptions[child] ?: "+more"
                 }
-            if (child !in rows || descs.containsKey(child)) rows[child] = label
+            if (child !in rows || descriptions.containsKey(child)) rows[child] = label
         }
         return rows.map { (child, label) ->
             val key = child.last()
@@ -114,7 +114,7 @@ object WhichKey {
                 JBLabel(gridHtml(host, rows)).apply {
                     border = JBUI.Borders.empty(6, 10)
                 }
-            val p =
+            val createdPopup =
                 JBPopupFactory
                     .getInstance()
                     .createComponentPopupBuilder(label, null)
@@ -123,10 +123,10 @@ object WhichKey {
                     .setCancelKeyEnabled(false)
                     .setCancelOnClickOutside(true)
                     .createPopup()
-            popup = p
-            val pref = label.preferredSize
-            val y = (host.height - pref.height - JBUI.scale(BOTTOM_INSET)).coerceAtLeast(0)
-            p.show(RelativePoint(host, Point(JBUI.scale(LEFT_INSET), y)))
+            popup = createdPopup
+            val preferred = label.preferredSize
+            val y = (host.height - preferred.height - JBUI.scale(BOTTOM_INSET)).coerceAtLeast(0)
+            createdPopup.show(RelativePoint(host, Point(JBUI.scale(LEFT_INSET), y)))
         }
     }
 
@@ -135,20 +135,21 @@ object WhichKey {
         rows: List<Pair<String, String>>,
     ): String {
         val metrics = host.getFontMetrics(JBFont.label())
-        val entryWidth = rows.maxOf { (k, d) -> metrics.stringWidth(k + SEPARATOR + d) } + JBUI.scale(COLUMN_GAP)
+        val entryWidth =
+            rows.maxOf { (key, desc) -> metrics.stringWidth(key + SEPARATOR + desc) } + JBUI.scale(COLUMN_GAP)
         val available = (host.width - JBUI.scale(PANEL_MARGIN)).coerceAtLeast(entryWidth)
         val cols = (available / entryWidth).coerceIn(1, rows.size)
         val perColumn = (rows.size + cols - 1) / cols
         return buildString {
             append("<html><table cellpadding='1' cellspacing='0'>")
-            for (r in 0 until perColumn) {
+            for (row in 0 until perColumn) {
                 append("<tr>")
-                for (c in 0 until cols) {
-                    val i = c * perColumn + r
-                    if (i < rows.size) {
-                        val (k, d) = rows[i]
-                        append("<td align='right'><b>").append(esc(k)).append("</b></td>")
-                        append("<td>").append(SEPARATOR).append(esc(d)).append("</td>")
+                for (col in 0 until cols) {
+                    val index = col * perColumn + row
+                    if (index < rows.size) {
+                        val (key, desc) = rows[index]
+                        append("<td align='right'><b>").append(esc(key)).append("</b></td>")
+                        append("<td>").append(SEPARATOR).append(esc(desc)).append("</td>")
                         append("<td width='").append(JBUI.scale(18)).append("'></td>")
                     }
                 }
@@ -168,5 +169,5 @@ object WhichKey {
         popup = null
     }
 
-    private fun esc(s: String) = s.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+    private fun esc(text: String) = text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
 }

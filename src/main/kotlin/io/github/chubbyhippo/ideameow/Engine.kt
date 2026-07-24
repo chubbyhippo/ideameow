@@ -62,31 +62,31 @@ object Engine {
     private fun routeSession(
         editor: Editor,
         state: MeowState,
-        c: Char,
+        key: Char,
     ): Boolean {
         when {
             state.mode == MeowMode.KEYPAD -> {
-                Keypad.key(editor, state, c)
+                Keypad.key(editor, state, key)
                 state.lastCommand = "keypad"
             }
 
             state.avy != null -> {
-                Avy.key(editor, state, c)
+                Avy.key(editor, state, key)
                 state.lastCommand = "avy"
             }
 
             state.aceWindow != null -> {
-                AceWindow.key(editor, state, c)
+                AceWindow.key(editor, state, key)
                 state.lastCommand = "ace-window"
             }
 
             state.aceClick != null -> {
-                AceClick.key(editor, state, c)
+                AceClick.key(editor, state, key)
                 state.lastCommand = "ace-click"
             }
 
             state.aceResize != null -> {
-                AceResize.key(editor, state, c)
+                AceResize.key(editor, state, key)
                 state.lastCommand = "ace-resize"
             }
 
@@ -98,80 +98,95 @@ object Engine {
 
     fun handleChar(
         editor: Editor,
-        c: Char,
+        key: Char,
     ): Boolean {
         val state = Meow.state(editor) ?: return false
-        if (routeSession(editor, state, c)) return true
+        if (routeSession(editor, state, key)) return true
         if (state.mode == MeowMode.INSERT) return false
 
         WhichKey.hide()
         ExpandHints.clear(state)
 
-        val pend = state.pending
-        val repeatBinding = if (pend == null) repeatMap?.get(c) else null
-        if (pend == null && repeatBinding == null) repeatMap = null
-        val motion = state.mode == MeowMode.MOTION
-        val binding = if (pend == null) repeatBinding ?: resolve(state, c, motion) else null
-        val cmd = binding?.command
+        val pending = state.pending
+        val binding = resolveBinding(state, key, pending)
+        val command = binding?.command
 
-        if (!state.replaying && cmd != "repeat") {
-            if (pend == null && state.pendingCount == 0 && !state.negative) state.unitKeys.clear()
-            state.unitKeys.add(c)
-        }
-
-        if (pend != null) {
-            state.pending = null
-            resolvePending(editor, state, pend, c)
-            state.lastCommand = "pending"
-        } else if (binding != null) {
-            runBinding(editor, state, binding)
-            state.lastCommand = binding.command ?: binding.action ?: state.lastCommand
-        } else {
-            state.lastCommand = null
-        }
-
-        val isPrefixCommand =
-            state.pending != null ||
-                (state.pendingCount != 0 && cmd?.startsWith("meow-expand-") == true) ||
-                (state.negative && cmd == "meow-negative-argument") ||
-                cmd == "meow-keypad"
-        if (!state.replaying && cmd != "repeat" && !isPrefixCommand) state.lastKeys = state.unitKeys.toList()
+        recordUnitKey(state, key, command, pending)
+        executeStep(editor, state, pending, binding, key)
+        recordLastKeys(state, command)
 
         Meow.updateWidgets()
         return true
     }
 
+    private fun resolveBinding(
+        state: MeowState,
+        key: Char,
+        pending: Pending?,
+    ): Rc.Binding? {
+        if (pending != null) return null
+        val repeatBinding = repeatMap?.get(key)
+        if (repeatBinding == null) repeatMap = null
+        val motion = state.mode == MeowMode.MOTION
+        return repeatBinding ?: resolve(state, key, motion)
+    }
+
+    private fun executeStep(
+        editor: Editor,
+        state: MeowState,
+        pending: Pending?,
+        binding: Rc.Binding?,
+        key: Char,
+    ) {
+        when {
+            pending != null -> {
+                state.pending = null
+                resolvePending(editor, state, pending, key)
+                state.lastCommand = "pending"
+            }
+
+            binding != null -> {
+                runBinding(editor, state, binding)
+                state.lastCommand = binding.command ?: binding.action ?: state.lastCommand
+            }
+
+            else -> {
+                state.lastCommand = null
+            }
+        }
+    }
+
     private fun resolve(
         state: MeowState,
-        c: Char,
+        key: Char,
         motion: Boolean,
     ): Rc.Binding? {
-        if (c == ' ') return KEYPAD_BINDING
+        if (key == ' ') return KEYPAD_BINDING
         if (state.noremapDepth == 0) {
             val config = Rc.config()
-            (if (motion) config.motion[c] else config.normal[c])?.let { return it }
+            (if (motion) config.motion[key] else config.normal[key])?.let { return it }
         }
-        val d = Rc.defaults()
-        return if (motion) d.motion[c] else d.normal[c]
+        val defaults = Rc.defaults()
+        return if (motion) defaults.motion[key] else defaults.normal[key]
     }
 
     private fun resolvePending(
         editor: Editor,
         state: MeowState,
-        p: Pending,
-        c: Char,
+        pending: Pending,
+        key: Char,
     ) {
-        when (p) {
+        when (pending) {
             Pending.FIND -> {
-                Motions.findTill(editor, state, c, till = false)
+                Motions.findTill(editor, state, key, till = false)
             }
 
             Pending.TILL -> {
-                Motions.findTill(editor, state, c, till = true)
+                Motions.findTill(editor, state, key, till = true)
             }
 
             Pending.INNER, Pending.BOUNDS, Pending.BEGIN, Pending.END -> {
-                Structures.thingSelect(editor, state, p, c)
+                Structures.thingSelect(editor, state, pending, key)
             }
         }
     }
@@ -184,7 +199,7 @@ object Engine {
         if (keys.isEmpty()) return
         state.replaying = true
         try {
-            for (k in keys) handleChar(editor, k)
+            for (key in keys) handleChar(editor, key)
         } finally {
             state.replaying = false
         }
@@ -193,33 +208,33 @@ object Engine {
     fun runBinding(
         editor: Editor,
         state: MeowState,
-        b: Rc.Binding,
+        binding: Rc.Binding,
     ) {
-        dispatch(editor, state, b)
-        val map = Rc.repeatMapFor(b) ?: return
+        dispatch(editor, state, binding)
+        val repeatKeymap = Rc.repeatMapFor(binding) ?: return
         if (repeatMap == null) {
-            Ide.hint(editor, "Repeat with ${map.keys.joinToString(", ")}")
+            Ide.hint(editor, "Repeat with ${repeatKeymap.keys.joinToString(", ")}")
         }
-        repeatMap = map
+        repeatMap = repeatKeymap
     }
 
     internal fun dispatch(
         editor: Editor,
         state: MeowState,
-        b: Rc.Binding,
+        binding: Rc.Binding,
     ) {
-        val command = b.command
+        val command = binding.command
         if (command != null) {
             COMMANDS[command]?.invoke(editor, state)
                 ?: Ide.hint(editor, "Unknown meow command: $command")
             return
         }
-        val actionId = b.action
+        val actionId = binding.action
         if (actionId != null) {
             Ide.act(editor, actionId)
             return
         }
-        val keys = b.keys ?: return
+        val keys = binding.keys ?: return
         if (state.replayDepth >= Rc.MAX_MAPPING_DEPTH) {
             Ide.hint(editor, "ideameow: mapping recursion is too deep")
             return
@@ -227,13 +242,42 @@ object Engine {
         val savedReplaying = state.replaying
         state.replaying = true
         state.replayDepth++
-        if (!b.recursive) state.noremapDepth++
+        if (!binding.recursive) state.noremapDepth++
         try {
-            for (k in keys) handleChar(editor, k)
+            for (key in keys) handleChar(editor, key)
         } finally {
-            if (!b.recursive) state.noremapDepth--
+            if (!binding.recursive) state.noremapDepth--
             state.replayDepth--
             state.replaying = savedReplaying
         }
     }
 }
+
+private fun recordUnitKey(
+    state: MeowState,
+    key: Char,
+    command: String?,
+    pending: Pending?,
+) {
+    if (state.replaying || command == "repeat") return
+    if (pending == null && state.pendingCount == 0 && !state.negative) state.unitKeys.clear()
+    state.unitKeys.add(key)
+}
+
+private fun recordLastKeys(
+    state: MeowState,
+    command: String?,
+) {
+    if (!state.replaying && command != "repeat" && !isPrefixCommand(state, command)) {
+        state.lastKeys = state.unitKeys.toList()
+    }
+}
+
+private fun isPrefixCommand(
+    state: MeowState,
+    command: String?,
+): Boolean =
+    state.pending != null ||
+        (state.pendingCount != 0 && command?.startsWith("meow-expand-") == true) ||
+        (state.negative && command == "meow-negative-argument") ||
+        command == "meow-keypad"

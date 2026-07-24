@@ -26,24 +26,24 @@ import java.io.File
 class ReloadRcAction :
     AnAction(),
     DumbAware {
-    override fun actionPerformed(e: AnActionEvent) = RcReload.perform()
+    override fun actionPerformed(event: AnActionEvent) = RcReload.perform()
 }
 
 class EditRcAction :
     AnAction(),
     DumbAware {
-    override fun actionPerformed(e: AnActionEvent) {
-        val project = e.project ?: return
-        val f = Rc.rcFile()
-        seedIfMissing(f)
-        val vf = LocalFileSystem.getInstance().refreshAndFindFileByIoFile(f) ?: return
-        OpenFileDescriptor(project, vf).navigate(true)
+    override fun actionPerformed(event: AnActionEvent) {
+        val project = event.project ?: return
+        val file = Rc.rcFile()
+        seedIfMissing(file)
+        val virtualFile = LocalFileSystem.getInstance().refreshAndFindFileByIoFile(file) ?: return
+        OpenFileDescriptor(project, virtualFile).navigate(true)
     }
 
     companion object {
-        fun seedIfMissing(f: File) {
-            if (f.exists()) return
-            f.writeText(
+        fun seedIfMissing(file: File) {
+            if (file.exists()) return
+            file.writeText(
                 Rc.defaultsText()
                     ?: (
                         "\" ~/${Rc.FILE_NAME} — ideameow configuration\n" +

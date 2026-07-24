@@ -41,11 +41,19 @@ internal object RcFileState {
     private var modificationStamp = 0L
     private val listeners = mutableListOf<() -> Unit>()
 
-    private fun hash(c: Rc.Config): Int =
-        listOf(c.normal, c.motion, c.keypad, c.keypadDesc, c.repeat, c.whichKey, c.whichKeyDelayMs).hashCode()
+    private fun hash(config: Rc.Config): Int =
+        listOf(
+            config.normal,
+            config.motion,
+            config.keypad,
+            config.keypadDesc,
+            config.repeat,
+            config.whichKey,
+            config.whichKeyDelayMs,
+        ).hashCode()
 
-    fun saveParsed(c: Rc.Config) {
-        state = hash(c)
+    fun saveParsed(config: Rc.Config) {
+        state = hash(config)
         val snapshot = synchronized(listeners) { listeners.toList() }
         snapshot.forEach { it() }
     }
@@ -79,42 +87,42 @@ internal object RcReload {
         flushUnsavedRc()
         Rc.load()
         TreeMeow.refresh()
-        val c = Rc.config
+        val config = Rc.config
         Rc.notify(
-            "Reloaded ~/${Rc.FILE_NAME}: ${c.normal.size} normal map(s), " +
-                "${c.motion.size} motion map(s), " +
-                "${c.keypad.size} keypad map(s), ${c.keypadDesc.size} description(s), " +
-                "${c.repeat.size} repeat group(s)" +
-                if (c.errors.isEmpty()) "" else ", ${c.errors.size} problem(s)",
+            "Reloaded ~/${Rc.FILE_NAME}: ${config.normal.size} normal map(s), " +
+                "${config.motion.size} motion map(s), " +
+                "${config.keypad.size} keypad map(s), ${config.keypadDesc.size} description(s), " +
+                "${config.repeat.size} repeat group(s)" +
+                if (config.errors.isEmpty()) "" else ", ${config.errors.size} problem(s)",
             NotificationType.INFORMATION,
         )
     }
 
     fun flushUnsavedRc() {
-        val vf = LocalFileSystem.getInstance().findFileByIoFile(Rc.rcFile()) ?: return
-        val fdm = FileDocumentManager.getInstance()
-        val doc = fdm.getCachedDocument(vf) ?: return
-        if (fdm.isDocumentUnsaved(doc)) fdm.saveDocumentAsIs(doc)
+        val virtualFile = LocalFileSystem.getInstance().findFileByIoFile(Rc.rcFile()) ?: return
+        val fileDocumentManager = FileDocumentManager.getInstance()
+        val document = fileDocumentManager.getCachedDocument(virtualFile) ?: return
+        if (fileDocumentManager.isDocumentUnsaved(document)) fileDocumentManager.saveDocumentAsIs(document)
     }
 }
 
 internal class ReloadRcFloatingAction : DumbAwareAction() {
     override fun getActionUpdateThread() = ActionUpdateThread.BGT
 
-    override fun update(e: AnActionEvent) {
-        val editor = e.getData(PlatformDataKeys.EDITOR)
-        val vf = e.getData(PlatformDataKeys.VIRTUAL_FILE)
-        if (editor == null || vf == null || File(vf.path) != Rc.rcFile()) {
-            e.presentation.isEnabledAndVisible = false
+    override fun update(event: AnActionEvent) {
+        val editor = event.getData(PlatformDataKeys.EDITOR)
+        val virtualFile = event.getData(PlatformDataKeys.VIRTUAL_FILE)
+        if (editor == null || virtualFile == null || File(virtualFile.path) != Rc.rcFile()) {
+            event.presentation.isEnabledAndVisible = false
             return
         }
         val same = RcFileState.loaded() && RcFileState.equalTo(editor.document)
-        e.presentation.icon = if (same) AllIcons.Actions.Checked else AllIcons.Actions.BuildLoadChanges
-        e.presentation.text = if (same) "No Changes in ~/${Rc.FILE_NAME}" else "Reload ~/${Rc.FILE_NAME}"
-        e.presentation.isEnabledAndVisible = true
+        event.presentation.icon = if (same) AllIcons.Actions.Checked else AllIcons.Actions.BuildLoadChanges
+        event.presentation.text = if (same) "No Changes in ~/${Rc.FILE_NAME}" else "Reload ~/${Rc.FILE_NAME}"
+        event.presentation.isEnabledAndVisible = true
     }
 
-    override fun actionPerformed(e: AnActionEvent) = RcReload.perform()
+    override fun actionPerformed(event: AnActionEvent) = RcReload.perform()
 }
 
 internal class ReloadRcFloatingActionGroup : DefaultActionGroup() {
@@ -131,8 +139,8 @@ internal class RcReloadFloatingToolbar : AbstractFloatingToolbarProvider(ReloadR
         component: FloatingToolbarComponent,
         parentDisposable: Disposable,
     ) {
-        val show = { component.scheduleShow() }
-        RcFileState.whenSaved(show)
-        Disposer.register(parentDisposable) { RcFileState.removeListener(show) }
+        val showToolbar = { component.scheduleShow() }
+        RcFileState.whenSaved(showToolbar)
+        Disposer.register(parentDisposable) { RcFileState.removeListener(showToolbar) }
     }
 }

@@ -25,7 +25,9 @@ internal object Selections {
 
     val commands: Map<String, MeowCommand> =
         buildMap {
-            for (n in 0..9) put("meow-expand-$n", MeowCommand { editor, state -> expandOrCount(editor, state, n) })
+            for (digit in 0..9) {
+                put("meow-expand-$digit", MeowCommand { editor, state -> expandOrCount(editor, state, digit) })
+            }
             put("meow-reverse", MeowCommand { editor, _ -> reverse(editor) })
             put("meow-cancel-selection", MeowCommand { editor, state -> cancelAll(editor, state) })
             put("meow-pop-selection", MeowCommand { editor, state -> pop(editor, state) })
@@ -42,26 +44,26 @@ internal object Selections {
         )
 
     fun backwardP(editor: Editor): Boolean {
-        val sm = editor.selectionModel
-        return sm.hasSelection() && editor.caretModel.offset <= sm.selectionStart
+        val selectionModel = editor.selectionModel
+        return selectionModel.hasSelection() && editor.caretModel.offset <= selectionModel.selectionStart
     }
 
     fun mark(editor: Editor): Int {
-        val sm = editor.selectionModel
-        if (!sm.hasSelection()) return editor.caretModel.offset
-        return if (backwardP(editor)) sm.selectionEnd else sm.selectionStart
+        val selectionModel = editor.selectionModel
+        if (!selectionModel.hasSelection()) return editor.caretModel.offset
+        return if (backwardP(editor)) selectionModel.selectionEnd else selectionModel.selectionStart
     }
 
     fun lineExpandPoint(
         doc: Document,
         ln: Int,
-        n: Int,
+        count: Int,
         back: Boolean,
     ): Int =
         if (back) {
-            doc.getLineStartOffset((ln - n).coerceAtLeast(0))
+            doc.getLineStartOffset((ln - count).coerceAtLeast(0))
         } else {
-            doc.getLineEndOffset((ln + n).coerceAtMost(doc.lineCount - 1))
+            doc.getLineEndOffset((ln + count).coerceAtMost(doc.lineCount - 1))
         }
 
     fun recordSelect(
@@ -87,19 +89,19 @@ internal object Selections {
         expand: Boolean,
         push: Boolean = true,
     ) {
-        val len = editor.document.textLength
-        val m = mark.coerceIn(0, len)
-        val p = point.coerceIn(0, len)
-        val sm = editor.selectionModel
+        val length = editor.document.textLength
+        val markOffset = mark.coerceIn(0, length)
+        val pointOffset = point.coerceIn(0, length)
+        val selectionModel = editor.selectionModel
         if (push) {
-            recordSelect(state, type, expand, m, p, editor.caretModel.offset)
+            recordSelect(state, type, expand, markOffset, pointOffset, editor.caretModel.offset)
         } else {
-            state.lastSelection = SavedSelection(type, expand, m, p)
+            state.lastSelection = SavedSelection(type, expand, markOffset, pointOffset)
         }
         state.selType = type
         state.selExpand = expand
-        editor.caretModel.moveToOffset(p)
-        sm.setSelection(minOf(m, p), maxOf(m, p))
+        editor.caretModel.moveToOffset(pointOffset)
+        selectionModel.setSelection(minOf(markOffset, pointOffset), maxOf(markOffset, pointOffset))
         editor.scrollingModel.scrollToCaret(ScrollType.RELATIVE)
         Grab.beacon(editor, state)
         ExpandHints.show(editor, state)
@@ -136,13 +138,13 @@ internal object Selections {
     }
 
     private fun reverse(editor: Editor) {
-        val sm = editor.selectionModel
-        if (!sm.hasSelection()) return
-        val s = sm.selectionStart
-        val e = sm.selectionEnd
-        val newPoint = if (editor.caretModel.offset <= s) e else s
+        val selectionModel = editor.selectionModel
+        if (!selectionModel.hasSelection()) return
+        val start = selectionModel.selectionStart
+        val end = selectionModel.selectionEnd
+        val newPoint = if (editor.caretModel.offset <= start) end else start
         editor.caretModel.moveToOffset(newPoint)
-        sm.setSelection(s, e)
+        selectionModel.setSelection(start, end)
         editor.scrollingModel.scrollToCaret(ScrollType.RELATIVE)
     }
 
@@ -167,19 +169,19 @@ internal object Selections {
     private fun expandOrCount(
         editor: Editor,
         state: MeowState,
-        n: Int,
+        digit: Int,
     ) {
         if (editor.selectionModel.hasSelection() && state.selType in EXPANDABLE) {
-            expand(editor, state, if (n == 0) 10 else n)
+            expand(editor, state, if (digit == 0) 10 else digit)
         } else {
-            state.pendingCount = state.pendingCount * 10 + n
+            state.pendingCount = state.pendingCount * 10 + digit
         }
     }
 
     private fun expand(
         editor: Editor,
         state: MeowState,
-        n: Int,
+        count: Int,
     ) {
         val text = editor.document.charsSequence
         val doc = editor.document
@@ -188,21 +190,22 @@ internal object Selections {
         val target: Int =
             when (state.selType) {
                 SelType.CHAR -> {
-                    caret + if (back) -n else n
+                    caret + if (back) -count else count
                 }
 
                 SelType.WORD, SelType.SYMBOL -> {
-                    val p = charPred(state.selType == SelType.SYMBOL)
-                    if (back) Words.prevStart(text, caret, n, p) else Words.nextEnd(text, caret, n, p)
+                    val pred = charPred(state.selType == SelType.SYMBOL)
+                    if (back) Words.prevStart(text, caret, count, pred) else Words.nextEnd(text, caret, count, pred)
                 }
 
-                SelType.LINE -> lineExpandPoint(doc, doc.getLineNumber(caret), n, back)
+                SelType.LINE -> lineExpandPoint(doc, doc.getLineNumber(caret), count, back)
 
                 SelType.FIND, SelType.TILL -> {
-                    val ch = state.lastFind ?: return
-                    val t = nthCharTarget(text, ch, caret, n, backward = back, till = state.selType == SelType.TILL)
-                    if (t < 0) return
-                    t
+                    val char = state.lastFind ?: return
+                    val charTarget =
+                        nthCharTarget(text, char, caret, count, backward = back, till = state.selType == SelType.TILL)
+                    if (charTarget < 0) return
+                    charTarget
                 }
 
                 else -> {

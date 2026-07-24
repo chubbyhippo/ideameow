@@ -40,8 +40,8 @@ object Meow {
     }
 
     fun updateWidgets() {
-        for (p in ProjectManager.getInstance().openProjects) {
-            WindowManager.getInstance().getStatusBar(p)?.updateWidget(MeowWidgetFactory.ID)
+        for (project in ProjectManager.getInstance().openProjects) {
+            WindowManager.getInstance().getStatusBar(project)?.updateWidget(MeowWidgetFactory.ID)
         }
     }
 

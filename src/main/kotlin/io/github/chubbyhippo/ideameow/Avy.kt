@@ -69,17 +69,17 @@ object Avy {
     ) : Node()
 
     fun subdiv(
-        n: Int,
-        b: Int,
+        count: Int,
+        base: Int,
     ): List<Int> {
-        val p = kotlin.math.floor(ln(n.toDouble()) / ln(b.toDouble()) + 1e-6).toInt() - 1
+        val power = kotlin.math.floor(ln(count.toDouble()) / ln(base.toDouble()) + 1e-6).toInt() - 1
         var x1 = 1
-        repeat(p) { x1 *= b }
-        val x2 = b * x1
-        val delta = n - x2
+        repeat(power) { x1 *= base }
+        val x2 = base * x1
+        val delta = count - x2
         val n2 = delta / (x2 - x1)
-        val n1 = b - n2 - 1
-        return List(n1) { x1 } + listOf(n - n1 * x1 - n2 * x2) + List(n2) { x2 }
+        val n1 = base - n2 - 1
+        return List(n1) { x1 } + listOf(count - n1 * x1 - n2 * x2) + List(n2) { x2 }
     }
 
     fun tree(
@@ -103,12 +103,12 @@ object Avy {
         val out = mutableListOf<Pair<Int, String>>()
 
         fun walk(
-            n: Node,
+            current: Node,
             path: String,
         ) {
-            when (n) {
-                is Leaf -> out.add(n.offset to path)
-                is Branch -> n.children.forEach { (k, child) -> walk(child, path + k) }
+            when (current) {
+                is Leaf -> out.add(current.offset to path)
+                is Branch -> current.children.forEach { (key, child) -> walk(child, path + key) }
             }
         }
         walk(node, "")
@@ -139,12 +139,12 @@ object Avy {
     fun key(
         editor: Editor,
         state: MeowState,
-        c: Char,
+        char: Char,
     ) {
         val session = state.avy ?: return
         when (session.phase) {
-            Phase.COLLECTING -> collect(editor, state, session, c)
-            Phase.SELECTING -> select(editor, state, session, c)
+            Phase.COLLECTING -> collect(editor, state, session, char)
+            Phase.SELECTING -> select(editor, state, session, char)
         }
     }
 
@@ -152,9 +152,9 @@ object Avy {
         editor: Editor,
         state: MeowState,
         session: Session,
-        c: Char,
+        char: Char,
     ) {
-        session.input += c
+        session.input += char
         session.timer?.stop()
         session.timer =
             Timer(TIMEOUT_MS) { finishInput(editor, state) }.apply {
@@ -205,9 +205,9 @@ object Avy {
         editor: Editor,
         state: MeowState,
         session: Session,
-        c: Char,
+        char: Char,
     ) {
-        if (session.gotoLine && c.isDigit()) {
+        if (session.gotoLine && char.isDigit()) {
             cancel(editor, state)
             val input =
                 Messages.showInputDialog(
@@ -215,7 +215,7 @@ object Avy {
                     "Goto line:",
                     "Avy",
                     null,
-                    c.toString(),
+                    char.toString(),
                     null,
                 ) ?: return
             val doc = editor.document
@@ -224,7 +224,7 @@ object Avy {
             return
         }
         val node = session.node ?: return
-        when (val child = node.children.firstOrNull { it.first == c }?.second) {
+        when (val child = node.children.firstOrNull { it.first == char }?.second) {
             is Leaf -> {
                 cancel(editor, state)
                 jump(editor, child.offset)
@@ -236,7 +236,7 @@ object Avy {
             }
 
             null -> {
-                Ide.hint(editor, "No such candidate: $c")
+                Ide.hint(editor, "No such candidate: $char")
             }
         }
     }
@@ -245,11 +245,11 @@ object Avy {
         editor: Editor,
         offset: Int,
     ) {
-        val sm = editor.selectionModel
-        if (sm.hasSelection()) {
+        val selectionModel = editor.selectionModel
+        if (selectionModel.hasSelection()) {
             val anchor = Selections.mark(editor)
             editor.caretModel.moveToOffset(offset)
-            sm.setSelection(minOf(anchor, offset), maxOf(anchor, offset))
+            selectionModel.setSelection(minOf(anchor, offset), maxOf(anchor, offset))
         } else {
             editor.caretModel.moveToOffset(offset)
         }
@@ -342,7 +342,7 @@ object Avy {
         ) {
             val text = editor.document.charsSequence
             for ((offset, label) in labels) {
-                val p = editor.offsetToXY(offset, true, false)
+                val origin = editor.offsetToXY(offset, true, false)
                 var covered = 0
                 var end = offset
                 while (covered < label.length && end < text.length && text[end] != '\n') {
@@ -351,15 +351,15 @@ object Avy {
                 }
                 val right = if (end > offset) editor.offsetToXY(end, true, false) else null
                 val width =
-                    if (right != null && right.y == p.y && right.x > p.x) {
-                        maxOf(right.x - p.x, metrics.stringWidth(label) + Overlay.LABEL_PADDING)
+                    if (right != null && right.y == origin.y && right.x > origin.x) {
+                        maxOf(right.x - origin.x, metrics.stringWidth(label) + Overlay.LABEL_PADDING)
                     } else {
                         metrics.stringWidth(label) + Overlay.LABEL_PADDING
                     }
                 graphics.color = LEAD_BG
-                graphics.fillRect(p.x, p.y, width, editor.lineHeight)
+                graphics.fillRect(origin.x, origin.y, width, editor.lineHeight)
                 graphics.color = LEAD_FG
-                graphics.drawString(label, p.x + 1, p.y + editor.ascent)
+                graphics.drawString(label, origin.x + 1, origin.y + editor.ascent)
             }
         }
     }

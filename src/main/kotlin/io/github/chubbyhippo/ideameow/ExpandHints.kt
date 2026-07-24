@@ -16,6 +16,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package io.github.chubbyhippo.ideameow
 
+import com.intellij.openapi.editor.Document
 import com.intellij.openapi.editor.Editor
 import com.intellij.ui.JBColor
 import java.awt.Color
@@ -36,7 +37,7 @@ object ExpandHints {
         if (!editor.selectionModel.hasSelection()) return
         val positions = positions(editor, state, 10)
         if (positions.isEmpty()) return
-        val labels = positions.mapIndexed { i, off -> off to ((i + 1) % 10).toString() }
+        val labels = positions.mapIndexed { i, offset -> offset to ((i + 1) % 10).toString() }
         val canvas = HintsCanvas(editor, labels)
         Overlay.attach(editor, canvas)
         state.hintOverlay = canvas
@@ -63,40 +64,68 @@ object ExpandHints {
         val doc = editor.document
         val caret = editor.caretModel.offset
         val backward = editor.selectionModel.hasSelection() && caret <= editor.selectionModel.selectionStart
-        val out = mutableListOf<Int>()
-        when (state.selType) {
-            SelType.WORD, SelType.SYMBOL -> {
-                val pred = charPred(state.selType == SelType.SYMBOL)
-                var i = caret
-                repeat(count) {
-                    i = if (backward) Words.prevStart(text, i, 1, pred) else Words.nextEnd(text, i, 1, pred)
-                    if (if (backward) i <= 0 else i >= text.length) return@repeat
-                    out.add(i)
-                }
-            }
+        val positions =
+            when (state.selType) {
+                SelType.WORD, SelType.SYMBOL ->
+                    wordPositions(text, caret, backward, count, state.selType == SelType.SYMBOL)
 
-            SelType.LINE -> {
-                var ln = doc.getLineNumber(caret)
-                repeat(count) {
-                    ln += if (backward) -1 else 1
-                    if (ln < 0 || ln > doc.lineCount - 1) return@repeat
-                    out.add(if (backward) doc.getLineStartOffset(ln) else doc.getLineEndOffset(ln))
-                }
+                SelType.LINE -> linePositions(doc, caret, backward, count)
+                SelType.FIND, SelType.TILL -> charPositions(text, state, caret, backward, count)
+                else -> emptyList()
             }
+        return positions.distinct()
+    }
 
-            SelType.FIND, SelType.TILL -> {
-                val c = state.lastFind ?: return out
-                val till = state.selType == SelType.TILL
-                for (k in 1..count) {
-                    val t = nthCharTarget(text, c, caret, k, backward, till)
-                    if (t < 0) break
-                    out.add(t)
-                }
-            }
-
-            else -> {}
+    private fun wordPositions(
+        text: CharSequence,
+        caret: Int,
+        backward: Boolean,
+        count: Int,
+        symbol: Boolean,
+    ): List<Int> {
+        val pred = charPred(symbol)
+        val positions = mutableListOf<Int>()
+        var i = caret
+        repeat(count) {
+            i = if (backward) Words.prevStart(text, i, 1, pred) else Words.nextEnd(text, i, 1, pred)
+            if (if (backward) i <= 0 else i >= text.length) return@repeat
+            positions.add(i)
         }
-        return out.distinct()
+        return positions
+    }
+
+    private fun linePositions(
+        doc: Document,
+        caret: Int,
+        backward: Boolean,
+        count: Int,
+    ): List<Int> {
+        val positions = mutableListOf<Int>()
+        var ln = doc.getLineNumber(caret)
+        repeat(count) {
+            ln += if (backward) -1 else 1
+            if (ln < 0 || ln > doc.lineCount - 1) return@repeat
+            positions.add(if (backward) doc.getLineStartOffset(ln) else doc.getLineEndOffset(ln))
+        }
+        return positions
+    }
+
+    private fun charPositions(
+        text: CharSequence,
+        state: MeowState,
+        caret: Int,
+        backward: Boolean,
+        count: Int,
+    ): List<Int> {
+        val char = state.lastFind ?: return emptyList()
+        val till = state.selType == SelType.TILL
+        val positions = mutableListOf<Int>()
+        for (k in 1..count) {
+            val target = nthCharTarget(text, char, caret, k, backward, till)
+            if (target < 0) break
+            positions.add(target)
+        }
+        return positions
     }
 
     private class HintsCanvas(
@@ -110,7 +139,7 @@ object ExpandHints {
             val text = editor.document.charsSequence
             val lineHeight = editor.lineHeight
             for ((offset, label) in hints) {
-                val p = editor.offsetToXY(offset, true, false)
+                val origin = editor.offsetToXY(offset, true, false)
                 val next =
                     if (offset < text.length && text[offset] != '\n') {
                         editor.offsetToXY(offset + 1, true, false)
@@ -118,18 +147,18 @@ object ExpandHints {
                         null
                     }
                 val cell =
-                    if (next != null && next.y == p.y && next.x > p.x) {
-                        next.x - p.x
+                    if (next != null && next.y == origin.y && next.x > origin.x) {
+                        next.x - origin.x
                     } else {
                         metrics.stringWidth(label) + Overlay.LABEL_PADDING
                     }
                 graphics.color = editor.colorsScheme.defaultBackground
-                graphics.fillRect(p.x, p.y, cell, lineHeight)
+                graphics.fillRect(origin.x, origin.y, cell, lineHeight)
                 graphics.color = HINT_COLOR
                 graphics.drawString(
                     label,
-                    p.x + ((cell - metrics.stringWidth(label)) / 2).coerceAtLeast(0),
-                    p.y + editor.ascent,
+                    origin.x + ((cell - metrics.stringWidth(label)) / 2).coerceAtLeast(0),
+                    origin.y + editor.ascent,
                 )
             }
         }

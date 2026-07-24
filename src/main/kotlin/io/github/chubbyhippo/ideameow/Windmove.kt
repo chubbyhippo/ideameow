@@ -62,29 +62,29 @@ internal object Windmove {
     fun <T> pick(
         dir: Dir,
         current: Rectangle,
-        posn: Int,
+        position: Int,
         frame: Dimension,
         candidates: List<Pair<T, Rectangle>>,
     ): T? {
-        val hor = dir.horizontal
-        val first = if (hor) current.x else current.y
-        val last = first + if (hor) current.width else current.height
+        val horizontal = dir.horizontal
+        val first = if (horizontal) current.x else current.y
+        val last = first + if (horizontal) current.width else current.height
         var bestEdge =
             when (dir) {
                 Dir.DOWN -> frame.height
                 Dir.RIGHT -> frame.width
                 else -> -1
             }
-        var bestEdge2 = bestEdge
-        var bestDiff2 = if (hor) frame.height else frame.width
+        var bestBandEdge = bestEdge
+        var bestBandDiff = if (horizontal) frame.height else frame.width
         var best: T? = null
-        var best2: T? = null
-        for ((w, r) in candidates) {
-            val lead = if (hor) r.x else r.y
-            val size = if (hor) r.width else r.height
-            val bandLead = if (hor) r.y else r.x
-            val bandSize = if (hor) r.height else r.width
-            if (bandLead <= posn && posn < bandLead + bandSize) {
+        var bestBand: T? = null
+        for ((window, rect) in candidates) {
+            val lead = if (horizontal) rect.x else rect.y
+            val size = if (horizontal) rect.width else rect.height
+            val bandLead = if (horizontal) rect.y else rect.x
+            val bandSize = if (horizontal) rect.height else rect.width
+            if (bandLead <= position && position < bandLead + bandSize) {
                 val inDir =
                     when (dir) {
                         Dir.LEFT, Dir.UP -> lead in (bestEdge + 1)..first
@@ -93,7 +93,7 @@ internal object Windmove {
                     }
                 if (inDir) {
                     bestEdge = lead
-                    best = w
+                    best = window
                 }
             } else {
                 val strictlyInDir =
@@ -102,25 +102,25 @@ internal object Windmove {
                         Dir.RIGHT, Dir.DOWN -> last <= lead
                     }
                 if (!strictlyInDir) continue
-                val diff2 =
-                    if (bandLead > posn) bandLead - posn else posn - bandLead - bandSize
+                val bandDiff =
+                    if (bandLead > position) bandLead - position else position - bandLead - bandSize
                 val better =
-                    diff2 < bestDiff2 ||
+                    bandDiff < bestBandDiff ||
                         (
-                            diff2 == bestDiff2 &&
+                            bandDiff == bestBandDiff &&
                                 when (dir) {
-                                    Dir.LEFT, Dir.UP -> lead > bestEdge2
-                                    Dir.RIGHT, Dir.DOWN -> lead < bestEdge2
+                                    Dir.LEFT, Dir.UP -> lead > bestBandEdge
+                                    Dir.RIGHT, Dir.DOWN -> lead < bestBandEdge
                                 }
                         )
                 if (better) {
-                    bestEdge2 = lead
-                    bestDiff2 = diff2
-                    best2 = w
+                    bestBandEdge = lead
+                    bestBandDiff = bandDiff
+                    bestBand = window
                 }
             }
         }
-        return best ?: best2
+        return best ?: bestBand
     }
 
     fun move(
@@ -133,8 +133,8 @@ internal object Windmove {
             visibleEditors(editor, frame).mapNotNull { other ->
                 rectIn(frame, other.component)?.let { other to it }
             }
-        val posn = reference(dir, current, caretPoint(editor, frame))
-        val target = pick(dir, current, posn, frame.size, candidates)
+        val position = reference(dir, current, caretPoint(editor, frame))
+        val target = pick(dir, current, position, frame.size, candidates)
         if (target == null) {
             Ide.hint(editor, noWindowMessage(dir))
             return
@@ -148,34 +148,34 @@ internal object Windmove {
     ) {
         val project = editor.project ?: return
         val frame = SwingUtilities.getWindowAncestor(editor.component) ?: return
-        val fem = FileEditorManagerEx.getInstanceEx(project)
-        val current = fem.currentWindow ?: return
+        val fileEditorManager = FileEditorManagerEx.getInstanceEx(project)
+        val current = fileEditorManager.currentWindow ?: return
         val currentRect = rectIn(frame, current) ?: return
         val candidates =
-            fem.windows
+            fileEditorManager.windows
                 .filter { it !== current }
-                .mapNotNull { w -> rectIn(frame, w)?.let { w to it } }
-        val posn = reference(dir, currentRect, caretPoint(editor, frame))
-        val target = pick(dir, currentRect, posn, frame.size, candidates)
-        if (target == null || !exchange(fem, current, target)) {
+                .mapNotNull { window -> rectIn(frame, window)?.let { window to it } }
+        val position = reference(dir, currentRect, caretPoint(editor, frame))
+        val target = pick(dir, currentRect, position, frame.size, candidates)
+        if (target == null || !exchange(fileEditorManager, current, target)) {
             Ide.hint(editor, noWindowMessage(dir))
         }
     }
 
     @Suppress("UnstableApiUsage")
     fun exchange(
-        fem: FileEditorManagerEx,
+        fileEditorManager: FileEditorManagerEx,
         current: EditorWindow,
         target: EditorWindow,
     ): Boolean {
-        val mine = current.selectedComposite?.file ?: return false
-        val theirs = target.selectedComposite?.file ?: return false
-        if (mine != theirs) {
+        val currentFile = current.selectedComposite?.file ?: return false
+        val targetFile = target.selectedComposite?.file ?: return false
+        if (currentFile != targetFile) {
             val options = FileEditorOpenOptions(requestFocus = false)
-            fem.openFile(mine, target, options)
-            fem.openFile(theirs, current, options)
-            current.closeFile(mine)
-            target.closeFile(theirs)
+            fileEditorManager.openFile(currentFile, target, options)
+            fileEditorManager.openFile(targetFile, current, options)
+            current.closeFile(currentFile)
+            target.closeFile(targetFile)
         }
         target.setAsCurrentWindow(true)
         return true
@@ -191,10 +191,10 @@ internal object Windmove {
 
     fun rectIn(
         frame: java.awt.Window,
-        c: java.awt.Component,
+        component: java.awt.Component,
     ): Rectangle? {
-        if (!c.isShowing || c.width <= 0 || c.height <= 0) return null
-        return SwingUtilities.convertRectangle(c.parent, c.bounds, frame)
+        if (!component.isShowing || component.width <= 0 || component.height <= 0) return null
+        return SwingUtilities.convertRectangle(component.parent, component.bounds, frame)
     }
 
     fun visibleEditors(
@@ -228,12 +228,12 @@ internal sealed class WindmoveAction(
 
     override fun getActionUpdateThread() = ActionUpdateThread.BGT
 
-    override fun update(e: AnActionEvent) {
-        e.presentation.isEnabled = e.getData(CommonDataKeys.EDITOR) != null
+    override fun update(event: AnActionEvent) {
+        event.presentation.isEnabled = event.getData(CommonDataKeys.EDITOR) != null
     }
 
-    override fun actionPerformed(e: AnActionEvent) {
-        val editor = e.getData(CommonDataKeys.EDITOR) ?: return
+    override fun actionPerformed(event: AnActionEvent) {
+        val editor = event.getData(CommonDataKeys.EDITOR) ?: return
         Windmove.move(editor, dir)
     }
 }
@@ -251,12 +251,12 @@ internal sealed class WindmoveSwapAction(
 ) : DumbAwareAction() {
     override fun getActionUpdateThread() = ActionUpdateThread.BGT
 
-    override fun update(e: AnActionEvent) {
-        e.presentation.isEnabled = e.getData(CommonDataKeys.EDITOR) != null
+    override fun update(event: AnActionEvent) {
+        event.presentation.isEnabled = event.getData(CommonDataKeys.EDITOR) != null
     }
 
-    override fun actionPerformed(e: AnActionEvent) {
-        val editor = e.getData(CommonDataKeys.EDITOR) ?: return
+    override fun actionPerformed(event: AnActionEvent) {
+        val editor = event.getData(CommonDataKeys.EDITOR) ?: return
         Windmove.swap(editor, dir)
     }
 }

@@ -19,6 +19,7 @@ package io.github.chubbyhippo.ideameow
 import com.intellij.openapi.editor.Caret
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.editor.ScrollType
+import com.intellij.openapi.editor.SelectionModel
 import com.intellij.openapi.ui.Messages
 import kotlin.math.abs
 
@@ -47,19 +48,19 @@ internal object Motions {
             )
             put(
                 "meow-next-word",
-                MeowCommand { editor, state -> wordMotion(editor, state, symbol = false, n = state.takeCount(1)) },
+                MeowCommand { editor, state -> wordMotion(editor, state, symbol = false, count = state.takeCount(1)) },
             )
             put(
                 "meow-next-symbol",
-                MeowCommand { editor, state -> wordMotion(editor, state, symbol = true, n = state.takeCount(1)) },
+                MeowCommand { editor, state -> wordMotion(editor, state, symbol = true, count = state.takeCount(1)) },
             )
             put(
                 "meow-back-word",
-                MeowCommand { editor, state -> wordMotion(editor, state, symbol = false, n = -state.takeCount(1)) },
+                MeowCommand { editor, state -> wordMotion(editor, state, symbol = false, count = -state.takeCount(1)) },
             )
             put(
                 "meow-back-symbol",
-                MeowCommand { editor, state -> wordMotion(editor, state, symbol = true, n = -state.takeCount(1)) },
+                MeowCommand { editor, state -> wordMotion(editor, state, symbol = true, count = -state.takeCount(1)) },
             )
             put("meow-mark-word", MeowCommand { editor, state -> markWord(editor, state, symbol = false) })
             put("meow-mark-symbol", MeowCommand { editor, state -> markWord(editor, state, symbol = true) })
@@ -129,8 +130,8 @@ internal object Motions {
     ): Int {
         if (state.goalColumn == null || state.lastCommand !in VERTICAL) {
             val doc = editor.document
-            val off = editor.caretModel.offset
-            state.goalColumn = off - doc.getLineStartOffset(doc.getLineNumber(off))
+            val offset = editor.caretModel.offset
+            state.goalColumn = offset - doc.getLineStartOffset(doc.getLineNumber(offset))
         }
         return state.goalColumn!!
     }
@@ -139,7 +140,7 @@ internal object Motions {
         editor: Editor,
         offset: Int,
         dy: Int,
-        col: Int,
+        column: Int,
     ): Int {
         val doc = editor.document
         val ln = doc.getLineNumber(offset)
@@ -154,8 +155,8 @@ internal object Motions {
             }
 
             else -> {
-                val bol = doc.getLineStartOffset(target)
-                bol + minOf(col, doc.getLineEndOffset(target) - bol)
+                val lineStart = doc.getLineStartOffset(target)
+                lineStart + minOf(column, doc.getLineEndOffset(target) - lineStart)
             }
         }
     }
@@ -167,9 +168,9 @@ internal object Motions {
     ) {
         val extend = charSelActive(editor, state)
         if (!extend && editor.selectionModel.hasSelection()) Selections.cancel(editor, state)
-        val len = editor.document.textLength
+        val length = editor.document.textLength
         for (caret in editor.caretModel.allCarets) {
-            val target = (caret.offset + dx).coerceIn(0, len)
+            val target = (caret.offset + dx).coerceIn(0, length)
             applyCaretMove(caret, target, extend)
         }
         editor.scrollingModel.scrollToCaret(ScrollType.RELATIVE)
@@ -206,9 +207,9 @@ internal object Motions {
         extend: Boolean,
     ) {
         if (extend) {
-            val lead = caret.leadSelectionOffset
+            val leadOffset = caret.leadSelectionOffset
             caret.moveToOffset(target)
-            caret.setSelection(lead, target)
+            caret.setSelection(leadOffset, target)
         } else {
             caret.moveToOffset(target)
             caret.removeSelection()
@@ -223,11 +224,11 @@ internal object Motions {
     ) {
         val posBefore = editor.caretModel.offset
         val goal = if (dy != 0) goalColumn(editor, state) else 0
-        val len = editor.document.textLength
+        val length = editor.document.textLength
         for (caret in editor.caretModel.allCarets) {
             val target =
                 if (dy == 0) {
-                    (caret.offset + dx).coerceIn(0, len)
+                    (caret.offset + dx).coerceIn(0, length)
                 } else {
                     movedLineOffset(editor, caret.offset, dy, columnFor(editor, caret, goal))
                 }
@@ -300,32 +301,32 @@ internal object Motions {
     private fun wordOrExpand(
         editor: Editor,
         state: MeowState,
-        n: Int,
+        count: Int,
     ) {
         val text = editor.document.charsSequence
         val pred = charPred(symbol = false)
-        moveToOrExpand(editor, state, SelType.WORD) { _, offset -> Words.move(text, offset, n, pred) }
+        moveToOrExpand(editor, state, SelType.WORD) { _, offset -> Words.move(text, offset, count, pred) }
     }
 
     private fun sentenceOrExpand(
         editor: Editor,
         state: MeowState,
-        n: Int,
+        count: Int,
     ) {
         val text = editor.document.charsSequence
         moveToOrExpand(editor, state, SelType.CHAR) { _, offset ->
-            if (n >= 0) nextSentenceEnd(text, offset, n) else prevSentenceStart(text, offset, -n)
+            if (count >= 0) nextSentenceEnd(text, offset, count) else prevSentenceStart(text, offset, -count)
         }
     }
 
     private fun paragraphOrExpand(
         editor: Editor,
         state: MeowState,
-        n: Int,
+        count: Int,
     ) {
         val text = editor.document.charsSequence
         moveToOrExpand(editor, state, SelType.CHAR) { _, offset ->
-            if (n >= 0) Paragraphs.nextEnd(text, offset, n) else Paragraphs.prevStart(text, offset, -n)
+            if (count >= 0) Paragraphs.nextEnd(text, offset, count) else Paragraphs.prevStart(text, offset, -count)
         }
     }
 
@@ -335,15 +336,15 @@ internal object Motions {
         top: Boolean,
     ) {
         val counted = state.pendingCount != 0 || state.negative
-        val n = state.takeCount(1)
+        val count = state.takeCount(1)
         moveToOrExpand(editor, state, SelType.CHAR) { editor, _ ->
-            val len = editor.document.textLength
+            val length = editor.document.textLength
             if (!counted) {
-                if (top) 0 else len
+                if (top) 0 else length
             } else {
-                val tenth = len * n / 10
-                val raw = (if (top) tenth else len - tenth).coerceIn(0, len)
-                nextLineStart(editor, raw)
+                val tenth = length * count / 10
+                val rawOffset = (if (top) tenth else length - tenth).coerceIn(0, length)
+                nextLineStart(editor, rawOffset)
             }
         }
     }
@@ -362,51 +363,61 @@ internal object Motions {
         editor: Editor,
         state: MeowState,
         symbol: Boolean,
-        n: Int,
+        count: Int,
     ) {
-        if (n == 0) return
+        if (count == 0) return
         val text = editor.document.charsSequence
         val type = wordType(symbol)
         val pred = charPred(symbol)
-        val sm = editor.selectionModel
-        if (!(sm.hasSelection() && state.selType == type)) Selections.cancel(editor, state)
-        val extend = state.selExpand && state.selType == type && sm.hasSelection()
-        val from =
-            when {
-                extend && n < 0 -> sm.selectionStart
-                extend -> sm.selectionEnd
-                else -> editor.caretModel.offset
-            }
-        val target = Words.move(text, from, n, pred)
-        if (target == from) return
+        val selectionModel = editor.selectionModel
+        if (!(selectionModel.hasSelection() && state.selType == type)) Selections.cancel(editor, state)
+        val extend = state.selExpand && state.selType == type && selectionModel.hasSelection()
+        val start = wordMotionStart(editor, selectionModel, extend, count)
+        val target = Words.move(text, start, count, pred)
+        if (target == start) return
         val anchor =
-            when {
-                extend && n < 0 -> sm.selectionEnd
-
-                extend -> sm.selectionStart
-
-                else -> Words.fixSelectionMark(text, target, from, pred)
+            if (extend) {
+                wordMotionAnchor(selectionModel, count)
+            } else {
+                Words.fixSelectionMark(text, target, start, pred)
             }
         Selections.select(editor, state, type, anchor, target, expand = extend)
     }
+
+    private fun wordMotionStart(
+        editor: Editor,
+        selectionModel: SelectionModel,
+        extend: Boolean,
+        count: Int,
+    ): Int =
+        when {
+            extend && count < 0 -> selectionModel.selectionStart
+            extend -> selectionModel.selectionEnd
+            else -> editor.caretModel.offset
+        }
+
+    private fun wordMotionAnchor(
+        selectionModel: SelectionModel,
+        count: Int,
+    ): Int = if (count < 0) selectionModel.selectionEnd else selectionModel.selectionStart
 
     private fun markWord(
         editor: Editor,
         state: MeowState,
         symbol: Boolean,
     ) {
-        val neg = state.takeCount(1) < 0
+        val negative = state.takeCount(1) < 0
         val text = editor.document.charsSequence
-        val b =
+        val bounds =
             Words.boundsAt(text, editor.caretModel.offset, charPred(symbol))
                 ?: run {
                     Ide.hint(editor, "No word here")
                     return
                 }
-        val (s, e) = b
-        val (mark, point) = if (neg) e to s else s to e
+        val (start, end) = bounds
+        val (mark, point) = if (negative) end to start else start to end
         Selections.select(editor, state, wordType(symbol), mark, point, expand = true)
-        val quoted = Regex.escape(text.subSequence(s, e).toString())
+        val quoted = Regex.escape(text.subSequence(start, end).toString())
         val pattern = if (symbol) "(?<![\\w$])$quoted(?![\\w$])" else "\\b$quoted\\b"
         Search.push(state, Regex(pattern))
     }
@@ -417,18 +428,18 @@ internal object Motions {
     ) {
         val doc = editor.document
         if (doc.textLength == 0) return
-        val n = state.takeCount(1)
+        val count = state.takeCount(1)
         val ln = doc.getLineNumber(editor.caretModel.offset)
         if (state.selType == SelType.LINE && state.selExpand && editor.selectionModel.hasSelection()) {
-            val point = Selections.lineExpandPoint(doc, ln, abs(n), Selections.backwardP(editor))
+            val point = Selections.lineExpandPoint(doc, ln, abs(count), Selections.backwardP(editor))
             Selections.select(editor, state, SelType.LINE, Selections.mark(editor), point, expand = true)
             return
         }
         val (mark, point) =
-            if (n < 0) {
-                doc.getLineEndOffset(ln) to doc.getLineStartOffset((ln + n + 1).coerceAtLeast(0))
+            if (count < 0) {
+                doc.getLineEndOffset(ln) to doc.getLineStartOffset((ln + count + 1).coerceAtLeast(0))
             } else {
-                doc.getLineStartOffset(ln) to doc.getLineEndOffset((ln + n - 1).coerceAtMost(doc.lineCount - 1))
+                doc.getLineStartOffset(ln) to doc.getLineEndOffset((ln + count - 1).coerceAtMost(doc.lineCount - 1))
             }
         Selections.select(editor, state, SelType.LINE, mark, point, expand = true)
     }
@@ -455,18 +466,18 @@ internal object Motions {
     fun findTill(
         editor: Editor,
         state: MeowState,
-        ch: Char,
+        char: Char,
         till: Boolean,
     ) {
-        val n = state.takeCount(1)
+        val count = state.takeCount(1)
         val text = editor.document.charsSequence
         val caret = editor.caretModel.offset
-        val target = nthCharTarget(text, ch, caret, abs(n), backward = n < 0, till = till)
+        val target = nthCharTarget(text, char, caret, abs(count), backward = count < 0, till = till)
         if (target < 0) {
-            Ide.hint(editor, "char not found: $ch")
+            Ide.hint(editor, "char not found: $char")
             return
         }
-        state.lastFind = ch
+        state.lastFind = char
         Selections.select(editor, state, if (till) SelType.TILL else SelType.FIND, caret, target, expand = false)
     }
 }

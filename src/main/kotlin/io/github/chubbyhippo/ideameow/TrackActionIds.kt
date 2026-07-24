@@ -68,7 +68,7 @@ object TrackActionIds {
     private fun showId(id: String?) {
         expire()
         runCatching {
-            val n =
+            val shown =
                 NotificationGroupManager
                     .getInstance()
                     .getNotificationGroup("ideameow")
@@ -76,10 +76,10 @@ object TrackActionIds {
                         if (id != null) "Action id: <code>$id</code>" else "<i>Cannot detect action id</i>",
                         NotificationType.INFORMATION,
                     )
-            n.addAction(StopTracking(n))
-            if (id != null) n.addAction(CopyActionId(id, n))
-            notification = n
-            n.notify(null)
+            shown.addAction(StopTracking(shown))
+            if (id != null) shown.addAction(CopyActionId(id, shown))
+            notification = shown
+            shown.notify(null)
         }
     }
 
@@ -89,31 +89,31 @@ object TrackActionIds {
     }
 
     class StopTracking(
-        private val n: Notification,
+        private val notification: Notification,
     ) : AnAction("Stop Tracking") {
-        override fun actionPerformed(e: AnActionEvent) {
+        override fun actionPerformed(event: AnActionEvent) {
             enabled = false
             lastTrackedId = null
-            n.expire()
+            notification.expire()
         }
     }
 
     class CopyActionId(
         private val id: String,
-        private val n: Notification,
+        private val notification: Notification,
     ) : AnAction("Copy Action Id") {
-        override fun actionPerformed(e: AnActionEvent) {
+        override fun actionPerformed(event: AnActionEvent) {
             CopyPasteManager.getInstance().setContents(StringSelection(id))
-            n.expire()
+            notification.expire()
         }
     }
 }
 
 class TrackActionIdsAction : DumbAwareToggleAction() {
-    override fun isSelected(e: AnActionEvent): Boolean = TrackActionIds.enabled
+    override fun isSelected(event: AnActionEvent): Boolean = TrackActionIds.enabled
 
     override fun setSelected(
-        e: AnActionEvent,
+        event: AnActionEvent,
         state: Boolean,
     ) {
         if (TrackActionIds.enabled != state) TrackActionIds.toggle()

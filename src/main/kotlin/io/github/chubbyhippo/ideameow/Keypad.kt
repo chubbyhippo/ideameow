@@ -27,21 +27,21 @@ object Keypad {
     fun key(
         editor: Editor,
         state: MeowState,
-        c: Char,
+        char: Char,
     ) {
         WhichKey.hide()
         val bindings = Rc.keypad()
-        val buf = state.keypad.toString()
+        val buffer = state.keypad.toString()
 
-        if (buf == "/") {
-            describe(editor, c)
+        if (buffer == "/") {
+            describe(editor, char)
             exit(editor, state)
             return
         }
-        if (buf.isEmpty()) {
-            when (c) {
+        if (buffer.isEmpty()) {
+            when (char) {
                 in '0'..'9' -> {
-                    state.pendingCount = state.pendingCount * 10 + (c - '0')
+                    state.pendingCount = state.pendingCount * 10 + (char - '0')
                     exit(editor, state)
                     return
                 }
@@ -59,19 +59,19 @@ object Keypad {
             }
         }
 
-        state.keypad.append(c)
-        val cur = state.keypad.toString()
-        val binding = bindings[cur]
+        state.keypad.append(char)
+        val current = state.keypad.toString()
+        val binding = bindings[current]
         if (binding != null) {
             exit(editor, state)
             Engine.runBinding(editor, state, binding)
             return
         }
-        if (bindings.keys.none { it.startsWith(cur) }) {
+        if (bindings.keys.none { it.startsWith(current) }) {
             exit(editor, state)
-            Ide.hint(editor, "SPC ${cur.toCharArray().joinToString(" ")} is undefined")
+            Ide.hint(editor, "SPC ${current.toCharArray().joinToString(" ")} is undefined")
         } else {
-            WhichKey.scheduleKeypad(editor, cur)
+            WhichKey.scheduleKeypad(editor, current)
         }
     }
 
@@ -85,24 +85,24 @@ object Keypad {
 
     private fun describe(
         editor: Editor,
-        c: Char,
+        char: Char,
     ) {
-        val descs = Rc.keypadDescs()
+        val descriptions = Rc.keypadDescs()
         val entries =
             Rc
                 .keypad()
                 .entries
-                .filter { it.key.startsWith(c.toString()) }
+                .filter { it.key.startsWith(char.toString()) }
                 .sortedBy { it.key }
-                .joinToString("\n") { (seq, b) ->
-                    val target = b.action ?: b.command ?: b.keys.orEmpty()
-                    val desc = descs[seq]?.let { "  ($it)" } ?: ""
+                .joinToString("\n") { (seq, binding) ->
+                    val target = binding.action ?: binding.command ?: binding.keys.orEmpty()
+                    val desc = descriptions[seq]?.let { "  ($it)" } ?: ""
                     "SPC ${seq.toCharArray().joinToString(" ")}  ->  $target$desc"
                 }
         Messages.showInfoMessage(
             editor.project,
-            entries.ifEmpty { "SPC $c is undefined" },
-            "Meow Describe: SPC $c",
+            entries.ifEmpty { "SPC $char is undefined" },
+            "Meow Describe: SPC $char",
         )
     }
 
@@ -167,13 +167,13 @@ internal class KeypadAction : DumbAwareAction() {
 
     override fun getActionUpdateThread() = ActionUpdateThread.BGT
 
-    override fun update(e: AnActionEvent) {
-        val editor = e.getData(CommonDataKeys.EDITOR)
-        e.presentation.isEnabled = editor != null && Meow.state(editor) != null
+    override fun update(event: AnActionEvent) {
+        val editor = event.getData(CommonDataKeys.EDITOR)
+        event.presentation.isEnabled = editor != null && Meow.state(editor) != null
     }
 
-    override fun actionPerformed(e: AnActionEvent) {
-        val editor = e.getData(CommonDataKeys.EDITOR) ?: return
+    override fun actionPerformed(event: AnActionEvent) {
+        val editor = event.getData(CommonDataKeys.EDITOR) ?: return
         val state = Meow.state(editor)
         if (state != null && state.mode != MeowMode.KEYPAD) Engine.enterKeypad(editor, state)
     }

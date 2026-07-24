@@ -17,24 +17,24 @@
 package io.github.chubbyhippo.ideameow
 
 internal fun CharSequence.indexOfChar(
-    c: Char,
+    char: Char,
     from: Int,
 ): Int {
     var i = from.coerceAtLeast(0)
     while (i < length) {
-        if (this[i] == c) return i
+        if (this[i] == char) return i
         i++
     }
     return -1
 }
 
 internal fun CharSequence.lastIndexOfChar(
-    c: Char,
+    char: Char,
     from: Int,
 ): Int {
     var i = from.coerceAtMost(length - 1)
     while (i >= 0) {
-        if (this[i] == c) return i
+        if (this[i] == char) return i
         i--
     }
     return -1
@@ -46,15 +46,15 @@ internal fun parsedLineNumber(
     input: String?,
     lineCount: Int,
 ): Int? {
-    val n = input?.trim()?.toIntOrNull() ?: return null
-    return (n - 1).coerceIn(0, (lineCount - 1).coerceAtLeast(0))
+    val number = input?.trim()?.toIntOrNull() ?: return null
+    return (number - 1).coerceIn(0, (lineCount - 1).coerceAtLeast(0))
 }
 
 internal fun nthCharTarget(
     text: CharSequence,
-    ch: Char,
+    char: Char,
     caret: Int,
-    n: Int,
+    count: Int,
     backward: Boolean,
     till: Boolean,
 ): Int {
@@ -66,8 +66,8 @@ internal fun nthCharTarget(
             till -> caret + 1
             else -> caret
         }
-    repeat(n) {
-        found = if (backward) text.lastIndexOfChar(ch, from) else text.indexOfChar(ch, from)
+    repeat(count) {
+        found = if (backward) text.lastIndexOfChar(char, from) else text.indexOfChar(char, from)
         if (found < 0) return -1
         from = if (backward) found - 1 else found + 1
     }
@@ -81,10 +81,10 @@ internal fun nthCharTarget(
 internal fun nextSentenceEnd(
     text: CharSequence,
     from: Int,
-    n: Int,
+    count: Int,
 ): Int {
     var i = from.coerceIn(0, text.length)
-    repeat(n) {
+    repeat(count) {
         while (i < text.length && text[i] !in SENTENCE_ENDERS) i++
         while (i < text.length && text[i] in SENTENCE_ENDERS) i++
         while (i < text.length && text[i].isWhitespace()) i++
@@ -95,11 +95,11 @@ internal fun nextSentenceEnd(
 internal fun prevSentenceStart(
     text: CharSequence,
     from: Int,
-    n: Int,
+    count: Int,
 ): Int {
-    fun isGap(c: Char) = c.isWhitespace() || c in SENTENCE_ENDERS
+    fun isGap(char: Char) = char.isWhitespace() || char in SENTENCE_ENDERS
     var i = from.coerceIn(0, text.length)
-    repeat(n) {
+    repeat(count) {
         while (i > 0 && isGap(text[i - 1])) i--
         while (i > 0 && !isGap(text[i - 1])) i--
     }
@@ -110,10 +110,10 @@ object Paragraphs {
     fun nextEnd(
         text: CharSequence,
         from: Int,
-        n: Int,
+        count: Int,
     ): Int {
         var pos = from.coerceIn(0, text.length)
-        repeat(n) {
+        repeat(count) {
             var i = lineStartAt(text, pos)
             while (i < text.length && blankLineAt(text, i)) i = followingLineStart(text, i)
             while (i < text.length && !blankLineAt(text, i)) i = followingLineStart(text, i)
@@ -125,10 +125,10 @@ object Paragraphs {
     fun prevStart(
         text: CharSequence,
         from: Int,
-        n: Int,
+        count: Int,
     ): Int {
         var pos = from.coerceIn(0, text.length)
-        repeat(n) {
+        repeat(count) {
             if (pos > 0) {
                 val start = startBefore(text, pos)
                 pos = if (start < pos) start else startBefore(text, start - 1)
@@ -159,18 +159,18 @@ object Paragraphs {
 
     private fun followingLineStart(
         text: CharSequence,
-        bol: Int,
+        lineStart: Int,
     ): Int {
-        var i = bol
+        var i = lineStart
         while (i < text.length && text[i] != '\n') i++
         return if (i < text.length) i + 1 else i
     }
 
     private fun blankLineAt(
         text: CharSequence,
-        bol: Int,
+        lineStart: Int,
     ): Boolean {
-        var i = bol
+        var i = lineStart
         while (i < text.length && text[i] != '\n') {
             if (!text[i].isWhitespace()) return false
             i++
@@ -183,11 +183,11 @@ object Words {
     fun nextEnd(
         text: CharSequence,
         from: Int,
-        n: Int,
+        count: Int,
         pred: (Char) -> Boolean,
     ): Int {
         var i = from.coerceIn(0, text.length)
-        repeat(n) {
+        repeat(count) {
             while (i < text.length && !pred(text[i])) i++
             while (i < text.length && pred(text[i])) i++
         }
@@ -197,11 +197,11 @@ object Words {
     fun prevStart(
         text: CharSequence,
         from: Int,
-        n: Int,
+        count: Int,
         pred: (Char) -> Boolean,
     ): Int {
         var i = from.coerceIn(0, text.length)
-        repeat(n) {
+        repeat(count) {
             while (i > 0 && !pred(text[i - 1])) i--
             while (i > 0 && pred(text[i - 1])) i--
         }
@@ -211,20 +211,20 @@ object Words {
     fun move(
         text: CharSequence,
         from: Int,
-        n: Int,
+        count: Int,
         pred: (Char) -> Boolean,
-    ): Int = if (n >= 0) nextEnd(text, from, n, pred) else prevStart(text, from, -n, pred)
+    ): Int = if (count >= 0) nextEnd(text, from, count, pred) else prevStart(text, from, -count, pred)
 
     fun spanAt(
         text: CharSequence,
         offset: Int,
         pred: (Char) -> Boolean,
     ): Pair<Int, Int> {
-        var s = offset
-        var e = offset
-        while (s > 0 && pred(text[s - 1])) s--
-        while (e < text.length && pred(text[e])) e++
-        return s to e
+        var start = offset
+        var end = offset
+        while (start > 0 && pred(text[start - 1])) start--
+        while (end < text.length && pred(text[end])) end++
+        return start to end
     }
 
     fun fixSelectionMark(
@@ -243,21 +243,21 @@ object Words {
         offset: Int,
         pred: (Char) -> Boolean,
     ): Pair<Int, Int>? {
-        var o = offset
-        if (o >= text.length || !pred(text[o])) {
+        var index = offset
+        if (index >= text.length || !pred(text[index])) {
             when {
-                o > 0 && pred(text[o - 1]) -> {
-                    o--
+                index > 0 && pred(text[index - 1]) -> {
+                    index--
                 }
 
                 else -> {
-                    var f = o
-                    while (f < text.length && !pred(text[f])) f++
-                    if (f >= text.length) return null
-                    o = f
+                    var next = index
+                    while (next < text.length && !pred(text[next])) next++
+                    if (next >= text.length) return null
+                    index = next
                 }
             }
         }
-        return spanAt(text, o, pred)
+        return spanAt(text, index, pred)
     }
 }

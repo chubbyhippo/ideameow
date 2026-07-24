@@ -41,7 +41,7 @@ data class ChordKey(
             modifiers: Int,
         ): ChordKey = ChordKey(keyCode, modifiers and ALL)
 
-        fun fromKeyStroke(ks: KeyStroke): ChordKey = of(ks.keyCode, ks.modifiers)
+        fun fromKeyStroke(keyStroke: KeyStroke): ChordKey = of(keyStroke.keyCode, keyStroke.modifiers)
     }
 }
 
@@ -95,8 +95,8 @@ object Rc {
 
     fun defaultsText(): String? = javaClass.getResourceAsStream("/$FILE_NAME")?.bufferedReader()?.use { it.readText() }
 
-    fun setForTest(c: Config) {
-        config = c
+    fun setForTest(newConfig: Config) {
+        config = newConfig
         loaded = true
         RcFileState.resetForTest()
     }
@@ -107,8 +107,8 @@ object Rc {
 
     fun load() {
         loaded = true
-        val f = rcFile()
-        config = if (f.isFile) parse(f.readLines()) else Config()
+        val file = rcFile()
+        config = if (file.isFile) parse(file.readLines()) else Config()
         RcFileState.saveParsed(config)
         if (config.errors.isNotEmpty()) {
             notify(
@@ -151,9 +151,11 @@ object Rc {
         return merged
     }
 
-    fun repeatMapFor(b: Binding): Map<Char, Binding>? =
+    fun repeatMapFor(binding: Binding): Map<Char, Binding>? =
         repeatGroups().values.firstOrNull { members ->
-            members.values.any { it.action == b.action && it.command == b.command && it.keys == b.keys }
+            members.values.any {
+                it.action == binding.action && it.command == binding.command && it.keys == binding.keys
+            }
         }
 
     fun whichKeyEnabled(): Boolean = config().whichKey ?: defaults().whichKey ?: true

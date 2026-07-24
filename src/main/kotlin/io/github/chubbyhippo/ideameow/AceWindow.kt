@@ -87,8 +87,10 @@ object AceWindow {
     ) {
         val frame = SwingUtilities.getWindowAncestor(editor.component) ?: return
         val editors =
-            (listOf(editor) + Windmove.visibleEditors(editor, frame)).mapNotNull { e ->
-                Windmove.rectIn(frame, e.component)?.let { Window(it, e, e.contentComponent) }
+            (listOf(editor) + Windmove.visibleEditors(editor, frame)).mapNotNull { visibleEditor ->
+                Windmove.rectIn(frame, visibleEditor.component)?.let {
+                    Window(it, visibleEditor, visibleEditor.contentComponent)
+                }
             }
         val panels = if (swap) emptyList() else previewPanels(editor, frame) + toolWindowPanels(editor, frame, editors)
         val layer = (frame as? RootPaneContainer)?.rootPane?.layeredPane
@@ -110,14 +112,14 @@ object AceWindow {
         current: Window? = null,
     ) {
         cancel(state)
-        val cur = current ?: windows.firstOrNull { it.editor === editor }
+        val resolvedCurrent = current ?: windows.firstOrNull { it.editor === editor }
         when (plan(windows.size)) {
             Plan.NONE -> return
 
-            Plan.OTHER -> perform(editor, swap, otherWindow(windows, cur), cur)
+            Plan.OTHER -> perform(editor, swap, otherWindow(windows, resolvedCurrent), resolvedCurrent)
 
             Plan.LABELS -> {
-                val session = Session(swap, windows, layer, cur)
+                val session = Session(swap, windows, layer, resolvedCurrent)
                 state.aceWindow = session
                 session.node = Avy.tree(windows.indices.toList())
                 paintLabels(session)
@@ -128,11 +130,11 @@ object AceWindow {
     fun key(
         editor: Editor,
         state: MeowState,
-        c: Char,
+        char: Char,
     ) {
         val session = state.aceWindow ?: return
         val node = session.node ?: return
-        when (val child = node.children.firstOrNull { it.first == c }?.second) {
+        when (val child = node.children.firstOrNull { it.first == char }?.second) {
             is Avy.Leaf -> {
                 val target = session.windows.getOrNull(child.offset)
                 val swap = session.swap
@@ -147,7 +149,7 @@ object AceWindow {
             }
 
             null -> {
-                Ide.hint(editor, "No such candidate: $c")
+                Ide.hint(editor, "No such candidate: $char")
             }
         }
     }
@@ -179,13 +181,13 @@ object AceWindow {
         target: Editor,
     ) {
         val project = editor.project ?: return
-        val fem = FileEditorManagerEx.getInstanceEx(project)
-        val current = fem.currentWindow
+        val fileEditorManager = FileEditorManagerEx.getInstanceEx(project)
+        val current = fileEditorManager.currentWindow
         val targetWindow =
-            fem.windows
+            fileEditorManager.windows
                 .firstOrNull { SwingUtilities.isDescendingFrom(target.component, it.tabbedPane.component) }
                 ?.takeIf { it !== current }
-        if (current == null || targetWindow == null || !Windmove.exchange(fem, current, targetWindow)) {
+        if (current == null || targetWindow == null || !Windmove.exchange(fileEditorManager, current, targetWindow)) {
             Ide.hint(editor, "Cannot swap with this window")
         }
     }
@@ -273,7 +275,11 @@ private fun toolWindowPanels(
                 Windmove.rectIn(frame, paneHost(pane))?.let { AceWindow.Window(it, null, pane, pane) }
             }
         if (paneWindows.isNotEmpty()) return@flatMap paneWindows
-        if (editors.any { w -> w.editor != null && SwingUtilities.isDescendingFrom(w.editor.component, component) }) {
+        val containsEnumeratedEditor =
+            editors.any { window ->
+                window.editor != null && SwingUtilities.isDescendingFrom(window.editor.component, component)
+            }
+        if (containsEnumeratedEditor) {
             return@flatMap emptyList()
         }
         val focusable = toolWindow.contentManagerIfCreated?.selectedContent?.preferredFocusableComponent
@@ -290,15 +296,15 @@ internal fun panes(root: Component): List<JComponent> {
     val queue = ArrayDeque<Component>()
     queue.add(root)
     while (queue.isNotEmpty()) {
-        val c = queue.removeFirst()
-        if (!c.isVisible) continue
+        val component = queue.removeFirst()
+        if (!component.isVisible) continue
         when {
-            c is JTree || c is JTable || c is JList<*> -> out.add(c as JComponent)
+            component is JTree || component is JTable || component is JList<*> -> out.add(component as JComponent)
 
-            c is Container -> queue += c.components
+            component is Container -> queue += component.components
         }
     }
     return out
 }
 
-internal fun paneHost(c: JComponent): Component = SwingUtilities.getAncestorOfClass(JScrollPane::class.java, c) ?: c
+internal fun paneHost(component: JComponent): Component = SwingUtilities.getAncestorOfClass(JScrollPane::class.java, component) ?: component

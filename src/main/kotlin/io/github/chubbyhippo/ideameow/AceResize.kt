@@ -68,8 +68,8 @@ object AceResize {
         val canvases = mutableListOf<JComponent>()
     }
 
-    fun dirOf(c: Char): Dir? =
-        when (c) {
+    fun dirOf(char: Char): Dir? =
+        when (char) {
             'h' -> Dir.LEFT
             'l' -> Dir.RIGHT
             'j' -> Dir.DOWN
@@ -147,10 +147,10 @@ object AceResize {
     fun key(
         editor: Editor,
         state: MeowState,
-        c: Char,
+        char: Char,
     ) {
         val session = state.aceResize ?: return
-        if (session.phase == Phase.HOLD) hold(state, session, c) else pick(editor, state, session, c)
+        if (session.phase == Phase.HOLD) hold(state, session, char) else pick(editor, state, session, char)
     }
 
     fun holdArrow(
@@ -176,10 +176,10 @@ private fun pick(
     editor: Editor,
     state: MeowState,
     session: AceResize.Session,
-    c: Char,
+    char: Char,
 ) {
     val node = session.node ?: return
-    when (val child = node.children.firstOrNull { it.first == c }?.second) {
+    when (val child = node.children.firstOrNull { it.first == char }?.second) {
         is Avy.Leaf -> enterHold(editor, state, session, child.offset)
 
         is Avy.Branch -> {
@@ -187,7 +187,7 @@ private fun pick(
             paintLabels(session)
         }
 
-        null -> Ide.hint(editor, "No such candidate: $c")
+        null -> Ide.hint(editor, "No such candidate: $char")
     }
 }
 
@@ -212,9 +212,9 @@ private fun enterHold(
 private fun hold(
     state: MeowState,
     session: AceResize.Session,
-    c: Char,
+    char: Char,
 ) {
-    val dir = AceResize.dirOf(c)
+    val dir = AceResize.dirOf(char)
     val target = session.picked
     if (dir == null || target == null) {
         AceResize.cancel(state)
@@ -259,12 +259,12 @@ private fun splitterTargets(
     val queue = ArrayDeque<Component>()
     queue.add(frame)
     while (queue.isNotEmpty()) {
-        val c = queue.removeFirst()
-        if (!c.isVisible) continue
-        if (c is Splitter && c.firstComponent != null && c.secondComponent != null) {
-            splitterTarget(c, layer)?.let { out.add(it) }
+        val component = queue.removeFirst()
+        if (!component.isVisible) continue
+        if (component is Splitter && component.firstComponent != null && component.secondComponent != null) {
+            splitterTarget(component, layer)?.let { out.add(it) }
         }
-        if (c is Container) queue += c.components
+        if (component is Container) queue += component.components
     }
     return out
 }
@@ -283,8 +283,8 @@ private fun splitterTarget(
                 } else {
                     Rectangle(first.x + first.width, 0, 1, splitter.height)
                 }
-            val r = SwingUtilities.convertRectangle(splitter, spot, layer)
-            Point(r.x + r.width / 2, r.y + r.height / 2)
+            val rect = SwingUtilities.convertRectangle(splitter, spot, layer)
+            Point(rect.x + rect.width / 2, rect.y + rect.height / 2)
         } else {
             null
         }
@@ -327,13 +327,14 @@ private fun toolWindowBoundary(
 ): Point? {
     if (layer == null || !area.isShowing || !toolWindow.isShowing) return null
     val areaRect = SwingUtilities.convertRectangle(area, Rectangle(0, 0, area.width, area.height), layer)
-    val tw = SwingUtilities.convertRectangle(toolWindow, Rectangle(0, 0, toolWindow.width, toolWindow.height), layer)
+    val toolWindowRect =
+        SwingUtilities.convertRectangle(toolWindow, Rectangle(0, 0, toolWindow.width, toolWindow.height), layer)
     return when (anchor) {
-        ToolWindowAnchor.LEFT -> Point(areaRect.x, tw.y + tw.height / 2)
-        ToolWindowAnchor.RIGHT -> Point(areaRect.x + areaRect.width, tw.y + tw.height / 2)
-        ToolWindowAnchor.TOP -> Point(tw.x + tw.width / 2, areaRect.y)
-        ToolWindowAnchor.BOTTOM -> Point(tw.x + tw.width / 2, areaRect.y + areaRect.height)
-        else -> Point(tw.x + tw.width / 2, tw.y + tw.height / 2)
+        ToolWindowAnchor.LEFT -> Point(areaRect.x, toolWindowRect.y + toolWindowRect.height / 2)
+        ToolWindowAnchor.RIGHT -> Point(areaRect.x + areaRect.width, toolWindowRect.y + toolWindowRect.height / 2)
+        ToolWindowAnchor.TOP -> Point(toolWindowRect.x + toolWindowRect.width / 2, areaRect.y)
+        ToolWindowAnchor.BOTTOM -> Point(toolWindowRect.x + toolWindowRect.width / 2, areaRect.y + areaRect.height)
+        else -> Point(toolWindowRect.x + toolWindowRect.width / 2, toolWindowRect.y + toolWindowRect.height / 2)
     }
 }
 
@@ -372,11 +373,11 @@ private class ResizeBadges(
         graphics.font = graphics.font.deriveFont(Font.BOLD)
         val metrics = graphics.fontMetrics
         for ((center, label) in entries) {
-            val p = center() ?: continue
+            val point = center() ?: continue
             val width = metrics.stringWidth(label) + Overlay.LABEL_PADDING
             val height = metrics.height
-            val x = p.x - width / 2
-            val y = p.y - height / 2
+            val x = point.x - width / 2
+            val y = point.y - height / 2
             graphics.color = Avy.LEAD_BG
             graphics.fillRect(x, y, width, height)
             graphics.color = Avy.LEAD_FG

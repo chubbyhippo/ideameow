@@ -33,9 +33,9 @@ internal object Structures {
     private fun pendThing(
         editor: Editor,
         state: MeowState,
-        p: Pending,
+        pending: Pending,
     ) {
-        state.pending = p
+        state.pending = pending
         WhichKey.scheduleThings(editor)
     }
 
@@ -43,23 +43,23 @@ internal object Structures {
         editor: Editor,
         state: MeowState,
         kind: Pending,
-        ch: Char,
+        char: Char,
     ) {
-        val off = editor.caretModel.offset
-        val b =
+        val offset = editor.caretModel.offset
+        val bounds =
             when (kind) {
-                Pending.BOUNDS -> Things.bounds(editor, ch, off)
-                else -> Things.inner(editor, ch, off)
+                Pending.BOUNDS -> Things.bounds(editor, char, offset)
+                else -> Things.inner(editor, char, offset)
             } ?: run {
-                Ide.hint(editor, "No thing '$ch' here")
+                Ide.hint(editor, "No thing '$char' here")
                 return
             }
         val (mark, point) =
             when (kind) {
-                Pending.INNER -> b.start to b.end
-                Pending.BOUNDS -> b.end to b.start
-                Pending.BEGIN -> off to b.start
-                Pending.END -> off to b.end
+                Pending.INNER -> bounds.start to bounds.end
+                Pending.BOUNDS -> bounds.end to bounds.start
+                Pending.BEGIN -> offset to bounds.start
+                Pending.END -> offset to bounds.end
                 else -> return
             }
         Selections.select(editor, state, SelType.TRANSIENT, mark, point, expand = false)
@@ -72,8 +72,8 @@ internal object Structures {
 
     private fun enclosingPair(
         text: CharSequence,
-        s: Int,
-        e: Int,
+        start: Int,
+        end: Int,
     ): PairRange? {
         val opens = "([{"
         val closes = ")]}"
@@ -81,33 +81,19 @@ internal object Structures {
         var best: PairRange? = null
         var i = 0
         while (i < text.length) {
-            val c = text[i]
-            if (c == '"' || c == '\'' || c == '`') {
-                var j = i + 1
-                while (j < text.length && text[j] != c && text[j] != '\n') {
-                    if (text[j] == '\\') j++
-                    j++
-                }
-                if (j < text.length && text[j] == c) {
-                    i = j + 1
-                    continue
-                }
+            val afterQuote = skipQuoted(text, i)
+            if (afterQuote != i) {
+                i = afterQuote
+                continue
             }
-            when (c) {
-                in opens -> {
-                    stack.addLast(i)
-                }
+            val char = text[i]
+            when (char) {
+                in opens -> stack.addLast(i)
 
                 in closes -> {
-                    val kind = closes.indexOf(c)
-                    while (stack.isNotEmpty()) {
-                        val o = stack.removeLast()
-                        if (opens.indexOf(text[o]) == kind) {
-                            if (o < s && i + 1 >= e && (best == null || i - o < best.close - best.open)) {
-                                best = PairRange(o, i)
-                            }
-                            break
-                        }
+                    val open = popMatchingOpen(text, stack, opens, closes.indexOf(char))
+                    if (open >= 0 && encloses(open, i, start, end) && tighterThan(best, open, i)) {
+                        best = PairRange(open, i)
                     }
                 }
             }
@@ -116,28 +102,68 @@ internal object Structures {
         return best
     }
 
+    private fun skipQuoted(
+        text: CharSequence,
+        offset: Int,
+    ): Int {
+        val quote = text[offset]
+        if (quote != '"' && quote != '\'' && quote != '`') return offset
+        var j = offset + 1
+        while (j < text.length && text[j] != quote && text[j] != '\n') {
+            if (text[j] == '\\') j++
+            j++
+        }
+        return if (j < text.length && text[j] == quote) j + 1 else offset
+    }
+
+    private fun popMatchingOpen(
+        text: CharSequence,
+        stack: ArrayDeque<Int>,
+        opens: String,
+        closeKind: Int,
+    ): Int {
+        while (stack.isNotEmpty()) {
+            val open = stack.removeLast()
+            if (opens.indexOf(text[open]) == closeKind) return open
+        }
+        return -1
+    }
+
+    private fun encloses(
+        open: Int,
+        close: Int,
+        start: Int,
+        end: Int,
+    ) = open < start && close + 1 >= end
+
+    private fun tighterThan(
+        best: PairRange?,
+        open: Int,
+        close: Int,
+    ) = best == null || close - open < best.close - best.open
+
     private fun block(
         editor: Editor,
         state: MeowState,
     ) {
-        val sm = editor.selectionModel
+        val selectionModel = editor.selectionModel
         val text = editor.document.charsSequence
         val back = Selections.backwardP(editor) != (state.takeCount(1) < 0)
-        val (s, e) =
-            if (state.selType == SelType.BLOCK && sm.hasSelection()) {
-                sm.selectionStart to sm.selectionEnd
+        val (start, end) =
+            if (state.selType == SelType.BLOCK && selectionModel.hasSelection()) {
+                selectionModel.selectionStart to selectionModel.selectionEnd
             } else {
                 editor.caretModel.offset to editor.caretModel.offset
             }
-        val p =
-            enclosingPair(text, s, e) ?: run {
+        val pair =
+            enclosingPair(text, start, end) ?: run {
                 Ide.hint(editor, "No enclosing block")
                 return
             }
         if (back) {
-            Selections.select(editor, state, SelType.BLOCK, p.close + 1, p.open, expand = true)
+            Selections.select(editor, state, SelType.BLOCK, pair.close + 1, pair.open, expand = true)
         } else {
-            Selections.select(editor, state, SelType.BLOCK, p.open, p.close + 1, expand = true)
+            Selections.select(editor, state, SelType.BLOCK, pair.open, pair.close + 1, expand = true)
         }
     }
 
@@ -148,12 +174,12 @@ internal object Structures {
         val text = editor.document.charsSequence
         val back = (state.selType == SelType.BLOCK && Selections.backwardP(editor)) || state.takeCount(1) < 0
         val caret = editor.caretModel.offset
-        val p =
+        val pair =
             enclosingPair(text, caret, caret) ?: run {
                 Ide.hint(editor, "No enclosing block")
                 return
             }
-        Selections.select(editor, state, SelType.BLOCK, caret, if (back) p.open else p.close + 1, expand = true)
+        Selections.select(editor, state, SelType.BLOCK, caret, if (back) pair.open else pair.close + 1, expand = true)
     }
 
     private fun join(
@@ -162,31 +188,31 @@ internal object Structures {
     ) {
         val doc = editor.document
         if (doc.textLength == 0) return
-        val n = state.takeCount(1)
+        val count = state.takeCount(1)
         val text = doc.charsSequence
 
-        fun blank(l: Int) = text.subSequence(doc.getLineStartOffset(l), doc.getLineEndOffset(l)).isBlank()
+        fun blank(line: Int) = text.subSequence(doc.getLineStartOffset(line), doc.getLineEndOffset(line)).isBlank()
 
         val ln = doc.getLineNumber(editor.caretModel.offset)
         val markLine: Int
         val pointLine: Int
-        if (n >= 0) {
-            var pl = ln - 1
-            while (pl >= 0 && blank(pl)) pl--
-            if (pl < 0) return
-            markLine = pl
+        if (count >= 0) {
+            var previousLine = ln - 1
+            while (previousLine >= 0 && blank(previousLine)) previousLine--
+            if (previousLine < 0) return
+            markLine = previousLine
             pointLine = ln
         } else {
-            var nl = ln + 1
-            while (nl <= doc.lineCount - 1 && blank(nl)) nl++
-            if (nl > doc.lineCount - 1) return
+            var nextLine = ln + 1
+            while (nextLine <= doc.lineCount - 1 && blank(nextLine)) nextLine++
+            if (nextLine > doc.lineCount - 1) return
             markLine = ln
-            pointLine = nl
+            pointLine = nextLine
         }
-        val m = doc.getLineEndOffset(markLine)
-        var p = doc.getLineStartOffset(pointLine)
-        val eol = doc.getLineEndOffset(pointLine)
-        while (p < eol && text[p].isWhitespace()) p++
-        Selections.select(editor, state, SelType.JOIN, m, p, expand = true)
+        val mark = doc.getLineEndOffset(markLine)
+        var point = doc.getLineStartOffset(pointLine)
+        val lineEnd = doc.getLineEndOffset(pointLine)
+        while (point < lineEnd && text[point].isWhitespace()) point++
+        Selections.select(editor, state, SelType.JOIN, mark, point, expand = true)
     }
 }

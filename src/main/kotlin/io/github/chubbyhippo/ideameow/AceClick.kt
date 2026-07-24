@@ -112,46 +112,46 @@ object AceClick {
         val queue = ArrayDeque<Component>()
         queue.add(root)
         while (queue.isNotEmpty()) {
-            val c = queue.removeFirst()
-            if (!c.isVisible) continue
-            if (c is Container) queue += c.components
-            val rows = rowTargets(c, layer)
-            if (rows != null) out.addAll(rows) else targetOf(c, layer)?.let { out.add(it) }
+            val component = queue.removeFirst()
+            if (!component.isVisible) continue
+            if (component is Container) queue += component.components
+            val rows = rowTargets(component, layer)
+            if (rows != null) out.addAll(rows) else targetOf(component, layer)?.let { out.add(it) }
         }
         return out
     }
 
     private fun targetOf(
-        c: Component,
+        component: Component,
         layer: JLayeredPane,
     ): Target? {
-        if (c !is JComponent || !c.isShowing) return null
-        val click = clicker(c) ?: return null
-        val visible = c.visibleRect
+        if (component !is JComponent || !component.isShowing) return null
+        val click = clicker(component) ?: return null
+        val visible = component.visibleRect
         if (visible.width <= 0 || visible.height <= 0) return null
         val screen = Rectangle(visible)
         val corner = screen.location
-        SwingUtilities.convertPointToScreen(corner, c)
+        SwingUtilities.convertPointToScreen(corner, component)
         screen.location = corner
         val point = centerOf(visible)
         return Target(
-            SwingUtilities.convertRectangle(c, visible, layer),
-            c,
+            SwingUtilities.convertRectangle(component, visible, layer),
+            component,
             layer,
             screen,
             click = click,
-            rightClick = { popupClick(c, point) },
+            rightClick = { popupClick(component, point) },
         )
     }
 
     private fun rowTargets(
-        c: Component,
+        component: Component,
         layer: JLayeredPane,
     ): List<Target>? {
-        if (c !is JComponent || !c.isShowing) return null
-        return when (c) {
-            is JTree -> treeRows(c, layer)
-            is JList<*> -> listCells(c, layer)
+        if (component !is JComponent || !component.isShowing) return null
+        return when (component) {
+            is JTree -> treeRows(component, layer)
+            is JList<*> -> listCells(component, layer)
             else -> null
         }
     }
@@ -193,25 +193,25 @@ object AceClick {
     }
 
     private fun rowTarget(
-        c: JComponent,
+        component: JComponent,
         rectInComponent: Rectangle,
         layer: JLayeredPane,
         click: () -> Unit,
     ): Target {
         val screen = Rectangle(rectInComponent)
         val corner = screen.location
-        SwingUtilities.convertPointToScreen(corner, c)
+        SwingUtilities.convertPointToScreen(corner, component)
         screen.location = corner
         val point = centerOf(rectInComponent)
         return Target(
-            SwingUtilities.convertRectangle(c, rectInComponent, layer),
-            c,
+            SwingUtilities.convertRectangle(component, rectInComponent, layer),
+            component,
             layer,
             screen,
             click = click,
             rightClick = {
                 click()
-                popupClick(c, point)
+                popupClick(component, point)
             },
         )
     }
@@ -232,38 +232,38 @@ object AceClick {
         list.ensureIndexIsVisible(index)
     }
 
-    private fun centerOf(r: Rectangle) = Point(r.x + r.width / 2, r.y + r.height / 2)
+    private fun centerOf(rect: Rectangle) = Point(rect.x + rect.width / 2, rect.y + rect.height / 2)
 
     private fun popupClick(
-        c: JComponent,
-        p: Point,
+        component: JComponent,
+        point: Point,
     ) {
         val time = System.currentTimeMillis()
         for (id in intArrayOf(MouseEvent.MOUSE_PRESSED, MouseEvent.MOUSE_RELEASED)) {
-            c.dispatchEvent(MouseEvent(c, id, time, 0, p.x, p.y, 1, true, MouseEvent.BUTTON3))
+            component.dispatchEvent(MouseEvent(component, id, time, 0, point.x, point.y, 1, true, MouseEvent.BUTTON3))
         }
     }
 
-    internal fun clicker(c: JComponent): (() -> Unit)? {
-        if (!c.isEnabled) return null
+    internal fun clicker(component: JComponent): (() -> Unit)? {
+        if (!component.isEnabled) return null
         return when {
-            c is ActionButton -> ({ clickActionButton(c) })
+            component is ActionButton -> ({ clickActionButton(component) })
 
-            c is JMenuItem -> ({ clickMenuItem(c) })
+            component is JMenuItem -> ({ clickMenuItem(component) })
 
-            c is AbstractButton && !wrappedButtonChild(c.parent) -> ({ c.doClick() })
+            component is AbstractButton && !wrappedButtonChild(component.parent) -> ({ component.doClick() })
 
-            c is InplaceButton -> ({ c.doClick() })
+            component is InplaceButton -> ({ component.doClick() })
 
-            c is LinkLabel<*> -> ({ c.doClick() })
+            component is LinkLabel<*> -> ({ component.doClick() })
 
-            c is HyperlinkLabel -> ({ c.doClick() })
+            component is HyperlinkLabel -> ({ component.doClick() })
 
-            c is JComboBox<*> -> ({ c.showPopup() })
+            component is JComboBox<*> -> ({ component.showPopup() })
 
-            c is TabLabel -> ({ mouseClick(c) })
+            component is TabLabel -> ({ mouseClick(component) })
 
-            standaloneTextInput(c) -> ({ mouseClick(c) })
+            standaloneTextInput(component) -> ({ mouseClick(component) })
 
             else -> null
         }
@@ -272,12 +272,12 @@ object AceClick {
     fun key(
         editor: Editor,
         state: MeowState,
-        c: Char,
+        char: Char,
     ) {
         val session = state.aceClick ?: return
         val node = session.node ?: return
-        val lower = c.lowercaseChar()
-        val secondary = c != lower
+        val lower = char.lowercaseChar()
+        val secondary = char != lower
         when (val child = node.children.firstOrNull { it.first == lower }?.second) {
             is Avy.Leaf -> {
                 val target = session.targets.getOrNull(child.offset)
@@ -301,7 +301,7 @@ object AceClick {
             }
 
             null -> {
-                Ide.hint(editor, "No such candidate: $c")
+                Ide.hint(editor, "No such candidate: $char")
             }
         }
     }
@@ -327,45 +327,45 @@ object AceClick {
     }
 }
 
-private fun clickMenuItem(c: JMenuItem) {
-    if (c is JMenu) {
-        c.doClick()
+private fun clickMenuItem(menuItem: JMenuItem) {
+    if (menuItem is JMenu) {
+        menuItem.doClick()
         return
     }
     MenuSelectionManager.defaultManager().clearSelectedPath()
-    c.doClick(0)
+    menuItem.doClick(0)
 }
 
 @Suppress("UnstableApiUsage")
-private fun clickActionButton(c: ActionButton) {
-    if (c.isShowing) {
-        c.click()
+private fun clickActionButton(button: ActionButton) {
+    if (button.isShowing) {
+        button.click()
         return
     }
     val stamped = mutableListOf<JComponent>()
-    var p: Component? = c
-    while (p is JComponent) {
-        stamped.add(p)
-        p.putClientProperty(ActionUtil.ALLOW_ACTION_PERFORM_WHEN_HIDDEN, true)
-        if (p is ActionToolbar) break
-        p = p.parent
+    var ancestor: Component? = button
+    while (ancestor is JComponent) {
+        stamped.add(ancestor)
+        ancestor.putClientProperty(ActionUtil.ALLOW_ACTION_PERFORM_WHEN_HIDDEN, true)
+        if (ancestor is ActionToolbar) break
+        ancestor = ancestor.parent
     }
     try {
-        c.click()
+        button.click()
     } finally {
         stamped.forEach { it.putClientProperty(ActionUtil.ALLOW_ACTION_PERFORM_WHEN_HIDDEN, null) }
     }
 }
 
-private fun wrappedButtonChild(p: Container?): Boolean = p is JComboBox<*> || p is JSpinner || p is JScrollBar
+private fun wrappedButtonChild(parent: Container?): Boolean = parent is JComboBox<*> || parent is JSpinner || parent is JScrollBar
 
-private fun standaloneTextInput(c: JComponent): Boolean =
-    c is JTextComponent &&
-        c.isEditable &&
-        SwingUtilities.getAncestorOfClass(JComboBox::class.java, c) == null &&
-        SwingUtilities.getAncestorOfClass(JSpinner::class.java, c) == null
+private fun standaloneTextInput(component: JComponent): Boolean =
+    component is JTextComponent &&
+        component.isEditable &&
+        SwingUtilities.getAncestorOfClass(JComboBox::class.java, component) == null &&
+        SwingUtilities.getAncestorOfClass(JSpinner::class.java, component) == null
 
-private fun mouseClick(c: JComponent) {
+private fun mouseClick(component: JComponent) {
     val time = System.currentTimeMillis()
     val ids =
         intArrayOf(
@@ -374,8 +374,8 @@ private fun mouseClick(c: JComponent) {
             MouseEvent.MOUSE_CLICKED,
         )
     for (id in ids) {
-        c.dispatchEvent(
-            MouseEvent(c, id, time, 0, c.width / 2, c.height / 2, 1, false, MouseEvent.BUTTON1),
+        component.dispatchEvent(
+            MouseEvent(component, id, time, 0, component.width / 2, component.height / 2, 1, false, MouseEvent.BUTTON1),
         )
     }
 }

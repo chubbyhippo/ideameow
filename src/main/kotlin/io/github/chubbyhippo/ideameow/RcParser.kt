@@ -19,88 +19,60 @@ package io.github.chubbyhippo.ideameow
 import javax.swing.KeyStroke
 
 internal object RcParser {
-    private val ACTION_RE = Regex("""(?i)<action>\(([\w.$(),=-]+)\)""")
-    private val WHICHKEY_LET_RE = Regex("""^let\s+g:WhichKeyDesc\w*\s*=\s*"(.+)"$""")
+    private val ACTION_REGEX = Regex("""(?i)<action>\(([\w.$(),=-]+)\)""")
+    private val WHICHKEY_LET_REGEX = Regex("""^let\s+g:WhichKeyDesc\w*\s*=\s*"(.+)"$""")
 
     fun parse(lines: List<String>): Rc.Config {
-        val c = Rc.Config()
-        for ((i, raw) in lines.withIndex()) {
-            var line = raw.trim()
-
-            fun err(msg: String) = c.errors.add("line ${i + 1}: $msg")
-
-            if (line.isEmpty() || line.startsWith("\"") || line.startsWith("#")) continue
-
-            val wk = WHICHKEY_LET_RE.matchEntire(line)
-            if (wk != null) {
-                parseDescBody(c, wk.groupValues[1], ::err)
-                continue
-            }
-
-            val cut = Regex("\\s\"").find(line)?.range?.first
-            if (cut != null) line = line.substring(0, cut).trimEnd()
-            if (line.isEmpty()) continue
-
-            val split = line.split(Regex("\\s+"), limit = 2)
-            val cmd = split[0]
-            val rest = split.getOrNull(1)?.trim() ?: ""
-            when (cmd) {
-                "let" -> {}
-
-                "set" -> {
-                    parseSet(c, rest)
-                }
-
-                "desc" -> {
-                    parseDescBody(c, rest, ::err)
-                }
-
-                "map", "noremap", "nmap", "nnoremap", "mmap", "mnoremap" -> {
-                    parseMap(c, cmd, rest, ::err)
-                }
-
-                "cmap", "cnoremap" -> {
-                    parseChord(c, cmd, rest, ::err)
-                }
-
-                "repeat" -> {
-                    parseRepeat(c, rest, ::err)
-                }
-
-                else -> {
-                    err("unknown command '$cmd'")
-                }
-            }
+        val config = Rc.Config()
+        for ((index, raw) in lines.withIndex()) {
+            parseLine(config, raw.trim()) { message -> config.errors.add("line ${index + 1}: $message") }
         }
-        return c
+        return config
     }
 
-    private fun parseSet(
-        c: Rc.Config,
-        rest: String,
+    private fun parseLine(
+        config: Rc.Config,
+        line: String,
+        err: (String) -> Unit,
     ) {
-        when {
-            rest == "which-key" -> {
-                c.whichKey = true
-            }
+        if (line.isEmpty() || line.startsWith("\"") || line.startsWith("#")) return
 
-            rest == "nowhich-key" -> {
-                c.whichKey = false
-            }
+        val whichKeyLet = WHICHKEY_LET_REGEX.matchEntire(line)
+        if (whichKeyLet != null) {
+            parseDescBody(config, whichKeyLet.groupValues[1], err)
+            return
+        }
 
-            rest.startsWith("timeoutlen") -> {
-                val n =
-                    rest.substringAfter("=", "").trim().toIntOrNull()
-                        ?: rest.split(Regex("\\s+")).getOrNull(1)?.toIntOrNull()
-                if (n != null && n >= 0) c.whichKeyDelayMs = n
-            }
+        var text = line
+        val cut = Regex("\\s\"").find(text)?.range?.first
+        if (cut != null) text = text.substring(0, cut).trimEnd()
+        if (text.isEmpty()) return
 
-            else -> {}
+        val split = text.split(Regex("\\s+"), limit = 2)
+        val command = split[0]
+        val rest = split.getOrNull(1)?.trim() ?: ""
+        dispatchCommand(config, command, rest, err)
+    }
+
+    private fun dispatchCommand(
+        config: Rc.Config,
+        command: String,
+        rest: String,
+        err: (String) -> Unit,
+    ) {
+        when (command) {
+            "let" -> {}
+            "set" -> parseSet(config, rest)
+            "desc" -> parseDescBody(config, rest, err)
+            "map", "noremap", "nmap", "nnoremap", "mmap", "mnoremap" -> parseMap(config, command, rest, err)
+            "cmap", "cnoremap" -> parseChord(config, command, rest, err)
+            "repeat" -> parseRepeat(config, rest, err)
+            else -> err("unknown command '$command'")
         }
     }
 
     private fun parseDescBody(
-        c: Rc.Config,
+        config: Rc.Config,
         body: String,
         err: (String) -> Unit,
     ) {
@@ -116,82 +88,94 @@ internal object RcParser {
             err("empty key sequence in description: $body")
             return
         }
-        c.keypadDesc[seq] = desc
+        config.keypadDesc[seq] = desc
     }
 
     private fun parseMap(
-        c: Rc.Config,
-        cmd: String,
+        config: Rc.Config,
+        command: String,
         rest: String,
         err: (String) -> Unit,
     ) {
         val parts = rest.split(Regex("\\s+"), limit = 2)
         if (parts.size < 2) {
-            err("$cmd needs a key and a target")
+            err("$command needs a key and a target")
             return
         }
         val lhs = parts[0]
         val rhs = parts[1].trim()
-        val recursive = cmd == "map" || cmd == "nmap" || cmd == "mmap"
-        val motion = cmd == "mmap" || cmd == "mnoremap"
+        val recursive = command == "map" || command == "nmap" || command == "mmap"
+        val motion = command == "mmap" || command == "mnoremap"
 
-        val binding = parseTarget(rhs, recursive, "$cmd $rest", err) ?: return
+        val binding = parseTarget(rhs, recursive, "$command $rest", err) ?: return
 
         if (lhs.startsWith("<leader>")) {
             if (motion) {
-                err("$cmd cannot define keypad entries; use map <leader>...")
+                err("$command cannot define keypad entries; use map <leader>...")
                 return
             }
-            val seq = parseKeys(lhs.removePrefix("<leader>"), err) ?: return
-            when {
-                seq.isEmpty() -> err("<leader> alone cannot be mapped")
-                seq[0] in "0123456789?/" -> err("keypad ${seq[0]} is reserved (digit argument / cheatsheet / describe)")
-                else -> c.keypad[seq] = binding
-            }
+            mapLeader(config, lhs, binding, err)
             return
         }
+        mapKey(config, lhs, motion, binding, err)
+    }
 
+    private fun mapLeader(
+        config: Rc.Config,
+        lhs: String,
+        binding: Rc.Binding,
+        err: (String) -> Unit,
+    ) {
+        val seq = parseKeys(lhs.removePrefix("<leader>"), err) ?: return
+        when {
+            seq.isEmpty() -> err("<leader> alone cannot be mapped")
+            seq[0] in "0123456789?/" -> err("keypad ${seq[0]} is reserved (digit argument / cheatsheet / describe)")
+            else -> config.keypad[seq] = binding
+        }
+    }
+
+    private fun mapKey(
+        config: Rc.Config,
+        lhs: String,
+        motion: Boolean,
+        binding: Rc.Binding,
+        err: (String) -> Unit,
+    ) {
         val keys = parseKeys(lhs, err) ?: return
         when {
-            keys.length != 1 -> {
+            keys.length != 1 ->
                 err("${if (motion) "motion" else "normal"}-mode key must be a single printable key: $lhs")
-            }
 
-            keys == " " -> {
-                err("SPC is the keypad key and cannot be remapped")
-            }
-
-            else -> {
-                (if (motion) c.motion else c.normal)[keys[0]] = binding
-            }
+            keys == " " -> err("SPC is the keypad key and cannot be remapped")
+            else -> (if (motion) config.motion else config.normal)[keys[0]] = binding
         }
     }
 
     private fun parseChord(
-        c: Rc.Config,
-        cmd: String,
+        config: Rc.Config,
+        command: String,
         rest: String,
         err: (String) -> Unit,
     ) {
         val tokens = rest.trim().split(Regex("\\s+")).filter { it.isNotEmpty() }
         if (tokens.size < 2) {
-            err("$cmd needs a chord keystroke and a target")
+            err("$command needs a chord keystroke and a target")
             return
         }
         val target = tokens.last()
-        val keystroke = tokens.dropLast(1).joinToString(" ")
-        val ks = KeyStroke.getKeyStroke(keystroke)
-        if (ks == null || ks.keyCode == 0) {
-            err("$cmd: cannot parse chord '$keystroke' (use e.g. 'control F', 'alt shift COMMA')")
+        val keystrokeText = tokens.dropLast(1).joinToString(" ")
+        val keyStroke = KeyStroke.getKeyStroke(keystrokeText)
+        if (keyStroke == null || keyStroke.keyCode == 0) {
+            err("$command: cannot parse chord '$keystrokeText' (use e.g. 'control F', 'alt shift COMMA')")
             return
         }
-        val key = ChordKey.fromKeyStroke(ks)
+        val key = ChordKey.fromKeyStroke(keyStroke)
         if (!key.hasNonShiftModifier()) {
-            err("$cmd: chord '$keystroke' needs a Ctrl, Alt or Meta modifier")
+            err("$command: chord '$keystrokeText' needs a Ctrl, Alt or Meta modifier")
             return
         }
-        val binding = parseTarget(target, recursive = cmd == "cmap", "$cmd $rest", err) ?: return
-        c.chords[key] = binding
+        val binding = parseTarget(target, recursive = command == "cmap", "$command $rest", err) ?: return
+        config.chords[key] = binding
     }
 
     private fun parseTarget(
@@ -200,7 +184,7 @@ internal object RcParser {
         errContext: String,
         err: (String) -> Unit,
     ): Rc.Binding? {
-        val action = ACTION_RE.matchEntire(rhs)?.groupValues?.get(1)
+        val action = ACTION_REGEX.matchEntire(rhs)?.groupValues?.get(1)
         return when {
             action != null -> {
                 Rc.Binding(action = action, recursive = recursive)
@@ -228,7 +212,7 @@ internal object RcParser {
     }
 
     private fun parseRepeat(
-        c: Rc.Config,
+        config: Rc.Config,
         rest: String,
         err: (String) -> Unit,
     ) {
@@ -250,46 +234,70 @@ internal object RcParser {
 
             else -> {
                 val binding = parseTarget(rhs.trim(), recursive = true, "repeat $rest", err) ?: return
-                c.repeat.getOrPut(group) { LinkedHashMap() }[key[0]] = binding
+                config.repeat.getOrPut(group) { LinkedHashMap() }[key[0]] = binding
             }
         }
     }
+}
 
-    private fun parseKeys(
-        s: String,
-        err: (String) -> Unit,
-    ): String? {
-        val out = StringBuilder()
-        var i = 0
-        while (i < s.length) {
-            val ch = s[i]
-            if (ch == '<') {
-                val close = s.indexOf('>', i)
-                if (close < 0) {
-                    out.append(ch)
-                    i++
-                    continue
-                }
-                when (s.substring(i + 1, close).lowercase()) {
-                    "space" -> {
-                        out.append(' ')
-                    }
+private fun parseSet(
+    config: Rc.Config,
+    rest: String,
+) {
+    when {
+        rest == "which-key" -> {
+            config.whichKey = true
+        }
 
-                    "lt" -> {
-                        out.append('<')
-                    }
+        rest == "nowhich-key" -> {
+            config.whichKey = false
+        }
 
-                    else -> {
-                        err("unsupported key token ${s.substring(i, close + 1)} (only printable keys reach the meow engine)")
-                        return null
-                    }
-                }
-                i = close + 1
-            } else {
-                out.append(ch)
+        rest.startsWith("timeoutlen") -> {
+            val delay =
+                rest.substringAfter("=", "").trim().toIntOrNull()
+                    ?: rest.split(Regex("\\s+")).getOrNull(1)?.toIntOrNull()
+            if (delay != null && delay >= 0) config.whichKeyDelayMs = delay
+        }
+
+        else -> {}
+    }
+}
+
+private fun parseKeys(
+    text: String,
+    err: (String) -> Unit,
+): String? {
+    val out = StringBuilder()
+    var i = 0
+    while (i < text.length) {
+        val char = text[i]
+        if (char == '<') {
+            val close = text.indexOf('>', i)
+            if (close < 0) {
+                out.append(char)
                 i++
+                continue
             }
+            when (text.substring(i + 1, close).lowercase()) {
+                "space" -> {
+                    out.append(' ')
+                }
+
+                "lt" -> {
+                    out.append('<')
+                }
+
+                else -> {
+                    err("unsupported key token ${text.substring(i, close + 1)} (only printable keys reach the meow engine)")
+                    return null
+                }
+            }
+            i = close + 1
+        } else {
+            out.append(char)
+            i++
         }
-        return out.toString()
     }
+    return out.toString()
 }

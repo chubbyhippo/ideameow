@@ -30,10 +30,10 @@ internal object Search {
 
     fun push(
         state: MeowState,
-        re: Regex,
+        regex: Regex,
     ) {
-        state.searchHistory.removeAll { it.pattern == re.pattern }
-        state.searchHistory.addLast(re)
+        state.searchHistory.removeAll { it.pattern == regex.pattern }
+        state.searchHistory.addLast(regex)
         while (state.searchHistory.size > SEARCH_RING_MAX) state.searchHistory.removeFirst()
     }
 
@@ -41,23 +41,23 @@ internal object Search {
         editor: Editor,
         state: MeowState,
     ) {
-        val sm = editor.selectionModel
-        var re = state.searchHistory.lastOrNull()
-        if (sm.hasSelection()) {
-            val selText =
+        val selectionModel = editor.selectionModel
+        var regex = state.searchHistory.lastOrNull()
+        if (selectionModel.hasSelection()) {
+            val selectionText =
                 editor.document.charsSequence
-                    .subSequence(sm.selectionStart, sm.selectionEnd)
+                    .subSequence(selectionModel.selectionStart, selectionModel.selectionEnd)
                     .toString()
-            if (selText.isNotEmpty() && (re == null || !re.matches(selText))) {
-                re = Regex(Regex.escape(selText))
-                push(state, re)
+            if (selectionText.isNotEmpty() && (regex == null || !regex.matches(selectionText))) {
+                regex = Regex(Regex.escape(selectionText))
+                push(state, regex)
             }
         }
-        if (re == null) {
+        if (regex == null) {
             Ide.hint(editor, "No search pattern")
             return
         }
-        searchWith(editor, state, re, backward = state.takeCount(1) < 0 || Selections.backwardP(editor))
+        searchWith(editor, state, regex, backward = state.takeCount(1) < 0 || Selections.backwardP(editor))
     }
 
     private fun visit(
@@ -67,54 +67,60 @@ internal object Search {
         val backward = state.takeCount(1) < 0
         val input = Messages.showInputDialog(editor.project, "Visit (regexp):", "Meow Visit", null)
         if (input.isNullOrEmpty()) return
-        val re =
+        val regex =
             try {
                 Regex(input)
             } catch (_: Exception) {
                 Regex(Regex.escape(input))
             }
-        push(state, re)
-        searchWith(editor, state, re, backward)
+        push(state, regex)
+        searchWith(editor, state, regex, backward)
     }
 
     private fun searchWith(
         editor: Editor,
         state: MeowState,
-        re: Regex,
+        regex: Regex,
         backward: Boolean,
     ) {
         val text = editor.document.charsSequence
         val caret = editor.caretModel.offset
-        val m: MatchResult? =
+        val match: MatchResult? =
             if (!backward) {
-                re.find(text, caret) ?: re.find(text, 0)
+                regex.find(text, caret) ?: regex.find(text, 0)
             } else {
-                var last: MatchResult? = null
-                var cur = re.find(text, 0)
-                while (cur != null && cur.range.last + 1 <= caret) {
-                    last = cur
-                    cur = cur.next()
-                }
-                if (last == null) {
-                    var tail: MatchResult? = cur
-                    while (true) {
-                        val nx = tail?.next() ?: break
-                        tail = nx
-                    }
-                    last = tail
-                }
-                last
+                lastMatchBefore(regex, text, caret)
             }
-        if (m == null || m.value.isEmpty()) {
-            Ide.hint(editor, "No match: ${re.pattern}")
+        if (match == null || match.value.isEmpty()) {
+            Ide.hint(editor, "No match: ${regex.pattern}")
             return
         }
         val (mark, point) =
             if (backward) {
-                m.range.last + 1 to m.range.first
+                match.range.last + 1 to match.range.first
             } else {
-                m.range.first to m.range.last + 1
+                match.range.first to match.range.last + 1
             }
         Selections.select(editor, state, SelType.VISIT, mark, point, expand = false)
+    }
+
+    private fun lastMatchBefore(
+        regex: Regex,
+        text: CharSequence,
+        caret: Int,
+    ): MatchResult? {
+        var last: MatchResult? = null
+        var current = regex.find(text, 0)
+        while (current != null && current.range.last + 1 <= caret) {
+            last = current
+            current = current.next()
+        }
+        if (last != null) return last
+        var tail: MatchResult? = current
+        while (true) {
+            val next = tail?.next() ?: break
+            tail = next
+        }
+        return tail
     }
 }

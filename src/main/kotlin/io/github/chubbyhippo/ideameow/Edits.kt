@@ -105,11 +105,11 @@ internal object Edits {
             caret.removeSelection()
             return
         }
-        val o = caret.offset
+        val offset = caret.offset
         if (forward) {
-            if (o < editor.document.textLength) editor.document.deleteString(o, o + 1)
-        } else if (o > 0) {
-            editor.document.deleteString(o - 1, o)
+            if (offset < editor.document.textLength) editor.document.deleteString(offset, offset + 1)
+        } else if (offset > 0) {
+            editor.document.deleteString(offset - 1, offset)
         }
     }
 
@@ -148,11 +148,11 @@ internal object Edits {
         state: MeowState,
     ) {
         if (state.selType != SelType.LINE) return
-        val len = editor.document.textLength
+        val length = editor.document.textLength
         for (caret in editor.caretModel.allCarets.sortedByDescending { it.selectionEnd }) {
             if (!caret.hasSelection()) continue
             val end = caret.selectionEnd
-            if (caret.offset >= end && end < len) {
+            if (caret.offset >= end && end < length) {
                 val start = caret.selectionStart
                 caret.moveToOffset(end + 1)
                 caret.setSelection(start, end + 1)
@@ -165,12 +165,12 @@ internal object Edits {
         state: MeowState,
     ) {
         if (!allowModify(editor)) return
-        val sm = editor.selectionModel
-        if (state.selType == SelType.JOIN && sm.hasSelection()) {
+        val selectionModel = editor.selectionModel
+        if (state.selType == SelType.JOIN && selectionModel.hasSelection()) {
             joinKill(editor, state)
             return
         }
-        if (sm.hasSelection()) {
+        if (selectionModel.hasSelection()) {
             prepareLineSelectionsForKill(editor, state)
             Ide.act(editor, IdeActions.ACTION_EDITOR_CUT)
             state.selType = SelType.NONE
@@ -179,10 +179,10 @@ internal object Edits {
         val doc = editor.document
         val caret = editor.caretModel.offset
         if (doc.textLength == 0) return
-        val eol = doc.getLineEndOffset(doc.getLineNumber(caret))
-        val end = if (caret == eol) (eol + 1).coerceAtMost(doc.textLength) else eol
+        val lineEnd = doc.getLineEndOffset(doc.getLineNumber(caret))
+        val end = if (caret == lineEnd) (lineEnd + 1).coerceAtMost(doc.textLength) else lineEnd
         if (end > caret) {
-            sm.setSelection(caret, end)
+            selectionModel.setSelection(caret, end)
             Ide.act(editor, IdeActions.ACTION_EDITOR_CUT)
         }
     }
@@ -191,14 +191,14 @@ internal object Edits {
         editor: Editor,
         state: MeowState,
     ) {
-        val sm = editor.selectionModel
-        val s = sm.selectionStart
-        val e = sm.selectionEnd
+        val selectionModel = editor.selectionModel
+        val start = selectionModel.selectionStart
+        val end = selectionModel.selectionEnd
         Ide.runWrite(editor, "Meow Join") {
-            editor.document.deleteString(s, e)
+            editor.document.deleteString(start, end)
             val text = editor.document.charsSequence
-            val before = if (s > 0) text[s - 1] else '\n'
-            val after = if (s < text.length) text[s] else '\n'
+            val before = if (start > 0) text[start - 1] else '\n'
+            val after = if (start < text.length) text[start] else '\n'
             val needsSpace =
                 before != '\n' &&
                     after != '\n' &&
@@ -206,8 +206,8 @@ internal object Edits {
                     !after.isWhitespace() &&
                     after !in ")]}.,;:" &&
                     before !in "([{"
-            if (needsSpace) editor.document.insertString(s, " ")
-            editor.caretModel.moveToOffset(s)
+            if (needsSpace) editor.document.insertString(start, " ")
+            editor.caretModel.moveToOffset(start)
         }
         Selections.collapse(editor, state)
     }
@@ -226,11 +226,11 @@ internal object Edits {
 
     private fun yank(editor: Editor) {
         if (blockedReadOnly(editor)) return
-        val clip = Ide.clipboard() ?: return
+        val clipboardText = Ide.clipboard() ?: return
         editCarets(editor, "Meow Yank") { caret ->
-            val off = caret.offset
-            editor.document.insertString(off, clip)
-            caret.moveToOffset(off + clip.length)
+            val offset = caret.offset
+            editor.document.insertString(offset, clipboardText)
+            caret.moveToOffset(offset + clipboardText.length)
         }
     }
 
@@ -240,13 +240,13 @@ internal object Edits {
     ) {
         if (!allowModify(editor)) return
         if (!editor.selectionModel.hasSelection()) return
-        val clip = (Ide.clipboard() ?: return).trimEnd('\n')
+        val clipboardText = (Ide.clipboard() ?: return).trimEnd('\n')
         editCarets(editor, "Meow Replace") { caret ->
             if (caret.hasSelection()) {
-                val s = caret.selectionStart
-                editor.document.replaceString(s, caret.selectionEnd, clip)
+                val start = caret.selectionStart
+                editor.document.replaceString(start, caret.selectionEnd, clipboardText)
                 caret.removeSelection()
-                caret.moveToOffset(s + clip.length)
+                caret.moveToOffset(start + clipboardText.length)
             }
         }
         state.selType = SelType.NONE
@@ -278,12 +278,12 @@ internal object Edits {
         val pred = charPred(symbol = false)
         val out = StringBuilder(slice.length)
         var inWord = false
-        for (c in slice) {
-            if (pred(c)) {
-                out.append(if (inWord) c.lowercaseChar() else c.uppercaseChar())
+        for (char in slice) {
+            if (pred(char)) {
+                out.append(if (inWord) char.lowercaseChar() else char.uppercaseChar())
                 inWord = true
             } else {
-                out.append(c)
+                out.append(char)
                 inWord = false
             }
         }
@@ -296,19 +296,19 @@ internal object Edits {
         op: CaseOp,
     ) {
         if (blockedReadOnly(editor)) return
-        val n = state.takeCount(1)
-        if (n == 0) return
+        val count = state.takeCount(1)
+        if (count == 0) return
         val hadSelection = editor.selectionModel.hasSelection()
         val pred = charPred(symbol = false)
         editCarets(editor, op.commandName) { caret ->
             val text = editor.document.charsSequence
             val from = caret.offset
-            val target = Words.move(text, from, n, pred)
-            val s = minOf(from, target)
-            val e = maxOf(from, target)
-            if (s == e) return@editCarets
-            editor.document.replaceString(s, e, casified(text.subSequence(s, e).toString(), op))
-            if (n > 0) caret.moveToOffset(e)
+            val target = Words.move(text, from, count, pred)
+            val start = minOf(from, target)
+            val end = maxOf(from, target)
+            if (start == end) return@editCarets
+            editor.document.replaceString(start, end, casified(text.subSequence(start, end).toString(), op))
+            if (count > 0) caret.moveToOffset(end)
         }
         if (hadSelection) Selections.collapse(editor, state)
     }
@@ -318,14 +318,14 @@ internal object Edits {
         state: MeowState,
     ) {
         if (blockedReadOnly(editor)) return
-        val n = state.takeCount(1)
-        if (n == 0) return
+        val count = state.takeCount(1)
+        if (count == 0) return
         val text = editor.document.charsSequence
         val pred = charPred(symbol = false)
         var any = false
         for (caret in editor.caretModel.allCarets) {
             val from = caret.offset
-            val target = Words.move(text, from, n, pred)
+            val target = Words.move(text, from, count, pred)
             if (target == from) {
                 caret.removeSelection()
                 continue

@@ -19,6 +19,7 @@ package io.github.chubbyhippo.ideameow
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.editor.VisualPosition
 import com.intellij.psi.PsiDocumentManager
+import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiFile
 
 object Things {
@@ -29,24 +30,24 @@ object Things {
 
     fun inner(
         editor: Editor,
-        ch: Char,
+        char: Char,
         offset: Int,
-    ): Bounds? = compute(editor, ch, offset, inner = true)
+    ): Bounds? = compute(editor, char, offset, inner = true)
 
     fun bounds(
         editor: Editor,
-        ch: Char,
+        char: Char,
         offset: Int,
-    ): Bounds? = compute(editor, ch, offset, inner = false)
+    ): Bounds? = compute(editor, char, offset, inner = false)
 
     private fun compute(
         editor: Editor,
-        ch: Char,
+        char: Char,
         offset: Int,
         inner: Boolean,
     ): Bounds? {
         val text = editor.document.charsSequence
-        return when (ch) {
+        return when (char) {
             'r' -> pair(text, offset, '(', ')', inner)
             's' -> pair(text, offset, '[', ']', inner)
             'c' -> pair(text, offset, '{', '}', inner)
@@ -74,10 +75,10 @@ object Things {
         var start = -1
         var i = offset - 1
         while (i >= 0) {
-            val c = text[i]
-            if (c == close) {
+            val char = text[i]
+            if (char == close) {
                 depth++
-            } else if (c == open) {
+            } else if (char == open) {
                 if (depth == 0) {
                     start = i
                     break
@@ -91,10 +92,10 @@ object Things {
         var end = -1
         var j = offset
         while (j < text.length) {
-            val c = text[j]
-            if (c == open && j != start) {
+            val char = text[j]
+            if (char == open && j != start) {
                 depth++
-            } else if (c == close) {
+            } else if (char == close) {
                 if (depth == 0) {
                     end = j
                     break
@@ -112,59 +113,64 @@ object Things {
         offset: Int,
         inner: Boolean,
     ): Bounds? {
-        val n = text.length
         var i = 0
-        while (i < n) {
-            val c = text[i]
-            if (c == '"' || c == '\'' || c == '`') {
-                val triple = i + 2 < n && text[i + 1] == c && text[i + 2] == c
-                val len = if (triple) 3 else 1
-                val open = i
-                var j = i + len
-                var closeEnd = -1
-                while (j < n) {
-                    val d = text[j]
-                    if (!triple && d == '\n') break
-                    if (d == '\\') {
-                        j += 2
-                        continue
-                    }
-                    val closes = if (triple) j + 2 < n && text[j + 1] == c && text[j + 2] == c else true
-                    if (d == c && closes) {
-                        closeEnd = j + len
-                        break
-                    }
-                    j++
-                }
-                if (closeEnd < 0) {
-                    i = open + len
-                    continue
-                }
-                if (offset in open until closeEnd) {
-                    return if (inner) Bounds(open + len, closeEnd - len) else Bounds(open, closeEnd)
-                }
-                i = closeEnd
+        while (i < text.length) {
+            val quote = text[i]
+            if (quote != '"' && quote != '\'' && quote != '`') {
+                i++
                 continue
             }
-            i++
+            val triple = i + 2 < text.length && text[i + 1] == quote && text[i + 2] == quote
+            val quoteLen = if (triple) 3 else 1
+            val open = i
+            val closeEnd = stringEnd(text, i + quoteLen, quote, triple)
+            if (closeEnd < 0) {
+                i = open + quoteLen
+                continue
+            }
+            if (offset in open until closeEnd) {
+                return if (inner) Bounds(open + quoteLen, closeEnd - quoteLen) else Bounds(open, closeEnd)
+            }
+            i = closeEnd
         }
         return null
     }
 
-    fun isWordChar(c: Char) = Character.isLetterOrDigit(c)
+    private fun stringEnd(
+        text: CharSequence,
+        contentStart: Int,
+        quote: Char,
+        triple: Boolean,
+    ): Int {
+        var j = contentStart
+        while (j < text.length) {
+            val char = text[j]
+            if (!triple && char == '\n') return -1
+            if (char == '\\') {
+                j += 2
+                continue
+            }
+            val closed = if (triple) j + 2 < text.length && text[j + 1] == quote && text[j + 2] == quote else true
+            if (char == quote && closed) return j + if (triple) 3 else 1
+            j++
+        }
+        return -1
+    }
 
-    fun isSymbolChar(c: Char) = isWordChar(c) || c == '_' || c == '$'
+    fun isWordChar(char: Char) = Character.isLetterOrDigit(char)
+
+    fun isSymbolChar(char: Char) = isWordChar(char) || char == '_' || char == '$'
 
     private fun symbol(
         text: CharSequence,
         offset: Int,
     ): Bounds? {
-        var o = offset
-        if (o >= text.length || !isSymbolChar(text[o])) {
-            if (o > 0 && isSymbolChar(text[o - 1])) o-- else return null
+        var index = offset
+        if (index >= text.length || !isSymbolChar(text[index])) {
+            if (index > 0 && isSymbolChar(text[index - 1])) index-- else return null
         }
-        val (s, e) = Words.spanAt(text, o, ::isSymbolChar)
-        return Bounds(s, e)
+        val (start, end) = Words.spanAt(text, index, ::isSymbolChar)
+        return Bounds(start, end)
     }
 
     private fun window(editor: Editor): Bounds {
@@ -181,7 +187,10 @@ object Things {
         val doc = editor.document
         if (doc.lineCount == 0) return null
 
-        fun blank(l: Int) = doc.charsSequence.subSequence(doc.getLineStartOffset(l), doc.getLineEndOffset(l)).isBlank()
+        fun blank(line: Int): Boolean {
+            val range = doc.charsSequence.subSequence(doc.getLineStartOffset(line), doc.getLineEndOffset(line))
+            return range.isBlank()
+        }
         val ln = doc.getLineNumber(offset.coerceIn(0, doc.textLength))
         if (blank(ln)) return null
         var first = ln
@@ -215,9 +224,9 @@ object Things {
         editor: Editor,
         offset: Int,
     ): Bounds {
-        val vLine = editor.offsetToVisualPosition(offset).line
-        val start = editor.visualPositionToOffset(VisualPosition(vLine, 0))
-        var end = editor.visualPositionToOffset(VisualPosition(vLine + 1, 0))
+        val visualLineNumber = editor.offsetToVisualPosition(offset).line
+        val start = editor.visualPositionToOffset(VisualPosition(visualLineNumber, 0))
+        var end = editor.visualPositionToOffset(VisualPosition(visualLineNumber + 1, 0))
         if (end <= start) {
             end = editor.document.textLength
         } else if (end > 0 && editor.document.charsSequence[end - 1] == '\n') {
@@ -230,33 +239,42 @@ object Things {
         editor: Editor,
         offset: Int,
     ): Bounds? {
-        val project = editor.project
-        if (project != null) {
-            val pdm = PsiDocumentManager.getInstance(project)
-            pdm.commitDocument(editor.document)
-            val file = pdm.getPsiFile(editor.document)
-            if (file != null) {
-                var el = file.findElementAt(offset.coerceIn(0, (editor.document.textLength - 1).coerceAtLeast(0)))
-                while (el != null && el !is PsiFile) {
-                    val t =
-                        el.node
-                            ?.elementType
-                            ?.toString()
-                            ?.uppercase() ?: ""
-                    if (t.contains("METHOD") || t.contains("FUNCTION") || t.startsWith("FUN") || t.contains("LAMBDA")) {
-                        return Bounds(el.textRange.startOffset, el.textRange.endOffset)
-                    }
-                    el = el.parent
-                }
-            }
-        }
+        defunFromPsi(editor, offset)?.let { return it }
         val text = editor.document.charsSequence
-        var b = pair(text, offset, '{', '}', false) ?: return null
+        var bounds = pair(text, offset, '{', '}', false) ?: return null
         while (true) {
-            val outer = pair(text, b.start, '{', '}', false) ?: break
-            b = outer
+            val outer = pair(text, bounds.start, '{', '}', false) ?: break
+            bounds = outer
         }
-        return b
+        return bounds
+    }
+
+    private fun defunFromPsi(
+        editor: Editor,
+        offset: Int,
+    ): Bounds? {
+        val project = editor.project ?: return null
+        val psiDocumentManager = PsiDocumentManager.getInstance(project)
+        psiDocumentManager.commitDocument(editor.document)
+        val file = psiDocumentManager.getPsiFile(editor.document) ?: return null
+        val safeOffset = offset.coerceIn(0, (editor.document.textLength - 1).coerceAtLeast(0))
+        var element = file.findElementAt(safeOffset)
+        while (element != null && element !is PsiFile) {
+            if (isFunctionElement(element)) return Bounds(element.textRange.startOffset, element.textRange.endOffset)
+            element = element.parent
+        }
+        return null
+    }
+
+    private val FUNCTION_TYPE_MARKERS = listOf("METHOD", "FUNCTION", "LAMBDA")
+
+    private fun isFunctionElement(element: PsiElement): Boolean {
+        val typeName =
+            element.node
+                ?.elementType
+                ?.toString()
+                ?.uppercase() ?: ""
+        return typeName.startsWith("FUN") || FUNCTION_TYPE_MARKERS.any { typeName.contains(it) }
     }
 
     private fun sentence(
@@ -270,20 +288,20 @@ object Things {
 
         fun blankLineAt(pos: Int) = text[pos] == '\n' && pos + 1 < text.length && text[pos + 1] == '\n'
 
-        var s = offset.coerceIn(0, text.length - 1)
-        while (s > 0) {
-            if (text[s - 1] in SENTENCE_ENDERS || blankLineBefore(s)) break
-            s--
+        var start = offset.coerceIn(0, text.length - 1)
+        while (start > 0) {
+            if (text[start - 1] in SENTENCE_ENDERS || blankLineBefore(start)) break
+            start--
         }
-        while (s < text.length && text[s].isWhitespace()) s++
-        var e = offset.coerceIn(0, text.length)
-        while (e < text.length && text[e] !in SENTENCE_ENDERS && !blankLineAt(e)) e++
-        if (e < text.length && text[e] in SENTENCE_ENDERS) e++
-        if (e <= s) return null
-        if (inner) return Bounds(s, e)
-        var be = e
-        while (be < text.length && text[be] == ' ') be++
-        return Bounds(s, be)
+        while (start < text.length && text[start].isWhitespace()) start++
+        var end = offset.coerceIn(0, text.length)
+        while (end < text.length && text[end] !in SENTENCE_ENDERS && !blankLineAt(end)) end++
+        if (end < text.length && text[end] in SENTENCE_ENDERS) end++
+        if (end <= start) return null
+        if (inner) return Bounds(start, end)
+        var extendedEnd = end
+        while (extendedEnd < text.length && text[extendedEnd] == ' ') extendedEnd++
+        return Bounds(start, extendedEnd)
     }
 }
 
