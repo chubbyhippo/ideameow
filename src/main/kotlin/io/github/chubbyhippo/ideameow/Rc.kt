@@ -18,6 +18,8 @@ package io.github.chubbyhippo.ideameow
 
 import com.intellij.notification.NotificationGroupManager
 import com.intellij.notification.NotificationType
+import com.intellij.ui.JBColor
+import java.awt.Color
 import java.awt.event.InputEvent
 import java.io.File
 import javax.swing.KeyStroke
@@ -50,6 +52,11 @@ object Rc {
     const val MAX_MAPPING_DEPTH = 8
     private const val DEFAULT_WHICH_KEY_DELAY_MS = 250
 
+    private val DEFAULT_OVERLAY_COLOR = JBColor(Color(0xE5, 0x2B, 0x50), Color(0xE5, 0x2B, 0x50))
+    private val DEFAULT_OVERLAY_TEXT_COLOR = JBColor(Color.WHITE, Color.WHITE)
+    private val DEFAULT_EXPAND_HINT_COLOR = JBColor(Color(0xD0, 0x5C, 0x0A), Color(0xFF, 0xB0, 0x50))
+    private val DEFAULT_GRAB_COLOR = JBColor(Color(0xCD, 0xE8, 0xCD), Color(0x2F, 0x47, 0x2F))
+
     data class Binding(
         val action: String? = null,
         val keys: String? = null,
@@ -67,6 +74,10 @@ object Rc {
         val repeat = linkedMapOf<String, LinkedHashMap<Char, Binding>>()
         var whichKey: Boolean? = null
         var whichKeyDelayMs: Int? = null
+        var overlayColor: Color? = null
+        var overlayTextColor: Color? = null
+        var expandHintColor: Color? = null
+        var grabColor: Color? = null
         val errors = mutableListOf<String>()
     }
 
@@ -161,6 +172,19 @@ object Rc {
     fun whichKeyEnabled(): Boolean = config().whichKey ?: defaults().whichKey ?: true
 
     fun whichKeyDelayMs(): Int = config().whichKeyDelayMs ?: defaults().whichKeyDelayMs ?: DEFAULT_WHICH_KEY_DELAY_MS
+
+    fun overlayColor(): JBColor = resolveColor(DEFAULT_OVERLAY_COLOR) { it.overlayColor }
+
+    fun overlayTextColor(): JBColor = resolveColor(DEFAULT_OVERLAY_TEXT_COLOR) { it.overlayTextColor }
+
+    fun expandHintColor(): JBColor = resolveColor(DEFAULT_EXPAND_HINT_COLOR) { it.expandHintColor }
+
+    fun grabColor(): JBColor = resolveColor(DEFAULT_GRAB_COLOR) { it.grabColor }
+
+    private fun resolveColor(
+        fallback: JBColor,
+        pick: (Config) -> Color?,
+    ): JBColor = (pick(config()) ?: pick(defaults()))?.let { JBColor(it, it) } ?: fallback
 
     fun notify(
         text: String,

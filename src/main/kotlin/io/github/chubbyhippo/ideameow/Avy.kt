@@ -24,7 +24,6 @@ import com.intellij.openapi.editor.markup.HighlighterTargetArea
 import com.intellij.openapi.editor.markup.RangeHighlighter
 import com.intellij.openapi.ui.Messages
 import com.intellij.ui.JBColor
-import java.awt.Color
 import java.awt.FontMetrics
 import java.awt.Graphics2D
 import javax.swing.JComponent
@@ -36,8 +35,8 @@ object Avy {
 
     private const val TIMEOUT_MS = 250
 
-    val LEAD_FG = JBColor(Color.WHITE, Color.WHITE)
-    val LEAD_BG = JBColor(Color(0xE5, 0x2B, 0x50), Color(0xE5, 0x2B, 0x50))
+    val LEAD_FG: JBColor get() = Rc.overlayTextColor()
+    val LEAD_BG: JBColor get() = Rc.overlayColor()
 
     val commands: Map<String, MeowCommand> =
         mapOf(

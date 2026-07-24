@@ -23,13 +23,12 @@ import com.intellij.openapi.editor.markup.HighlighterLayer
 import com.intellij.openapi.editor.markup.HighlighterTargetArea
 import com.intellij.openapi.editor.markup.TextAttributes
 import com.intellij.ui.JBColor
-import java.awt.Color
 import java.awt.Font
 
 internal object Grab {
     private const val MAX_BEACON_CARETS = 500
 
-    private val BG = JBColor(Color(0xCD, 0xE8, 0xCD), Color(0x2F, 0x47, 0x2F))
+    private val BG: JBColor get() = Rc.grabColor()
 
     val commands: Map<String, MeowCommand> =
         mapOf(

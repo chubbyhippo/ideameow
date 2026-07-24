@@ -19,7 +19,6 @@ package io.github.chubbyhippo.ideameow
 import com.intellij.openapi.editor.Document
 import com.intellij.openapi.editor.Editor
 import com.intellij.ui.JBColor
-import java.awt.Color
 import java.awt.FontMetrics
 import java.awt.Graphics2D
 import javax.swing.Timer
@@ -27,7 +26,7 @@ import javax.swing.Timer
 object ExpandHints {
     private const val HINT_TIMEOUT_MS = 1000
 
-    private val HINT_COLOR = JBColor(Color(0xD0, 0x5C, 0x0A), Color(0xFF, 0xB0, 0x50))
+    private val HINT_COLOR: JBColor get() = Rc.expandHintColor()
 
     fun show(
         editor: Editor,

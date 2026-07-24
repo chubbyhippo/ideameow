@@ -229,6 +229,10 @@ ideameow reads an `.ideavimrc`-style file from your home directory:
 | `let g:WhichKeyDesc_x = "<leader>x text"` | same as `desc` — paste `.ideavimrc` lines unchanged |
 | `set timeoutlen=300` | which-key popup delay in milliseconds (the bundled default sets 300) |
 | `set which-key` / `set nowhich-key` | popup on/off (default on) |
+| `set overlay-color=#E52B50` | background of the avy / ace-window / ace-click jump labels (`#RRGGBB`, applied to both light and dark themes) |
+| `set overlay-text-color=#ffffff` | the jump-label text color |
+| `set expand-hint-color=#d05c0a` | the `0`–`9` expand-hint color (theme-split by default) |
+| `set grab-color=#cde8cd` | the grab / beacon highlight color (theme-split by default) |
 
 Key notation: plain printable characters, plus `<Space>` and `<lt>`. To find
 an action's id, press `SPC i d` — it toggles action-id tracking, ideameow's

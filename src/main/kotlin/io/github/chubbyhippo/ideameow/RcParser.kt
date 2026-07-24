@@ -16,6 +16,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package io.github.chubbyhippo.ideameow
 
+import java.awt.Color
 import javax.swing.KeyStroke
 
 internal object RcParser {
@@ -62,7 +63,7 @@ internal object RcParser {
     ) {
         when (command) {
             "let" -> {}
-            "set" -> parseSet(config, rest)
+            "set" -> parseSet(config, rest, err)
             "desc" -> parseDescBody(config, rest, err)
             "map", "noremap", "nmap", "nnoremap", "mmap", "mnoremap" -> parseMap(config, command, rest, err)
             "cmap", "cnoremap" -> parseChord(config, command, rest, err)
@@ -243,6 +244,7 @@ internal object RcParser {
 private fun parseSet(
     config: Rc.Config,
     rest: String,
+    err: (String) -> Unit,
 ) {
     when {
         rest == "which-key" -> {
@@ -260,8 +262,40 @@ private fun parseSet(
             if (delay != null && delay >= 0) config.whichKeyDelayMs = delay
         }
 
-        else -> {}
+        else -> parseSetColor(config, rest, err)
     }
+}
+
+private val COLOR_SET_KEYS = setOf("overlay-color", "overlay-text-color", "expand-hint-color", "grab-color")
+
+private val HEX_COLOR_REGEX = Regex("[0-9a-fA-F]{6}")
+
+private fun parseSetColor(
+    config: Rc.Config,
+    rest: String,
+    err: (String) -> Unit,
+) {
+    val key = rest.substringBefore("=").trim()
+    if (key !in COLOR_SET_KEYS) return
+    val raw = rest.substringAfter("=", "").trim()
+    val color = parseHexColor(raw)
+    if (color == null) {
+        err("set $key: invalid color '$raw' (expected #RRGGBB)")
+        return
+    }
+    when (key) {
+        "overlay-color" -> config.overlayColor = color
+        "overlay-text-color" -> config.overlayTextColor = color
+        "expand-hint-color" -> config.expandHintColor = color
+        "grab-color" -> config.grabColor = color
+    }
+}
+
+private fun parseHexColor(text: String): Color? {
+    val hex = text.removePrefix("#")
+    if (!HEX_COLOR_REGEX.matches(hex)) return null
+    val rgb = hex.toInt(16)
+    return Color((rgb shr 16) and 0xFF, (rgb shr 8) and 0xFF, rgb and 0xFF)
 }
 
 private fun parseKeys(

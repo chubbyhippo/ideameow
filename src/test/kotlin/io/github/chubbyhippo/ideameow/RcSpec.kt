@@ -23,6 +23,7 @@ import com.intellij.openapi.editor.EditorFactory
 import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.vfs.LocalFileSystem
 import com.intellij.testFramework.TestActionEvent
+import java.awt.Color
 import java.io.File
 import java.nio.file.Files
 
@@ -116,6 +117,44 @@ class RcSpec : MeowSpec() {
         givenRc("set nowhich-key\nset timeoutlen=150")
         assertFalse(Rc.whichKeyEnabled())
         assertEquals(150, Rc.whichKeyDelayMs())
+    }
+
+    fun `test given overlay color set lines then they parse into rgb colors`() {
+        val c =
+            Rc.parse(
+                listOf(
+                    "set overlay-color=#E52B50",
+                    "set overlay-text-color=#ffffff",
+                    "set expand-hint-color=#d05c0a",
+                    "set grab-color=#CDE8CD",
+                ),
+            )
+        assertEquals(Color(0xE5, 0x2B, 0x50), c.overlayColor)
+        assertEquals(Color(0xFF, 0xFF, 0xFF), c.overlayTextColor)
+        assertEquals(Color(0xD0, 0x5C, 0x0A), c.expandHintColor)
+        assertEquals(Color(0xCD, 0xE8, 0xCD), c.grabColor)
+        assertTrue(c.errors.isEmpty())
+    }
+
+    fun `test given a malformed overlay color then an error is collected and it stays unset`() {
+        val c = Rc.parse(listOf("set overlay-color=#12345", "set grab-color=nope"))
+        assertNull(c.overlayColor)
+        assertNull(c.grabColor)
+        assertEquals(2, c.errors.size)
+        assertTrue(c.errors[0].contains("overlay-color"))
+    }
+
+    fun `test given an unknown set color option then it is ignored without error`() {
+        val c = Rc.parse(listOf("set cursor-color=#123456"))
+        assertNull(c.overlayColor)
+        assertTrue(c.errors.isEmpty())
+    }
+
+    fun `test overlay colors layer user over the bundled default`() {
+        assertEquals(Color(0xE5, 0x2B, 0x50).rgb, Rc.overlayColor().rgb)
+        givenRc("set overlay-color=#010203\nset grab-color=#040506")
+        assertEquals(Color(0x01, 0x02, 0x03).rgb, Rc.overlayColor().rgb)
+        assertEquals(Color(0x04, 0x05, 0x06).rgb, Rc.grabColor().rgb)
     }
 
     fun `test given a trailing comment then it is stripped from the line`() {
