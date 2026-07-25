@@ -305,10 +305,9 @@ internal fun panes(root: Component): List<JComponent> {
     while (queue.isNotEmpty()) {
         val component = queue.removeFirst()
         if (!component.isVisible) continue
-        when {
-            component is JTree || component is JTable || component is JList<*> -> out.add(component as JComponent)
-
-            component is Container -> queue += component.components
+        when (component) {
+            is JTree, is JTable, is JList<*> -> out.add(component as JComponent)
+            is Container -> queue += component.components
         }
     }
     return out
