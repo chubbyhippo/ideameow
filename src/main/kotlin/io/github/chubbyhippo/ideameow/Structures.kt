@@ -86,8 +86,7 @@ internal object Structures {
                 i = afterQuote
                 continue
             }
-            val char = text[i]
-            when (char) {
+            when (val char = text[i]) {
                 in opens -> stack.addLast(i)
 
                 in closes -> {
