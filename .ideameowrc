@@ -27,7 +27,7 @@
 "   set overlay-color=#2ECC71         avy/ace label background (#RRGGBB)
 "   set overlay-text-color=#ffffff    avy/ace label text
 "   set expand-hint-color=#d05c0a     0-9 expand-hint color
-"   set grab-color=#cde8cd            grab / beacon highlight
+"   set grab-color=#c0f0cd            grab / beacon highlight
 " ============================================================================
 
 set which-key
@@ -40,7 +40,7 @@ set timeoutlen=300
 set overlay-color=#2ECC71
 set overlay-text-color=#ffffff
 " set expand-hint-color=#d05c0a
-" set grab-color=#cde8cd
+" set grab-color=#c0f0cd
 
 " ============================================================================
 " The meow layout — QWERTY by default, every key rebindable

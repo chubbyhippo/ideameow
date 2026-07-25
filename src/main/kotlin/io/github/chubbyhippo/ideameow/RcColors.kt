@@ -23,8 +23,8 @@ internal object RcColors {
     private const val OVERLAY_RGB = 0x2ECC71
     private const val EXPAND_HINT_LIGHT_RGB = 0xD05C0A
     private const val EXPAND_HINT_DARK_RGB = 0xFFB050
-    private const val GRAB_LIGHT_RGB = 0xCDE8CD
-    private const val GRAB_DARK_RGB = 0x2F472F
+    private const val GRAB_LIGHT_RGB = 0xC0F0CD
+    private const val GRAB_DARK_RGB = 0x0C331C
 
     private val DEFAULT_OVERLAY_COLOR = JBColor(Color(OVERLAY_RGB), Color(OVERLAY_RGB))
     private val DEFAULT_OVERLAY_TEXT_COLOR = JBColor(Color.WHITE, Color.WHITE)
