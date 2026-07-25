@@ -134,11 +134,11 @@ class FindSearchSpec : MeowSpec() {
     }
 
     fun `test given W on a dollar symbol then n finds the next symbol occurrence`() {
-        given("dollar symbols", "$<caret>foo bar ${'$'}foo")
+        given("dollar symbols", $$"$<caret>foo bar $foo")
         whenKeys("W")
-        thenSelection("${'$'}foo")
+        thenSelection($$"$foo")
         whenKeys("n")
-        thenSelection("${'$'}foo")
+        thenSelection($$"$foo")
         thenCaretAt(13)
     }
 }
