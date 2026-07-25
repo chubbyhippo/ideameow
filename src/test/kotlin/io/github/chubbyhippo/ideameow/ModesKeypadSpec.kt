@@ -32,7 +32,7 @@ class ModesKeypadSpec : MeowSpec() {
                     editor: Editor,
                     caret: Caret?,
                     dataContext: DataContext?,
-                ) {}
+                ) = Unit
             }
         MeowEscapeHandler(noop).execute(ed, null, (ed as EditorEx).dataContext)
     }

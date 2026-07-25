@@ -24,54 +24,54 @@ import com.intellij.openapi.project.DumbAwareAction
 import com.intellij.openapi.ui.Messages
 
 object Keypad {
+    private const val DECIMAL_BASE = 10
+
     fun key(
         editor: Editor,
         state: MeowState,
         char: Char,
     ) {
         WhichKey.hide()
-        val bindings = Rc.keypad()
+        val bindings = RcLookups.keypad()
         val buffer = state.keypad.toString()
+        when {
+            buffer == "/" -> {
+                describe(editor, char)
+                exit(editor, state)
+            }
 
-        if (buffer == "/") {
-            describe(editor, char)
-            exit(editor, state)
-            return
-        }
-        if (buffer.isEmpty()) {
-            when (char) {
-                in '0'..'9' -> {
-                    state.pendingCount = state.pendingCount * 10 + (char - '0')
-                    exit(editor, state)
-                    return
-                }
+            buffer.isEmpty() && char in '0'..'9' -> {
+                state.pendingCount = state.pendingCount * DECIMAL_BASE + (char - '0')
+                exit(editor, state)
+            }
 
-                '?' -> {
-                    exit(editor, state)
-                    Messages.showInfoMessage(editor.project, CHEATSHEET, "Meow Cheatsheet")
-                    return
-                }
+            buffer.isEmpty() && char == '?' -> {
+                exit(editor, state)
+                Messages.showInfoMessage(editor.project, CHEATSHEET, "Meow Cheatsheet")
+            }
 
-                '/' -> {
-                    state.keypad.append('/')
-                    return
+            buffer.isEmpty() && char == '/' -> {
+                state.keypad.append('/')
+            }
+
+            else -> {
+                state.keypad.append(char)
+                val current = state.keypad.toString()
+                val binding = bindings[current]
+                when {
+                    binding != null -> {
+                        exit(editor, state)
+                        Engine.runBinding(editor, state, binding)
+                    }
+
+                    bindings.keys.none { it.startsWith(current) } -> {
+                        exit(editor, state)
+                        Ide.hint(editor, "SPC ${current.toCharArray().joinToString(" ")} is undefined")
+                    }
+
+                    else -> WhichKey.scheduleKeypad(editor, current)
                 }
             }
-        }
-
-        state.keypad.append(char)
-        val current = state.keypad.toString()
-        val binding = bindings[current]
-        if (binding != null) {
-            exit(editor, state)
-            Engine.runBinding(editor, state, binding)
-            return
-        }
-        if (bindings.keys.none { it.startsWith(current) }) {
-            exit(editor, state)
-            Ide.hint(editor, "SPC ${current.toCharArray().joinToString(" ")} is undefined")
-        } else {
-            WhichKey.scheduleKeypad(editor, current)
         }
     }
 
@@ -87,9 +87,9 @@ object Keypad {
         editor: Editor,
         char: Char,
     ) {
-        val descriptions = Rc.keypadDescs()
+        val descriptions = RcLookups.keypadDescs()
         val entries =
-            Rc
+            RcLookups
                 .keypad()
                 .entries
                 .filter { it.key.startsWith(char.toString()) }

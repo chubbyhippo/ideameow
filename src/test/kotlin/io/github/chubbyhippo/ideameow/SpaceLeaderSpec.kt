@@ -39,36 +39,36 @@ class SpaceLeaderSpec : MeowSpec() {
     ) = KeyEvent(source, KeyEvent.KEY_TYPED, System.currentTimeMillis(), 0, KeyEvent.VK_UNDEFINED, c)
 
     fun `test given trees tables and panels then space stays a leader surface`() {
-        assertFalse(SpaceLeader.nativeSpace(JTree()))
-        assertFalse(SpaceLeader.nativeSpace(JTable()))
-        assertFalse(SpaceLeader.nativeSpace(JPanel()))
+        assertFalse(nativeSpace(JTree()))
+        assertFalse(nativeSpace(JTable()))
+        assertFalse(nativeSpace(JPanel()))
     }
 
     fun `test given inputs buttons combos and checkbox lists then space stays native`() {
-        assertTrue(SpaceLeader.nativeSpace(JTextField()))
-        assertTrue(SpaceLeader.nativeSpace(JTextArea().apply { isEditable = false }))
-        assertTrue(SpaceLeader.nativeSpace(JButton()))
-        assertTrue(SpaceLeader.nativeSpace(JComboBox<String>()))
-        assertTrue(SpaceLeader.nativeSpace(CheckBoxList<String>()))
+        assertTrue(nativeSpace(JTextField()))
+        assertTrue(nativeSpace(JTextArea().apply { isEditable = false }))
+        assertTrue(nativeSpace(JButton()))
+        assertTrue(nativeSpace(JComboBox<String>()))
+        assertTrue(nativeSpace(CheckBoxList<String>()))
     }
 
     fun `test given a VCS changes tree then space stays native`() {
         assertTrue("com.intellij.openapi.vcs.changes.ui.ChangesTree" in SpaceLeader.SPACE_TREES)
         assertTrue("com.intellij.ui.CheckboxTree" in SpaceLeader.SPACE_TREES)
-        assertFalse(SpaceLeader.treeConsumesSpace(JTree::class.java))
+        assertFalse(treeConsumesSpace(JTree::class.java))
     }
 
     fun `test given a component nested in a native-space ancestor then space stays native`() {
-        assertTrue(SpaceLeader.nativeSpace(JPanel().also { JComboBox<String>().add(it) }))
+        assertTrue(nativeSpace(JPanel().also { JComboBox<String>().add(it) }))
     }
 
     fun `test given an open menu then arming skips the native-space and editor gates`() {
         given("space leader menu", "text")
-        assertTrue(SpaceLeader.blocksArming(false, JTextField()))
-        assertFalse(SpaceLeader.blocksArming(true, JTextField()))
-        assertTrue(SpaceLeader.blocksArming(false, ed.contentComponent))
-        assertFalse(SpaceLeader.blocksArming(true, ed.contentComponent))
-        assertFalse(SpaceLeader.blocksArming(false, JPanel()))
+        assertTrue(blocksArming(false, JTextField()))
+        assertFalse(blocksArming(true, JTextField()))
+        assertTrue(blocksArming(false, ed.contentComponent))
+        assertFalse(blocksArming(true, ed.contentComponent))
+        assertFalse(blocksArming(false, JPanel()))
     }
 
     fun `test given a routed leader surface then typed keys drive the keypad`() {
@@ -134,7 +134,7 @@ class SpaceLeaderSpec : MeowSpec() {
                 AceWindow.Window(Rectangle(40, 0, 40, 24), null, panel),
                 AceWindow.Window(Rectangle(80, 0, 40, 24), null, JPanel()),
             )
-        AceWindow.begin(ed, st, swap = false, windows = windows)
+        AceWindow.begin(ed, st, AceWindow.Request(swap = false, windows = windows))
         SpaceLeader.setForTest(ed, st, panel)
         assertTrue(SpaceLeader.dispatch(typed(panel, 's')))
         assertNull(st.aceWindow)

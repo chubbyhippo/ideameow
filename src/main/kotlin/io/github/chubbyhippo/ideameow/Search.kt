@@ -24,7 +24,7 @@ internal object Search {
 
     val commands: Map<String, MeowCommand> =
         mapOf(
-            "meow-search" to MeowCommand { editor, state -> search(editor, state) },
+            "meow-search" to MeowCommand { editor, state -> perform(editor, state) },
             "meow-visit" to MeowCommand { editor, state -> visit(editor, state) },
         )
 
@@ -37,7 +37,7 @@ internal object Search {
         while (state.searchHistory.size > SEARCH_RING_MAX) state.searchHistory.removeFirst()
     }
 
-    private fun search(
+    private fun perform(
         editor: Editor,
         state: MeowState,
     ) {
@@ -101,7 +101,7 @@ internal object Search {
             } else {
                 match.range.first to match.range.last + 1
             }
-        Selections.select(editor, state, SelType.VISIT, mark, point, expand = false)
+        Selections.select(editor, state, Selections.SelectionSpec(SelType.VISIT, mark, point, expand = false))
     }
 
     private fun lastMatchBefore(

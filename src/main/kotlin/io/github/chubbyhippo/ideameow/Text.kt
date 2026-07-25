@@ -40,7 +40,7 @@ internal fun CharSequence.lastIndexOfChar(
     return -1
 }
 
-internal fun charPred(symbol: Boolean): (Char) -> Boolean = if (symbol) Things::isSymbolChar else Things::isWordChar
+internal fun charPred(symbol: Boolean): (Char) -> Boolean = if (symbol) ::isSymbolChar else ::isWordChar
 
 internal fun parsedLineNumber(
     input: String?,
@@ -50,14 +50,19 @@ internal fun parsedLineNumber(
     return (number - 1).coerceIn(0, (lineCount - 1).coerceAtLeast(0))
 }
 
+internal data class CharSearch(
+    val backward: Boolean,
+    val till: Boolean,
+)
+
 internal fun nthCharTarget(
     text: CharSequence,
     char: Char,
     caret: Int,
     count: Int,
-    backward: Boolean,
-    till: Boolean,
+    search: CharSearch,
 ): Int {
+    val (backward, till) = search
     var found = -1
     var from =
         when {
@@ -71,8 +76,8 @@ internal fun nthCharTarget(
         if (found < 0) return -1
         from = if (backward) found - 1 else found + 1
     }
-    if (found < 0) return -1
     return when {
+        found < 0 -> -1
         backward -> if (till) found + 1 else found
         else -> if (till) found else found + 1
     }

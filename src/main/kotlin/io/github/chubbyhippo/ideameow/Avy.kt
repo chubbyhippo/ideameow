@@ -35,8 +35,10 @@ object Avy {
 
     private const val TIMEOUT_MS = 250
 
-    val LEAD_FG: JBColor get() = Rc.overlayTextColor()
-    val LEAD_BG: JBColor get() = Rc.overlayColor()
+    private const val LOG_EPSILON = 1e-6
+
+    val LEAD_FG: JBColor get() = RcColors.overlayTextColor()
+    val LEAD_BG: JBColor get() = RcColors.overlayColor()
 
     val commands: Map<String, MeowCommand> =
         mapOf(
@@ -71,7 +73,7 @@ object Avy {
         count: Int,
         base: Int,
     ): List<Int> {
-        val power = kotlin.math.floor(ln(count.toDouble()) / ln(base.toDouble()) + 1e-6).toInt() - 1
+        val power = kotlin.math.floor(ln(count.toDouble()) / ln(base.toDouble()) + LOG_EPSILON).toInt() - 1
         var x1 = 1
         repeat(power) { x1 *= base }
         val x2 = base * x1
@@ -189,72 +191,6 @@ object Avy {
         }
     }
 
-    private fun toSelecting(
-        editor: Editor,
-        session: Session,
-        candidates: List<Int>,
-    ) {
-        clearVisuals(editor, session)
-        session.phase = Phase.SELECTING
-        session.node = tree(candidates)
-        paintLabels(editor, session)
-    }
-
-    private fun select(
-        editor: Editor,
-        state: MeowState,
-        session: Session,
-        char: Char,
-    ) {
-        if (session.gotoLine && char.isDigit()) {
-            cancel(editor, state)
-            val input =
-                Messages.showInputDialog(
-                    editor.project,
-                    "Goto line:",
-                    "Avy",
-                    null,
-                    char.toString(),
-                    null,
-                ) ?: return
-            val doc = editor.document
-            val ln = parsedLineNumber(input, doc.lineCount) ?: return
-            jump(editor, doc.getLineStartOffset(ln))
-            return
-        }
-        val node = session.node ?: return
-        when (val child = node.children.firstOrNull { it.first == char }?.second) {
-            is Leaf -> {
-                cancel(editor, state)
-                jump(editor, child.offset)
-            }
-
-            is Branch -> {
-                session.node = child
-                paintLabels(editor, session)
-            }
-
-            null -> {
-                Ide.hint(editor, "No such candidate: $char")
-            }
-        }
-    }
-
-    private fun jump(
-        editor: Editor,
-        offset: Int,
-    ) {
-        val selectionModel = editor.selectionModel
-        if (selectionModel.hasSelection()) {
-            val anchor = Selections.mark(editor)
-            editor.caretModel.moveToOffset(offset)
-            selectionModel.setSelection(minOf(anchor, offset), maxOf(anchor, offset))
-        } else {
-            editor.caretModel.moveToOffset(offset)
-        }
-        editor.scrollingModel.scrollToCaret(ScrollType.RELATIVE)
-    }
-
     fun cancel(
         editor: Editor,
         state: MeowState,
@@ -267,50 +203,7 @@ object Avy {
         state.avy = null
     }
 
-    private fun matches(
-        editor: Editor,
-        input: String,
-    ): List<Int> {
-        if (input.isEmpty()) return emptyList()
-        val doc = editor.document
-        val (first, last) = Ide.visibleLines(editor)
-        val from = doc.getLineStartOffset(first)
-        val to = doc.getLineEndOffset(last)
-        val text = doc.charsSequence
-        val out = mutableListOf<Int>()
-        var i = from
-        while (i <= to - input.length) {
-            if (text.regionMatches(i, input, 0, input.length, ignoreCase = true)) {
-                out.add(i)
-                i += input.length
-            } else {
-                i++
-            }
-        }
-        return out
-    }
-
-    private fun highlightMatches(
-        editor: Editor,
-        session: Session,
-    ) {
-        session.matchHighlights.forEach { editor.markupModel.removeHighlighter(it) }
-        session.matchHighlights.clear()
-        val attrs = editor.colorsScheme.getAttributes(EditorColors.SEARCH_RESULT_ATTRIBUTES)
-        for (offset in matches(editor, session.input)) {
-            session.matchHighlights.add(
-                editor.markupModel.addRangeHighlighter(
-                    offset,
-                    offset + session.input.length,
-                    HighlighterLayer.SELECTION + 1,
-                    attrs,
-                    HighlighterTargetArea.EXACT_RANGE,
-                ),
-            )
-        }
-    }
-
-    private fun paintLabels(
+    internal fun paintLabels(
         editor: Editor,
         session: Session,
     ) {
@@ -319,16 +212,6 @@ object Avy {
         val canvas = LabelsCanvas(editor, labels)
         Overlay.attach(editor, canvas)
         session.canvas = canvas
-    }
-
-    private fun clearVisuals(
-        editor: Editor,
-        session: Session,
-    ) {
-        Overlay.detach(session.canvas)
-        session.canvas = null
-        session.matchHighlights.forEach { editor.markupModel.removeHighlighter(it) }
-        session.matchHighlights.clear()
     }
 
     private class LabelsCanvas(
@@ -362,4 +245,131 @@ object Avy {
             }
         }
     }
+}
+
+private fun toSelecting(
+    editor: Editor,
+    session: Avy.Session,
+    candidates: List<Int>,
+) {
+    clearVisuals(editor, session)
+    session.phase = Avy.Phase.SELECTING
+    session.node = Avy.tree(candidates)
+    Avy.paintLabels(editor, session)
+}
+
+private fun select(
+    editor: Editor,
+    state: MeowState,
+    session: Avy.Session,
+    char: Char,
+) {
+    if (session.gotoLine && char.isDigit()) {
+        promptGotoLine(editor, state, char)
+        return
+    }
+    val node = session.node ?: return
+    when (val child = node.children.firstOrNull { it.first == char }?.second) {
+        is Avy.Leaf -> {
+            Avy.cancel(editor, state)
+            jump(editor, child.offset)
+        }
+
+        is Avy.Branch -> {
+            session.node = child
+            Avy.paintLabels(editor, session)
+        }
+
+        null -> {
+            Ide.hint(editor, "No such candidate: $char")
+        }
+    }
+}
+
+private fun promptGotoLine(
+    editor: Editor,
+    state: MeowState,
+    char: Char,
+) {
+    Avy.cancel(editor, state)
+    val input =
+        Messages.showInputDialog(
+            editor.project,
+            "Goto line:",
+            "Avy",
+            null,
+            char.toString(),
+            null,
+        ) ?: return
+    val doc = editor.document
+    val ln = parsedLineNumber(input, doc.lineCount) ?: return
+    jump(editor, doc.getLineStartOffset(ln))
+}
+
+private fun jump(
+    editor: Editor,
+    offset: Int,
+) {
+    val selectionModel = editor.selectionModel
+    if (selectionModel.hasSelection()) {
+        val anchor = Selections.mark(editor)
+        editor.caretModel.moveToOffset(offset)
+        selectionModel.setSelection(minOf(anchor, offset), maxOf(anchor, offset))
+    } else {
+        editor.caretModel.moveToOffset(offset)
+    }
+    editor.scrollingModel.scrollToCaret(ScrollType.RELATIVE)
+}
+
+private fun matches(
+    editor: Editor,
+    input: String,
+): List<Int> {
+    if (input.isEmpty()) return emptyList()
+    val doc = editor.document
+    val (first, last) = Ide.visibleLines(editor)
+    val from = doc.getLineStartOffset(first)
+    val to = doc.getLineEndOffset(last)
+    val text = doc.charsSequence
+    val out = mutableListOf<Int>()
+    var i = from
+    while (i <= to - input.length) {
+        if (text.regionMatches(i, input, 0, input.length, ignoreCase = true)) {
+            out.add(i)
+            i += input.length
+        } else {
+            i++
+        }
+    }
+    return out
+}
+
+private fun highlightMatches(
+    editor: Editor,
+    session: Avy.Session,
+) {
+    session.matchHighlights.forEach { editor.markupModel.removeHighlighter(it) }
+    session.matchHighlights.clear()
+    val attrs = editor.colorsScheme.getAttributes(EditorColors.SEARCH_RESULT_ATTRIBUTES)
+    for (offset in matches(editor, session.input)) {
+        session.matchHighlights.add(
+            editor.markupModel.addRangeHighlighter(
+                offset,
+                offset + session.input.length,
+                HighlighterLayer.SELECTION + 1,
+                attrs,
+                HighlighterTargetArea.EXACT_RANGE,
+            ),
+        )
+    }
+}
+
+private fun clearVisuals(
+    editor: Editor,
+    session: Avy.Session,
+) {
+    Overlay.detach(session.canvas)
+    session.canvas = null
+    session.matchHighlights.forEach { editor.markupModel.removeHighlighter(it) }
+    session.matchHighlights.clear()
 }

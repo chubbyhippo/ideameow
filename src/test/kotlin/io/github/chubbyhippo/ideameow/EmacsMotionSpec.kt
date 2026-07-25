@@ -246,7 +246,7 @@ class EmacsMotionSpec : MeowSpec() {
         thenNoSelection()
     }
 
-    fun `test given a count landing on a line boundary when beginning-of-buffer then the caret lands one line past that tenth`() {
+    fun `test given a count on a line boundary when beginning-of-buffer then the caret lands past that tenth`() {
         given("three two-char lines", "<caret>aa\naa\naa\n")
         whenKeys("3")
         whenCommand("beginning-of-buffer")
@@ -269,7 +269,7 @@ class EmacsMotionSpec : MeowSpec() {
         thenNoSelection()
     }
 
-    fun `test given no selection when backward-paragraph then the caret lands on the empty line joining the paragraph start`() {
+    fun `test given no selection when backward-paragraph then caret lands on empty line joining paragraph start`() {
         given("two paragraphs", "aaa\n\nbb<caret>b")
         whenCommand("backward-paragraph")
         thenCaretAt(4)
@@ -290,14 +290,14 @@ class EmacsMotionSpec : MeowSpec() {
         thenNoSelection()
     }
 
-    fun `test given a whitespace-only separator when backward-paragraph then the caret stops at the paragraph text start`() {
+    fun `test given a whitespace-only separator when backward-paragraph then caret stops at paragraph text start`() {
         given("space-only separator line", "aaa\n \nbb<caret>b")
         whenCommand("backward-paragraph")
         thenCaretAt(6)
         thenNoSelection()
     }
 
-    fun `test given consecutive empty lines when backward-paragraph then only the adjacent one joins the paragraph start`() {
+    fun `test given consecutive empty lines when backward-paragraph then only the adjacent joins paragraph start`() {
         given("two empty separator lines", "aaa\n\n\nbb<caret>b")
         whenCommand("backward-paragraph")
         thenCaretAt(5)

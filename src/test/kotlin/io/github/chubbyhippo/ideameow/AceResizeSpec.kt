@@ -28,7 +28,8 @@ import java.awt.event.KeyEvent
 import javax.swing.JPanel
 
 class AceResizeSpec : MeowSpec() {
-    private fun targets(count: Int): List<AceResize.Target> = (0 until count).map { AceResize.Target(Rectangle(it * 10, 0, 10, 10)) {} }
+    private fun targets(count: Int): List<AceResize.Target> =
+        (0 until count).map { AceResize.Target(Rectangle(it * 10, 0, 10, 10)) {} }
 
     private fun pressed(
         keyCode: Int,

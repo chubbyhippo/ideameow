@@ -79,8 +79,8 @@ class RcSpec : MeowSpec() {
         assertEquals("GotoDeclaration", c.keypad["gd"]!!.action)
         assertEquals("goto things", c.keypadDesc["g"])
         Rc.setForTest(c)
-        assertEquals("GotoDeclaration", Rc.keypad()["gd"]!!.action)
-        assertEquals("RecentFiles", Rc.keypad()["bb"]!!.action)
+        assertEquals("GotoDeclaration", RcLookups.keypad()["gd"]!!.action)
+        assertEquals("RecentFiles", RcLookups.keypad()["bb"]!!.action)
     }
 
     fun `test given a parameterized action then the whole serialized command is kept`() {
@@ -151,10 +151,10 @@ class RcSpec : MeowSpec() {
     }
 
     fun `test overlay colors layer user over the bundled default`() {
-        assertEquals(Color(0xE5, 0x2B, 0x50).rgb, Rc.overlayColor().rgb)
+        assertEquals(Color(0xE5, 0x2B, 0x50).rgb, RcColors.overlayColor().rgb)
         givenRc("set overlay-color=#010203\nset grab-color=#040506")
-        assertEquals(Color(0x01, 0x02, 0x03).rgb, Rc.overlayColor().rgb)
-        assertEquals(Color(0x04, 0x05, 0x06).rgb, Rc.grabColor().rgb)
+        assertEquals(Color(0x01, 0x02, 0x03).rgb, RcColors.overlayColor().rgb)
+        assertEquals(Color(0x04, 0x05, 0x06).rgb, RcColors.grabColor().rgb)
     }
 
     fun `test given a trailing comment then it is stripped from the line`() {
@@ -263,7 +263,9 @@ class RcSpec : MeowSpec() {
             val doc = FileDocumentManager.getInstance().getDocument(vf)!!
             WriteCommandAction.runWriteCommandAction(project) { doc.setText("nmap Z ,b\nset overlay-color=#123456\n") }
             assertFalse("an overlay-color change demands a reload", RcFileState.equalTo(doc))
-            WriteCommandAction.runWriteCommandAction(project) { doc.setText("nmap Z ,b\ncmap alt shift COMMA meow-line\n") }
+            WriteCommandAction.runWriteCommandAction(project) {
+                doc.setText("nmap Z ,b\ncmap alt shift COMMA meow-line\n")
+            }
             assertFalse("a chord change demands a reload", RcFileState.equalTo(doc))
         } finally {
             System.setProperty("user.home", oldHome)

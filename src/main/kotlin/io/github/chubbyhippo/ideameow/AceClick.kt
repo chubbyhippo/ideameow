@@ -83,13 +83,6 @@ object AceClick {
         begin(editor, state, (listOf(base) + menuWindows()).distinct().flatMap(::collect))
     }
 
-    private fun menuWindows(): List<Window> =
-        MenuSelectionManager
-            .defaultManager()
-            .selectedPath
-            .filterIsInstance<JPopupMenu>()
-            .mapNotNull(SwingUtilities::getWindowAncestor)
-
     internal fun begin(
         editor: Editor,
         state: MeowState,
@@ -121,29 +114,6 @@ object AceClick {
         return out
     }
 
-    private fun targetOf(
-        component: Component,
-        layer: JLayeredPane,
-    ): Target? {
-        if (component !is JComponent || !component.isShowing) return null
-        val click = clicker(component) ?: return null
-        val visible = component.visibleRect
-        if (visible.width <= 0 || visible.height <= 0) return null
-        val screen = Rectangle(visible)
-        val corner = screen.location
-        SwingUtilities.convertPointToScreen(corner, component)
-        screen.location = corner
-        val point = centerOf(visible)
-        return Target(
-            SwingUtilities.convertRectangle(component, visible, layer),
-            component,
-            layer,
-            screen,
-            click = click,
-            rightClick = { popupClick(component, point) },
-        )
-    }
-
     private fun rowTargets(
         component: Component,
         layer: JLayeredPane,
@@ -168,8 +138,9 @@ object AceClick {
         for (row in first..last) {
             val bounds = tree.getRowBounds(row) ?: continue
             val clip = bounds.intersection(visible)
-            if (clip.isEmpty) continue
-            out.add(rowTarget(tree, clip, layer) { selectTreeRow(tree, row) })
+            if (!clip.isEmpty) {
+                out.add(rowTarget(tree, clip, layer) { selectTreeRow(tree, row) })
+            }
         }
         return out
     }
@@ -186,62 +157,11 @@ object AceClick {
         for (index in first..last) {
             val bounds = list.getCellBounds(index, index) ?: continue
             val clip = bounds.intersection(visible)
-            if (clip.isEmpty) continue
-            out.add(rowTarget(list, clip, layer) { selectListCell(list, index) })
+            if (!clip.isEmpty) {
+                out.add(rowTarget(list, clip, layer) { selectListCell(list, index) })
+            }
         }
         return out
-    }
-
-    private fun rowTarget(
-        component: JComponent,
-        rectInComponent: Rectangle,
-        layer: JLayeredPane,
-        click: () -> Unit,
-    ): Target {
-        val screen = Rectangle(rectInComponent)
-        val corner = screen.location
-        SwingUtilities.convertPointToScreen(corner, component)
-        screen.location = corner
-        val point = centerOf(rectInComponent)
-        return Target(
-            SwingUtilities.convertRectangle(component, rectInComponent, layer),
-            component,
-            layer,
-            screen,
-            click = click,
-            rightClick = {
-                click()
-                popupClick(component, point)
-            },
-        )
-    }
-
-    private fun selectTreeRow(
-        tree: JTree,
-        row: Int,
-    ) {
-        tree.setSelectionRow(row)
-        tree.scrollRowToVisible(row)
-    }
-
-    private fun selectListCell(
-        list: JList<*>,
-        index: Int,
-    ) {
-        list.selectedIndex = index
-        list.ensureIndexIsVisible(index)
-    }
-
-    private fun centerOf(rect: Rectangle) = Point(rect.x + rect.width / 2, rect.y + rect.height / 2)
-
-    private fun popupClick(
-        component: JComponent,
-        point: Point,
-    ) {
-        val time = System.currentTimeMillis()
-        for (id in intArrayOf(MouseEvent.MOUSE_PRESSED, MouseEvent.MOUSE_RELEASED)) {
-            component.dispatchEvent(MouseEvent(component, id, time, 0, point.x, point.y, 1, true, MouseEvent.BUTTON3))
-        }
     }
 
     internal fun clicker(component: JComponent): (() -> Unit)? {
@@ -327,6 +247,13 @@ object AceClick {
     }
 }
 
+private fun menuWindows(): List<Window> =
+    MenuSelectionManager
+        .defaultManager()
+        .selectedPath
+        .filterIsInstance<JPopupMenu>()
+        .mapNotNull(SwingUtilities::getWindowAncestor)
+
 private fun clickMenuItem(menuItem: JMenuItem) {
     if (menuItem is JMenu) {
         menuItem.doClick()
@@ -357,7 +284,8 @@ private fun clickActionButton(button: ActionButton) {
     }
 }
 
-private fun wrappedButtonChild(parent: Container?): Boolean = parent is JComboBox<*> || parent is JSpinner || parent is JScrollBar
+private fun wrappedButtonChild(parent: Container?): Boolean =
+    parent is JComboBox<*> || parent is JSpinner || parent is JScrollBar
 
 private fun standaloneTextInput(component: JComponent): Boolean =
     component is JTextComponent &&

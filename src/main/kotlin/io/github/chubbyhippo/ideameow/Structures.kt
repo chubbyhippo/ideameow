@@ -62,7 +62,7 @@ internal object Structures {
                 Pending.END -> offset to bounds.end
                 else -> return
             }
-        Selections.select(editor, state, SelType.TRANSIENT, mark, point, expand = false)
+        Selections.select(editor, state, Selections.SelectionSpec(SelType.TRANSIENT, mark, point, expand = false))
     }
 
     private data class PairRange(
@@ -160,11 +160,13 @@ internal object Structures {
                 Ide.hint(editor, "No enclosing block")
                 return
             }
-        if (back) {
-            Selections.select(editor, state, SelType.BLOCK, pair.close + 1, pair.open, expand = true)
-        } else {
-            Selections.select(editor, state, SelType.BLOCK, pair.open, pair.close + 1, expand = true)
-        }
+        val spec =
+            if (back) {
+                Selections.SelectionSpec(SelType.BLOCK, pair.close + 1, pair.open, expand = true)
+            } else {
+                Selections.SelectionSpec(SelType.BLOCK, pair.open, pair.close + 1, expand = true)
+            }
+        Selections.select(editor, state, spec)
     }
 
     private fun toBlock(
@@ -179,7 +181,8 @@ internal object Structures {
                 Ide.hint(editor, "No enclosing block")
                 return
             }
-        Selections.select(editor, state, SelType.BLOCK, caret, if (back) pair.open else pair.close + 1, expand = true)
+        val point = if (back) pair.open else pair.close + 1
+        Selections.select(editor, state, Selections.SelectionSpec(SelType.BLOCK, caret, point, expand = true))
     }
 
     private fun join(
@@ -194,25 +197,21 @@ internal object Structures {
         fun blank(line: Int) = text.subSequence(doc.getLineStartOffset(line), doc.getLineEndOffset(line)).isBlank()
 
         val ln = doc.getLineNumber(editor.caretModel.offset)
-        val markLine: Int
-        val pointLine: Int
-        if (count >= 0) {
-            var previousLine = ln - 1
-            while (previousLine >= 0 && blank(previousLine)) previousLine--
-            if (previousLine < 0) return
-            markLine = previousLine
-            pointLine = ln
-        } else {
-            var nextLine = ln + 1
-            while (nextLine <= doc.lineCount - 1 && blank(nextLine)) nextLine++
-            if (nextLine > doc.lineCount - 1) return
-            markLine = ln
-            pointLine = nextLine
-        }
+        val lines: Pair<Int, Int>? =
+            if (count >= 0) {
+                var previousLine = ln - 1
+                while (previousLine >= 0 && blank(previousLine)) previousLine--
+                if (previousLine < 0) null else previousLine to ln
+            } else {
+                var nextLine = ln + 1
+                while (nextLine <= doc.lineCount - 1 && blank(nextLine)) nextLine++
+                if (nextLine > doc.lineCount - 1) null else ln to nextLine
+            }
+        val (markLine, pointLine) = lines ?: return
         val mark = doc.getLineEndOffset(markLine)
         var point = doc.getLineStartOffset(pointLine)
         val lineEnd = doc.getLineEndOffset(pointLine)
         while (point < lineEnd && text[point].isWhitespace()) point++
-        Selections.select(editor, state, SelType.JOIN, mark, point, expand = true)
+        Selections.select(editor, state, Selections.SelectionSpec(SelType.JOIN, mark, point, expand = true))
     }
 }

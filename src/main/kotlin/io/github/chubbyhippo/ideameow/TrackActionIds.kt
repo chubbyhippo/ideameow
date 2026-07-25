@@ -47,7 +47,7 @@ object TrackActionIds {
         enabled = !enabled
         expire()
         if (!enabled) lastTrackedId = null
-        Rc.notify(
+        notify(
             if (enabled) {
                 "Tracking action ids — perform any action to see its id (SPC i d stops)"
             } else {

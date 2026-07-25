@@ -237,7 +237,10 @@ class AceClickSpec : MeowSpec() {
         menu.add(JMenuItem("i"))
         try {
             AceClick.clicker(menu)!!.invoke()
-            assertEquals(listOf<MenuElement>(menu, menu.popupMenu), MenuSelectionManager.defaultManager().selectedPath.toList())
+            assertEquals(
+                listOf<MenuElement>(menu, menu.popupMenu),
+                MenuSelectionManager.defaultManager().selectedPath.toList(),
+            )
         } finally {
             MenuSelectionManager.defaultManager().clearSelectedPath()
         }
@@ -306,8 +309,12 @@ class AceClickSpec : MeowSpec() {
             ed,
             st,
             listOf(
-                AceClick.Target(Rectangle(0, 0, 10, 10), rightmost, null, Rectangle(100, 0, 10, 10)) { clicks.add("right") },
-                AceClick.Target(Rectangle(0, 0, 10, 10), leftmost, null, Rectangle(0, 0, 10, 10)) { clicks.add("left") },
+                AceClick.Target(Rectangle(0, 0, 10, 10), rightmost, null, Rectangle(100, 0, 10, 10)) {
+                    clicks.add("right")
+                },
+                AceClick.Target(Rectangle(0, 0, 10, 10), leftmost, null, Rectangle(0, 0, 10, 10)) {
+                    clicks.add("left")
+                },
             ),
         )
         whenKeys("a")

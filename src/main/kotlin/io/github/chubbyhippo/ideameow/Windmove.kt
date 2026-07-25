@@ -66,61 +66,9 @@ internal object Windmove {
         frame: Dimension,
         candidates: List<Pair<T, Rectangle>>,
     ): T? {
-        val horizontal = dir.horizontal
-        val first = if (horizontal) current.x else current.y
-        val last = first + if (horizontal) current.width else current.height
-        var bestEdge =
-            when (dir) {
-                Dir.DOWN -> frame.height
-                Dir.RIGHT -> frame.width
-                else -> -1
-            }
-        var bestBandEdge = bestEdge
-        var bestBandDiff = if (horizontal) frame.height else frame.width
-        var best: T? = null
-        var bestBand: T? = null
-        for ((window, rect) in candidates) {
-            val lead = if (horizontal) rect.x else rect.y
-            val size = if (horizontal) rect.width else rect.height
-            val bandLead = if (horizontal) rect.y else rect.x
-            val bandSize = if (horizontal) rect.height else rect.width
-            if (bandLead <= position && position < bandLead + bandSize) {
-                val inDir =
-                    when (dir) {
-                        Dir.LEFT, Dir.UP -> lead in (bestEdge + 1)..first
-                        Dir.RIGHT -> lead in last..<bestEdge
-                        Dir.DOWN -> lead in first..<bestEdge
-                    }
-                if (inDir) {
-                    bestEdge = lead
-                    best = window
-                }
-            } else {
-                val strictlyInDir =
-                    when (dir) {
-                        Dir.LEFT, Dir.UP -> lead + size <= first
-                        Dir.RIGHT, Dir.DOWN -> last <= lead
-                    }
-                if (!strictlyInDir) continue
-                val bandDiff =
-                    if (bandLead > position) bandLead - position else position - bandLead - bandSize
-                val better =
-                    bandDiff < bestBandDiff ||
-                        (
-                            bandDiff == bestBandDiff &&
-                                when (dir) {
-                                    Dir.LEFT, Dir.UP -> lead > bestBandEdge
-                                    Dir.RIGHT, Dir.DOWN -> lead < bestBandEdge
-                                }
-                        )
-                if (better) {
-                    bestBandEdge = lead
-                    bestBandDiff = bandDiff
-                    bestBand = window
-                }
-            }
-        }
-        return best ?: bestBand
+        val inBand = candidates.filter { rectInBand(dir, it.second, position) }
+        val outBand = candidates.filterNot { rectInBand(dir, it.second, position) }
+        return pickAligned(dir, current, frame, inBand) ?: pickByBand(dir, current, position, frame, outBand)
     }
 
     fun move(
@@ -137,20 +85,22 @@ internal object Windmove {
         val target = pick(dir, current, position, frame.size, candidates)
         if (target == null) {
             Ide.hint(editor, noWindowMessage(dir))
-            return
+        } else {
+            IdeFocusManager.getInstance(editor.project).requestFocus(target.contentComponent, true)
         }
-        IdeFocusManager.getInstance(editor.project).requestFocus(target.contentComponent, true)
     }
 
     fun swap(
         editor: Editor,
         dir: Dir,
     ) {
-        val project = editor.project ?: return
-        val frame = SwingUtilities.getWindowAncestor(editor.component) ?: return
+        val project = editor.project
+        val frame = SwingUtilities.getWindowAncestor(editor.component)
+        if (project == null || frame == null) return
         val fileEditorManager = FileEditorManagerEx.getInstanceEx(project)
-        val current = fileEditorManager.currentWindow ?: return
-        val currentRect = rectIn(frame, current) ?: return
+        val current = fileEditorManager.currentWindow
+        val currentRect = current?.let { rectIn(frame, it) }
+        if (current == null || currentRect == null) return
         val candidates =
             fileEditorManager.windows
                 .filter { it !== current }
@@ -168,8 +118,9 @@ internal object Windmove {
         current: EditorWindow,
         target: EditorWindow,
     ): Boolean {
-        val currentFile = current.selectedComposite?.file ?: return false
-        val targetFile = target.selectedComposite?.file ?: return false
+        val currentFile = current.selectedComposite?.file
+        val targetFile = target.selectedComposite?.file
+        if (currentFile == null || targetFile == null) return false
         if (currentFile != targetFile) {
             val options = FileEditorOpenOptions(requestFocus = false)
             fileEditorManager.openFile(currentFile, target, options)
@@ -218,6 +169,117 @@ internal object Windmove {
         return SwingUtilities.convertPoint(editor.contentComponent, xy, frame)
     }
 }
+
+private fun initialEdge(
+    dir: Windmove.Dir,
+    frame: Dimension,
+): Int =
+    when (dir) {
+        Windmove.Dir.DOWN -> frame.height
+        Windmove.Dir.RIGHT -> frame.width
+        else -> -1
+    }
+
+private fun rectInBand(
+    dir: Windmove.Dir,
+    rect: Rectangle,
+    position: Int,
+): Boolean {
+    val bandLead = if (dir.horizontal) rect.y else rect.x
+    val bandSize = if (dir.horizontal) rect.height else rect.width
+    return bandLead <= position && position < bandLead + bandSize
+}
+
+private fun <T> pickAligned(
+    dir: Windmove.Dir,
+    current: Rectangle,
+    frame: Dimension,
+    candidates: List<Pair<T, Rectangle>>,
+): T? {
+    val horizontal = dir.horizontal
+    val first = if (horizontal) current.x else current.y
+    val last = first + if (horizontal) current.width else current.height
+    var bestEdge = initialEdge(dir, frame)
+    var best: T? = null
+    for ((window, rect) in candidates) {
+        val lead = if (horizontal) rect.x else rect.y
+        if (alignedInDir(dir, lead, first, last, bestEdge)) {
+            bestEdge = lead
+            best = window
+        }
+    }
+    return best
+}
+
+private fun <T> pickByBand(
+    dir: Windmove.Dir,
+    current: Rectangle,
+    position: Int,
+    frame: Dimension,
+    candidates: List<Pair<T, Rectangle>>,
+): T? {
+    val horizontal = dir.horizontal
+    val first = if (horizontal) current.x else current.y
+    val last = first + if (horizontal) current.width else current.height
+    var bestBandEdge = initialEdge(dir, frame)
+    var bestBandDiff = if (horizontal) frame.height else frame.width
+    var bestBand: T? = null
+    for ((window, rect) in candidates) {
+        val lead = if (horizontal) rect.x else rect.y
+        val size = if (horizontal) rect.width else rect.height
+        val bandLead = if (horizontal) rect.y else rect.x
+        val bandSize = if (horizontal) rect.height else rect.width
+        if (!strictlyBeyond(dir, lead, size, first, last)) continue
+        val bandDiff = if (bandLead > position) bandLead - position else position - bandLead - bandSize
+        if (bandCloser(dir, lead, bandDiff, bestBandDiff, bestBandEdge)) {
+            bestBandEdge = lead
+            bestBandDiff = bandDiff
+            bestBand = window
+        }
+    }
+    return bestBand
+}
+
+private fun alignedInDir(
+    dir: Windmove.Dir,
+    lead: Int,
+    first: Int,
+    last: Int,
+    edge: Int,
+): Boolean =
+    when (dir) {
+        Windmove.Dir.LEFT, Windmove.Dir.UP -> lead in (edge + 1)..first
+        Windmove.Dir.RIGHT -> lead in last..<edge
+        Windmove.Dir.DOWN -> lead in first..<edge
+    }
+
+private fun strictlyBeyond(
+    dir: Windmove.Dir,
+    lead: Int,
+    size: Int,
+    first: Int,
+    last: Int,
+): Boolean =
+    when (dir) {
+        Windmove.Dir.LEFT, Windmove.Dir.UP -> lead + size <= first
+        Windmove.Dir.RIGHT, Windmove.Dir.DOWN -> last <= lead
+    }
+
+private fun bandCloser(
+    dir: Windmove.Dir,
+    lead: Int,
+    bandDiff: Int,
+    bestBandDiff: Int,
+    bestBandEdge: Int,
+): Boolean =
+    bandDiff < bestBandDiff ||
+        (
+            bandDiff == bestBandDiff &&
+                when (dir) {
+                    Windmove.Dir.LEFT, Windmove.Dir.UP -> lead > bestBandEdge
+                    Windmove.Dir.RIGHT, Windmove.Dir.DOWN -> lead < bestBandEdge
+                }
+        )
 
 internal sealed class WindmoveAction(
     private val dir: Windmove.Dir,

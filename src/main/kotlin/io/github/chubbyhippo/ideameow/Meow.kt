@@ -46,8 +46,9 @@ object Meow {
     }
 
     fun statusText(project: Project): String {
-        val editor = FileEditorManager.getInstance(project).selectedTextEditor ?: return ""
-        val state = state(editor) ?: return ""
+        val editor = FileEditorManager.getInstance(project).selectedTextEditor
+        val state = editor?.let { state(it) }
+        if (editor == null || state == null) return ""
         val beacon = editor.caretModel.caretCount > 1
         val repeat = Engine.repeatMap
         return when {

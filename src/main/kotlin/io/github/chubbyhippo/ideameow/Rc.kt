@@ -18,7 +18,6 @@ package io.github.chubbyhippo.ideameow
 
 import com.intellij.notification.NotificationGroupManager
 import com.intellij.notification.NotificationType
-import com.intellij.ui.JBColor
 import java.awt.Color
 import java.awt.event.InputEvent
 import java.io.File
@@ -51,11 +50,6 @@ object Rc {
     const val FILE_NAME = ".ideameowrc"
     const val MAX_MAPPING_DEPTH = 8
     private const val DEFAULT_WHICH_KEY_DELAY_MS = 250
-
-    private val DEFAULT_OVERLAY_COLOR = JBColor(Color(0xE5, 0x2B, 0x50), Color(0xE5, 0x2B, 0x50))
-    private val DEFAULT_OVERLAY_TEXT_COLOR = JBColor(Color.WHITE, Color.WHITE)
-    private val DEFAULT_EXPAND_HINT_COLOR = JBColor(Color(0xD0, 0x5C, 0x0A), Color(0xFF, 0xB0, 0x50))
-    private val DEFAULT_GRAB_COLOR = JBColor(Color(0xCD, 0xE8, 0xCD), Color(0x2F, 0x47, 0x2F))
 
     data class Binding(
         val action: String? = null,
@@ -142,60 +136,49 @@ object Rc {
         }
     }
 
-    fun keypad(): Map<String, Binding> = LinkedHashMap(defaults().keypad).apply { putAll(config().keypad) }
+    fun whichKeyEnabled(): Boolean = config().whichKey ?: defaults().whichKey ?: true
 
-    fun keypadDescs(): Map<String, String> = HashMap(defaults().keypadDesc).apply { putAll(config().keypadDesc) }
+    fun whichKeyDelayMs(): Int = config().whichKeyDelayMs ?: defaults().whichKeyDelayMs ?: DEFAULT_WHICH_KEY_DELAY_MS
+}
 
-    fun chords(): Map<ChordKey, Binding> {
-        val merged = LinkedHashMap(defaults().chords)
-        merged.putAll(config().chords)
+internal object RcLookups {
+    fun keypad(): Map<String, Rc.Binding> = LinkedHashMap(Rc.defaults().keypad).apply { putAll(Rc.config().keypad) }
+
+    fun keypadDescs(): Map<String, String> = HashMap(Rc.defaults().keypadDesc).apply { putAll(Rc.config().keypadDesc) }
+
+    fun chords(): Map<ChordKey, Rc.Binding> {
+        val merged = LinkedHashMap(Rc.defaults().chords)
+        merged.putAll(Rc.config().chords)
         merged.values.removeIf { it.command == "ignore" }
         return merged
     }
 
-    fun repeatGroups(): Map<String, Map<Char, Binding>> {
-        val merged = LinkedHashMap<String, LinkedHashMap<Char, Binding>>()
-        for ((group, members) in defaults().repeat) merged.getOrPut(group) { LinkedHashMap() }.putAll(members)
-        for ((group, members) in config().repeat) merged.getOrPut(group) { LinkedHashMap() }.putAll(members)
+    fun repeatGroups(): Map<String, Map<Char, Rc.Binding>> {
+        val merged = LinkedHashMap<String, LinkedHashMap<Char, Rc.Binding>>()
+        for ((group, members) in Rc.defaults().repeat) merged.getOrPut(group) { LinkedHashMap() }.putAll(members)
+        for ((group, members) in Rc.config().repeat) merged.getOrPut(group) { LinkedHashMap() }.putAll(members)
         for (members in merged.values) members.values.removeIf { it.command == "ignore" }
         merged.values.removeIf { it.isEmpty() }
         return merged
     }
 
-    fun repeatMapFor(binding: Binding): Map<Char, Binding>? =
+    fun repeatMapFor(binding: Rc.Binding): Map<Char, Rc.Binding>? =
         repeatGroups().values.firstOrNull { members ->
             members.values.any {
                 it.action == binding.action && it.command == binding.command && it.keys == binding.keys
             }
         }
+}
 
-    fun whichKeyEnabled(): Boolean = config().whichKey ?: defaults().whichKey ?: true
-
-    fun whichKeyDelayMs(): Int = config().whichKeyDelayMs ?: defaults().whichKeyDelayMs ?: DEFAULT_WHICH_KEY_DELAY_MS
-
-    fun overlayColor(): JBColor = resolveColor(DEFAULT_OVERLAY_COLOR) { it.overlayColor }
-
-    fun overlayTextColor(): JBColor = resolveColor(DEFAULT_OVERLAY_TEXT_COLOR) { it.overlayTextColor }
-
-    fun expandHintColor(): JBColor = resolveColor(DEFAULT_EXPAND_HINT_COLOR) { it.expandHintColor }
-
-    fun grabColor(): JBColor = resolveColor(DEFAULT_GRAB_COLOR) { it.grabColor }
-
-    private fun resolveColor(
-        fallback: JBColor,
-        pick: (Config) -> Color?,
-    ): JBColor = (pick(config()) ?: pick(defaults()))?.let { JBColor(it, it) } ?: fallback
-
-    fun notify(
-        text: String,
-        type: NotificationType,
-    ) {
-        runCatching {
-            NotificationGroupManager
-                .getInstance()
-                .getNotificationGroup("ideameow")
-                .createNotification(text, type)
-                .notify(null)
-        }
+internal fun notify(
+    text: String,
+    type: NotificationType,
+) {
+    runCatching {
+        NotificationGroupManager
+            .getInstance()
+            .getNotificationGroup("ideameow")
+            .createNotification(text, type)
+            .notify(null)
     }
 }

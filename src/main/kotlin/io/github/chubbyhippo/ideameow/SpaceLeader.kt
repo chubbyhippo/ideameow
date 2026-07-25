@@ -40,7 +40,7 @@ import javax.swing.text.JTextComponent
 internal object SpaceLeader {
     private const val CHECKBOX_TREE = "com.intellij.ui.CheckboxTree"
     private const val CHANGES_TREE = "com.intellij.openapi.vcs.changes.ui.ChangesTree"
-    private const val TERMINAL_PACKAGE = "com.jediterm"
+    internal const val TERMINAL_PACKAGE = "com.jediterm"
     internal val SPACE_TREES = listOf(CHECKBOX_TREE, CHANGES_TREE)
 
     private var routed: Routed? = null
@@ -72,46 +72,41 @@ internal object SpaceLeader {
         routed = Routed(editor, state, surface)
     }
 
-    internal fun dispatch(event: AWTEvent): Boolean {
-        if (event !is KeyEvent || event.isConsumed) return false
-        if (event.id == KeyEvent.KEY_TYPED && swallowNextTyped) {
-            swallowNextTyped = false
-            return true
+    internal fun dispatch(event: AWTEvent): Boolean =
+        run {
+            if (event !is KeyEvent || event.isConsumed) return@run false
+            if (event.id == KeyEvent.KEY_TYPED && swallowNextTyped) {
+                swallowNextTyped = false
+                return@run true
+            }
+            val active = routed
+            if (active == null) return@run armOnSpace(event)
+            if (active.editor.isDisposed || !wantsKeys(active.state)) {
+                reset()
+                return@run false
+            }
+            when (event.id) {
+                KeyEvent.KEY_PRESSED -> routePressed(active, event)
+                KeyEvent.KEY_TYPED -> routeTyped(active, event)
+                else -> false
+            }
         }
-        val active = routed
-        if (active == null) return armOnSpace(event)
-        if (active.editor.isDisposed || !wantsKeys(active.state)) {
-            reset()
-            return false
-        }
-        return when (event.id) {
-            KeyEvent.KEY_PRESSED -> routePressed(active, event)
-            KeyEvent.KEY_TYPED -> routeTyped(active, event)
-            else -> false
-        }
-    }
 
     @Suppress("UnstableApiUsage")
-    private fun armOnSpace(event: KeyEvent): Boolean {
-        if (event.id != KeyEvent.KEY_PRESSED || event.keyCode != KeyEvent.VK_SPACE || event.modifiersEx != 0) {
-            return false
+    private fun armOnSpace(event: KeyEvent): Boolean =
+        run {
+            if (event.id != KeyEvent.KEY_PRESSED || event.keyCode != KeyEvent.VK_SPACE || event.modifiersEx != 0) {
+                return@run false
+            }
+            if (IdeEventQueue.getInstance().isPopupActive) return@run false
+            val focus = KeyboardFocusManager.getCurrentKeyboardFocusManager().focusOwner ?: return@run false
+            if (blocksArming(menuOpen(), focus)) return@run false
+            val target = leaderTarget(focus) ?: return@run false
+            routed = target
+            swallowNextTyped = true
+            WriteIntentReadAction.compute { openKeypad(target.editor, target.state) }
+            true
         }
-        if (IdeEventQueue.getInstance().isPopupActive) return false
-        val focus = KeyboardFocusManager.getCurrentKeyboardFocusManager().focusOwner ?: return false
-        if (blocksArming(menuOpen(), focus)) return false
-        val target = leaderTarget(focus) ?: return false
-        routed = target
-        swallowNextTyped = true
-        WriteIntentReadAction.compute { openKeypad(target.editor, target.state) }
-        return true
-    }
-
-    private fun menuOpen(): Boolean = MenuSelectionManager.defaultManager().selectedPath.isNotEmpty()
-
-    internal fun blocksArming(
-        menuOpen: Boolean,
-        focus: Component,
-    ): Boolean = !menuOpen && (nativeSpace(focus) || inAnyEditor(focus))
 
     internal fun openKeypad(
         editor: Editor,
@@ -126,58 +121,18 @@ internal object SpaceLeader {
 
     private fun wantsKeys(state: MeowState) = state.mode == MeowMode.KEYPAD || state.hasActiveOverlaySession
 
-    internal fun nativeSpace(focus: Component): Boolean {
-        var component: Component? = focus
-        while (component != null && component !is Window) {
-            when {
-                component is JTextComponent -> return true
-
-                component is AbstractButton -> return true
-
-                component is JComboBox<*> -> return true
-
-                component is CheckBoxList<*> -> return true
-
-                nativeSpaceTreeOrTerminal(component) -> return true
-            }
-            component = component.parent
+    private fun leaderTarget(focus: Component): Routed? =
+        run {
+            val context = DataManager.getInstance().getDataContext(focus)
+            if (PlatformDataKeys.SPEED_SEARCH_TEXT.getData(context) != null) return@run null
+            val project = CommonDataKeys.PROJECT.getData(context) ?: return@run null
+            val editor = FileEditorManager.getInstance(project).selectedTextEditor ?: return@run null
+            val state = Meow.state(editor) ?: return@run null
+            if (state.mode == MeowMode.KEYPAD) return@run null
+            val editorWindow = SwingUtilities.getWindowAncestor(editor.component)
+            if (!windowChainContains(SwingUtilities.getWindowAncestor(focus), editorWindow)) return@run null
+            Routed(editor, state, focus)
         }
-        return false
-    }
-
-    private fun nativeSpaceTreeOrTerminal(component: Component): Boolean =
-        component.javaClass.name.startsWith(TERMINAL_PACKAGE) || treeConsumesSpace(component.javaClass)
-
-    internal fun treeConsumesSpace(start: Class<*>): Boolean {
-        var current: Class<*>? = start
-        while (current != null) {
-            if (current.name in SPACE_TREES) return true
-            current = current.superclass
-        }
-        return false
-    }
-
-    private fun inAnyEditor(focus: Component): Boolean =
-        EditorFactory.getInstance().allEditors.any {
-            SwingUtilities.isDescendingFrom(focus, it.contentComponent)
-        }
-
-    private fun leaderTarget(focus: Component): Routed? {
-        val context = DataManager.getInstance().getDataContext(focus)
-        if (PlatformDataKeys.SPEED_SEARCH_TEXT.getData(context) != null) return null
-        val project = CommonDataKeys.PROJECT.getData(context) ?: return null
-        val editor = FileEditorManager.getInstance(project).selectedTextEditor ?: return null
-        val state = Meow.state(editor) ?: return null
-        if (state.mode == MeowMode.KEYPAD) return null
-        val editorWindow = SwingUtilities.getWindowAncestor(editor.component)
-        if (!windowChainContains(SwingUtilities.getWindowAncestor(focus), editorWindow)) return null
-        return Routed(editor, state, focus)
-    }
-
-    private fun windowChainContains(
-        from: Window?,
-        target: Window?,
-    ): Boolean = generateSequence(from) { it.owner }.any { it === target }
 
     @Suppress("UnstableApiUsage")
     private fun routePressed(
@@ -199,11 +154,54 @@ internal object SpaceLeader {
         active: Routed,
         event: KeyEvent,
     ): Boolean {
-        if (event.keyChar == KeyEvent.CHAR_UNDEFINED) return false
         val chord = InputEvent.ALT_DOWN_MASK or InputEvent.CTRL_DOWN_MASK or InputEvent.META_DOWN_MASK
-        if (event.modifiersEx and chord != 0) return false
+        if (event.keyChar == KeyEvent.CHAR_UNDEFINED || event.modifiersEx and chord != 0) return false
         WriteIntentReadAction.compute { Engine.handleChar(active.editor, event.keyChar) }
         if (!wantsKeys(active.state)) reset()
         return true
     }
 }
+
+private fun menuOpen(): Boolean = MenuSelectionManager.defaultManager().selectedPath.isNotEmpty()
+
+internal fun blocksArming(
+    menuOpen: Boolean,
+    focus: Component,
+): Boolean = !menuOpen && (nativeSpace(focus) || inAnyEditor(focus))
+
+internal fun nativeSpace(focus: Component): Boolean {
+    var component: Component? = focus
+    while (component != null && component !is Window) {
+        val consumesSpace =
+            component is JTextComponent ||
+                component is AbstractButton ||
+                component is JComboBox<*> ||
+                component is CheckBoxList<*> ||
+                nativeSpaceTreeOrTerminal(component)
+        if (consumesSpace) return true
+        component = component.parent
+    }
+    return false
+}
+
+private fun nativeSpaceTreeOrTerminal(component: Component): Boolean =
+    component.javaClass.name.startsWith(SpaceLeader.TERMINAL_PACKAGE) || treeConsumesSpace(component.javaClass)
+
+internal fun treeConsumesSpace(start: Class<*>): Boolean {
+    var current: Class<*>? = start
+    while (current != null) {
+        if (current.name in SpaceLeader.SPACE_TREES) return true
+        current = current.superclass
+    }
+    return false
+}
+
+private fun inAnyEditor(focus: Component): Boolean =
+    EditorFactory.getInstance().allEditors.any {
+        SwingUtilities.isDescendingFrom(focus, it.contentComponent)
+    }
+
+private fun windowChainContains(
+    from: Window?,
+    target: Window?,
+): Boolean = generateSequence(from) { it.owner }.any { it === target }

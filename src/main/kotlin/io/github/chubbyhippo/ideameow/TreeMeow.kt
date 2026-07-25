@@ -57,18 +57,17 @@ object TreeMeow {
     ) {
         val binding = (if (noremap) null else Rc.config().motion[char]) ?: Rc.defaults().motion[char] ?: return
         val command = binding.command
-        if (command != null) {
-            SWING_MOTIONS[command]?.let { swing(tree, it) }
-            return
-        }
         val actionId = binding.action
-        if (actionId != null) {
-            Ide.actOn(tree, actionId)
-            return
+        when {
+            command != null -> SWING_MOTIONS[command]?.let { swing(tree, it) }
+            actionId != null -> Ide.actOn(tree, actionId)
+            else -> {
+                val keys = binding.keys
+                if (keys != null && depth < Rc.MAX_MAPPING_DEPTH) {
+                    for (key in keys) dispatch(tree, key, noremap || !binding.recursive, depth + 1)
+                }
+            }
         }
-        val keys = binding.keys ?: return
-        if (depth >= Rc.MAX_MAPPING_DEPTH) return
-        for (key in keys) dispatch(tree, key, noremap || !binding.recursive, depth + 1)
     }
 
     private fun swing(
@@ -96,8 +95,8 @@ object TreeMeow {
 
             override fun actionPerformed(event: AnActionEvent) {
                 val tree = event.getData(PlatformDataKeys.CONTEXT_COMPONENT) as? JTree ?: return
-                val char = (event.inputEvent as? KeyEvent)?.keyChar ?: return
-                if (char == KeyEvent.CHAR_UNDEFINED) return
+                val char = (event.inputEvent as? KeyEvent)?.keyChar
+                if (char == null || char == KeyEvent.CHAR_UNDEFINED) return
                 dispatch(tree, char)
             }
         }
@@ -129,6 +128,7 @@ object TreeMeow {
             ?.let { register(it) }
     }
 
+    @Suppress("SpreadOperator")
     private fun register(tree: JTree) {
         dispatcher.unregisterCustomShortcutSet(tree)
         val shortcuts =

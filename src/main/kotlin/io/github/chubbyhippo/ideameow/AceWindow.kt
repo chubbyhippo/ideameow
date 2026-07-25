@@ -65,6 +65,13 @@ object AceWindow {
         val canvases = mutableListOf<JComponent>()
     }
 
+    data class Request(
+        val swap: Boolean,
+        val windows: List<Window>,
+        val layer: JLayeredPane? = null,
+        val current: Window? = null,
+    )
+
     fun plan(windowCount: Int): Plan =
         when {
             windowCount <= 1 -> Plan.NONE
@@ -95,7 +102,7 @@ object AceWindow {
         val panels = if (swap) emptyList() else previewPanels(editor, frame) + toolWindowPanels(editor, frame, editors)
         val layer = (frame as? RootPaneContainer)?.rootPane?.layeredPane
         val windows = ordered((editors + panels).map { it to it.rect })
-        begin(editor, state, swap, windows, layer, focusedWindow(windows))
+        begin(editor, state, Request(swap, windows, layer, focusedWindow(windows)))
     }
 
     private fun focusedWindow(windows: List<Window>): Window? {
@@ -106,20 +113,18 @@ object AceWindow {
     internal fun begin(
         editor: Editor,
         state: MeowState,
-        swap: Boolean,
-        windows: List<Window>,
-        layer: JLayeredPane? = null,
-        current: Window? = null,
+        request: Request,
     ) {
         cancel(state)
-        val resolvedCurrent = current ?: windows.firstOrNull { it.editor === editor }
+        val windows = request.windows
+        val resolvedCurrent = request.current ?: windows.firstOrNull { it.editor === editor }
         when (plan(windows.size)) {
             Plan.NONE -> return
 
-            Plan.OTHER -> perform(editor, swap, otherWindow(windows, resolvedCurrent), resolvedCurrent)
+            Plan.OTHER -> perform(editor, request.swap, otherWindow(windows, resolvedCurrent), resolvedCurrent)
 
             Plan.LABELS -> {
-                val session = Session(swap, windows, layer, resolvedCurrent)
+                val session = Session(request.swap, windows, request.layer, resolvedCurrent)
                 state.aceWindow = session
                 session.node = Avy.tree(windows.indices.toList())
                 paintLabels(session)
@@ -176,22 +181,6 @@ object AceWindow {
         }
     }
 
-    private fun swapWith(
-        editor: Editor,
-        target: Editor,
-    ) {
-        val project = editor.project ?: return
-        val fileEditorManager = FileEditorManagerEx.getInstanceEx(project)
-        val current = fileEditorManager.currentWindow
-        val targetWindow =
-            fileEditorManager.windows
-                .firstOrNull { SwingUtilities.isDescendingFrom(target.component, it.tabbedPane.component) }
-                ?.takeIf { it !== current }
-        if (current == null || targetWindow == null || !Windmove.exchange(fileEditorManager, current, targetWindow)) {
-            Ide.hint(editor, "Cannot swap with this window")
-        }
-    }
-
     private fun paintLabels(session: Session) {
         clearVisuals(session)
         val node = session.node ?: return
@@ -209,18 +198,15 @@ object AceWindow {
         }
         val layer = session.layer
         if (badges.isEmpty() || layer == null) return
-        val frame = SwingUtilities.getWindowAncestor(layer) ?: return
-        session.canvases.add(
-            Overlay.badge(
-                layer,
-                badges.map { (rect, label) -> SwingUtilities.convertRectangle(frame, rect, layer) to label },
-            ),
-        )
-    }
-
-    private fun clearVisuals(session: Session) {
-        session.canvases.forEach { Overlay.detach(it) }
-        session.canvases.clear()
+        val frame = SwingUtilities.getWindowAncestor(layer)
+        if (frame != null) {
+            session.canvases.add(
+                Overlay.badge(
+                    layer,
+                    badges.map { (rect, label) -> SwingUtilities.convertRectangle(frame, rect, layer) to label },
+                ),
+            )
+        }
     }
 
     private class LeadCanvas(
@@ -239,6 +225,27 @@ object AceWindow {
             graphics.drawString(label, area.x + 1, area.y + editor.ascent)
         }
     }
+}
+
+private fun swapWith(
+    editor: Editor,
+    target: Editor,
+) {
+    val project = editor.project ?: return
+    val fileEditorManager = FileEditorManagerEx.getInstanceEx(project)
+    val current = fileEditorManager.currentWindow
+    val targetWindow =
+        fileEditorManager.windows
+            .firstOrNull { SwingUtilities.isDescendingFrom(target.component, it.tabbedPane.component) }
+            ?.takeIf { it !== current }
+    if (current == null || targetWindow == null || !Windmove.exchange(fileEditorManager, current, targetWindow)) {
+        Ide.hint(editor, "Cannot swap with this window")
+    }
+}
+
+private fun clearVisuals(session: AceWindow.Session) {
+    session.canvases.forEach { Overlay.detach(it) }
+    session.canvases.clear()
 }
 
 private fun previewPanels(
@@ -307,4 +314,5 @@ internal fun panes(root: Component): List<JComponent> {
     return out
 }
 
-internal fun paneHost(component: JComponent): Component = SwingUtilities.getAncestorOfClass(JScrollPane::class.java, component) ?: component
+internal fun paneHost(component: JComponent): Component =
+    SwingUtilities.getAncestorOfClass(JScrollPane::class.java, component) ?: component

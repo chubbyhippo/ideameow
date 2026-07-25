@@ -23,9 +23,15 @@ import com.intellij.openapi.editor.ScrollType
 internal object Selections {
     private const val SELECTION_HISTORY_MAX = 200
 
+    private const val LAST_DIGIT = 9
+
+    private const val EXPAND_ZERO_COUNT = 10
+
+    private const val DECIMAL_BASE = 10
+
     val commands: Map<String, MeowCommand> =
         buildMap {
-            for (digit in 0..9) {
+            for (digit in 0..LAST_DIGIT) {
                 put("meow-expand-$digit", MeowCommand { editor, state -> expandOrCount(editor, state, digit) })
             }
             put("meow-reverse", MeowCommand { editor, _ -> reverse(editor) })
@@ -54,52 +60,42 @@ internal object Selections {
         return if (backwardP(editor)) selectionModel.selectionEnd else selectionModel.selectionStart
     }
 
-    fun lineExpandPoint(
-        doc: Document,
-        ln: Int,
-        count: Int,
-        back: Boolean,
-    ): Int =
-        if (back) {
-            doc.getLineStartOffset((ln - count).coerceAtLeast(0))
-        } else {
-            doc.getLineEndOffset((ln + count).coerceAtMost(doc.lineCount - 1))
-        }
+    data class SelectionSpec(
+        val type: SelType,
+        val mark: Int,
+        val point: Int,
+        val expand: Boolean,
+    )
 
     fun recordSelect(
         state: MeowState,
-        type: SelType,
-        expand: Boolean,
-        mark: Int,
-        point: Int,
+        spec: SelectionSpec,
         posBefore: Int,
     ) {
         val prev = state.lastSelection ?: SavedSelection(null, false, posBefore, posBefore)
         if (state.selectionHistory.lastOrNull() != prev) state.selectionHistory.addLast(prev)
         while (state.selectionHistory.size > SELECTION_HISTORY_MAX) state.selectionHistory.removeFirst()
-        state.lastSelection = SavedSelection(type, expand, mark, point)
+        state.lastSelection = SavedSelection(spec.type, spec.expand, spec.mark, spec.point)
     }
 
     fun select(
         editor: Editor,
         state: MeowState,
-        type: SelType,
-        mark: Int,
-        point: Int,
-        expand: Boolean,
+        spec: SelectionSpec,
         push: Boolean = true,
     ) {
         val length = editor.document.textLength
-        val markOffset = mark.coerceIn(0, length)
-        val pointOffset = point.coerceIn(0, length)
+        val markOffset = spec.mark.coerceIn(0, length)
+        val pointOffset = spec.point.coerceIn(0, length)
         val selectionModel = editor.selectionModel
         if (push) {
-            recordSelect(state, type, expand, markOffset, pointOffset, editor.caretModel.offset)
+            val moved = SelectionSpec(spec.type, markOffset, pointOffset, spec.expand)
+            recordSelect(state, moved, editor.caretModel.offset)
         } else {
-            state.lastSelection = SavedSelection(type, expand, markOffset, pointOffset)
+            state.lastSelection = SavedSelection(spec.type, spec.expand, markOffset, pointOffset)
         }
-        state.selType = type
-        state.selExpand = expand
+        state.selType = spec.type
+        state.selExpand = spec.expand
         editor.caretModel.moveToOffset(pointOffset)
         selectionModel.setSelection(minOf(markOffset, pointOffset), maxOf(markOffset, pointOffset))
         editor.scrollingModel.scrollToCaret(ScrollType.RELATIVE)
@@ -137,44 +133,15 @@ internal object Selections {
         cancel(editor, state)
     }
 
-    private fun reverse(editor: Editor) {
-        val selectionModel = editor.selectionModel
-        if (!selectionModel.hasSelection()) return
-        val start = selectionModel.selectionStart
-        val end = selectionModel.selectionEnd
-        val newPoint = if (editor.caretModel.offset <= start) end else start
-        editor.caretModel.moveToOffset(newPoint)
-        selectionModel.setSelection(start, end)
-        editor.scrollingModel.scrollToCaret(ScrollType.RELATIVE)
-    }
-
-    private fun pop(
-        editor: Editor,
-        state: MeowState,
-    ) {
-        if (editor.selectionModel.hasSelection()) {
-            val entry = state.selectionHistory.removeLastOrNull() ?: return
-            if (entry.type == null) {
-                editor.caretModel.moveToOffset(entry.point)
-                cancel(editor, state)
-                Ide.hint(editor, "No previous selection")
-            } else {
-                select(editor, state, entry.type, entry.mark, entry.point, entry.expand, push = false)
-            }
-        } else if (!Grab.pop(editor, state)) {
-            Ide.hint(editor, "No previous selection")
-        }
-    }
-
     private fun expandOrCount(
         editor: Editor,
         state: MeowState,
         digit: Int,
     ) {
         if (editor.selectionModel.hasSelection() && state.selType in EXPANDABLE) {
-            expand(editor, state, if (digit == 0) 10 else digit)
+            expand(editor, state, if (digit == 0) EXPAND_ZERO_COUNT else digit)
         } else {
-            state.pendingCount = state.pendingCount * 10 + digit
+            state.pendingCount = state.pendingCount * DECIMAL_BASE + digit
         }
     }
 
@@ -187,7 +154,7 @@ internal object Selections {
         val doc = editor.document
         val back = backwardP(editor)
         val caret = editor.caretModel.offset
-        val target: Int =
+        val target: Int? =
             when (state.selType) {
                 SelType.CHAR -> {
                     caret + if (back) -count else count
@@ -202,16 +169,56 @@ internal object Selections {
 
                 SelType.FIND, SelType.TILL -> {
                     val char = state.lastFind ?: return
-                    val charTarget =
-                        nthCharTarget(text, char, caret, count, backward = back, till = state.selType == SelType.TILL)
+                    val search = CharSearch(backward = back, till = state.selType == SelType.TILL)
+                    val charTarget = nthCharTarget(text, char, caret, count, search)
                     if (charTarget < 0) return
                     charTarget
                 }
 
-                else -> {
-                    return
-                }
+                else -> null
             }
-        select(editor, state, state.selType, mark(editor), target, expand = false)
+        if (target != null) select(editor, state, SelectionSpec(state.selType, mark(editor), target, expand = false))
+    }
+}
+
+internal fun lineExpandPoint(
+    doc: Document,
+    ln: Int,
+    count: Int,
+    back: Boolean,
+): Int =
+    if (back) {
+        doc.getLineStartOffset((ln - count).coerceAtLeast(0))
+    } else {
+        doc.getLineEndOffset((ln + count).coerceAtMost(doc.lineCount - 1))
+    }
+
+private fun reverse(editor: Editor) {
+    val selectionModel = editor.selectionModel
+    if (!selectionModel.hasSelection()) return
+    val start = selectionModel.selectionStart
+    val end = selectionModel.selectionEnd
+    val newPoint = if (editor.caretModel.offset <= start) end else start
+    editor.caretModel.moveToOffset(newPoint)
+    selectionModel.setSelection(start, end)
+    editor.scrollingModel.scrollToCaret(ScrollType.RELATIVE)
+}
+
+private fun pop(
+    editor: Editor,
+    state: MeowState,
+) {
+    if (editor.selectionModel.hasSelection()) {
+        val entry = state.selectionHistory.removeLastOrNull() ?: return
+        if (entry.type == null) {
+            editor.caretModel.moveToOffset(entry.point)
+            Selections.cancel(editor, state)
+            Ide.hint(editor, "No previous selection")
+        } else {
+            val spec = Selections.SelectionSpec(entry.type, entry.mark, entry.point, entry.expand)
+            Selections.select(editor, state, spec, push = false)
+        }
+    } else if (!Grab.pop(editor, state)) {
+        Ide.hint(editor, "No previous selection")
     }
 }

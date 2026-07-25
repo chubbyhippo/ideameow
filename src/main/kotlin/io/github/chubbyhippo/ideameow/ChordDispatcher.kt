@@ -40,36 +40,39 @@ internal object ChordDispatcher {
 
     internal fun dispatch(event: AWTEvent): Boolean {
         if (event !is KeyEvent || event.isConsumed) return false
-        if (event.id == KeyEvent.KEY_TYPED) {
-            if (!swallowNextTyped) return false
-            swallowNextTyped = false
-            return true
+        return when {
+            event.id == KeyEvent.KEY_TYPED -> {
+                val shouldSwallow = swallowNextTyped
+                if (shouldSwallow) swallowNextTyped = false
+                shouldSwallow
+            }
+            event.id == KeyEvent.KEY_PRESSED -> handlePress(event)
+            else -> false
         }
-        if (event.id != KeyEvent.KEY_PRESSED) return false
-        return handlePress(event)
     }
 
     @Suppress("UnstableApiUsage")
-    private fun handlePress(event: KeyEvent): Boolean {
-        val binding = bindingFor(event) ?: return false
-        if (IdeEventQueue.getInstance().isPopupActive) return false
-        val focus = KeyboardFocusManager.getCurrentKeyboardFocusManager().focusOwner ?: return false
-        val editor = normalEditorAt(focus) ?: return false
-        val state = Meow.state(editor) ?: return false
-        swallowNextTyped = true
-        WriteIntentReadAction.compute {
-            Engine.dispatch(editor, state, binding)
-            Meow.updateWidgets()
+    private fun handlePress(event: KeyEvent): Boolean =
+        run {
+            val binding = bindingFor(event) ?: return@run false
+            if (IdeEventQueue.getInstance().isPopupActive) return@run false
+            val focus = KeyboardFocusManager.getCurrentKeyboardFocusManager().focusOwner ?: return@run false
+            val editor = normalEditorAt(focus) ?: return@run false
+            val state = Meow.state(editor) ?: return@run false
+            swallowNextTyped = true
+            WriteIntentReadAction.compute {
+                Engine.dispatch(editor, state, binding)
+                Meow.updateWidgets()
+            }
+            true
         }
-        return true
-    }
 
     internal fun isChord(event: KeyEvent): Boolean =
         event.keyCode != KeyEvent.VK_UNDEFINED && ChordKey.of(event.keyCode, event.modifiersEx).hasNonShiftModifier()
 
     internal fun bindingFor(event: KeyEvent): Rc.Binding? {
         if (!isChord(event)) return null
-        return Rc.chords()[ChordKey.of(event.keyCode, event.modifiersEx)]
+        return RcLookups.chords()[ChordKey.of(event.keyCode, event.modifiersEx)]
     }
 
     internal fun claims(

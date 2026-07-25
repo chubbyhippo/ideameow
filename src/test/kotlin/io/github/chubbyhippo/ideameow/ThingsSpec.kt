@@ -72,7 +72,7 @@ class ThingsSpec : MeowSpec() {
         thenSelection("`hi there`")
     }
 
-    fun `test given a triple double quoted string when comma g then inner drops all three quotes and dot g keeps them`() {
+    fun `test given a triple double quoted string when comma g then inner drops the quotes and dot g keeps them`() {
         given("triple double", "say \"\"\"hi th<caret>ere\"\"\" now")
         whenKeys(",g")
         thenSelection("hi there")
@@ -80,7 +80,7 @@ class ThingsSpec : MeowSpec() {
         thenSelection("\"\"\"hi there\"\"\"")
     }
 
-    fun `test given a triple single quoted string when comma g then inner drops all three quotes and dot g keeps them`() {
+    fun `test given a triple single quoted string when comma g then inner drops the quotes and dot g keeps them`() {
         given("triple single", "say '''hi th<caret>ere''' now")
         whenKeys(",g")
         thenSelection("hi there")

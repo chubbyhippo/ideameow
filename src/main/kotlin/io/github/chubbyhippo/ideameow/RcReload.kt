@@ -93,7 +93,7 @@ internal object RcReload {
         Rc.load()
         TreeMeow.refresh()
         val config = Rc.config
-        Rc.notify(
+        notify(
             "Reloaded ~/${Rc.FILE_NAME}: ${config.normal.size} normal map(s), " +
                 "${config.motion.size} motion map(s), " +
                 "${config.keypad.size} keypad map(s), ${config.keypadDesc.size} description(s), " +

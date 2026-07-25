@@ -66,10 +66,13 @@ internal object Ide {
         if (doc.textLength == 0) return 0 to 0
         val last = (doc.lineCount - 1).coerceAtLeast(0)
         val area = editor.scrollingModel.visibleArea
-        if (area.height <= 0) return 0 to last
-        val top = editor.xyToLogicalPosition(Point(0, area.y)).line.coerceIn(0, last)
-        val bottom = editor.xyToLogicalPosition(Point(0, area.y + area.height)).line.coerceIn(0, last)
-        return top to bottom
+        return if (area.height <= 0) {
+            0 to last
+        } else {
+            val top = editor.xyToLogicalPosition(Point(0, area.y)).line.coerceIn(0, last)
+            val bottom = editor.xyToLogicalPosition(Point(0, area.y + area.height)).line.coerceIn(0, last)
+            top to bottom
+        }
     }
 
     fun runWrite(

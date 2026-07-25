@@ -79,7 +79,8 @@ abstract class MeowSpec : BasePlatformTestCase() {
         Engine.COMMANDS.getValue(name).invoke(ed, st)
     }
 
-    protected fun thenSelection(expected: String) = assertEquals("selected text", expected, ed.selectionModel.selectedText)
+    protected fun thenSelection(expected: String) =
+        assertEquals("selected text", expected, ed.selectionModel.selectedText)
 
     protected fun thenNoSelection() = assertFalse("expected no selection", ed.selectionModel.hasSelection())
 

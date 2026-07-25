@@ -28,11 +28,11 @@ import java.awt.Font
 internal object Grab {
     private const val MAX_BEACON_CARETS = 500
 
-    private val BG: JBColor get() = Rc.grabColor()
+    private val BG: JBColor get() = RcColors.grabColor()
 
     val commands: Map<String, MeowCommand> =
         mapOf(
-            "meow-grab" to MeowCommand { editor, state -> grab(editor, state) },
+            "meow-grab" to MeowCommand { editor, state -> capture(editor, state) },
             "meow-sync-grab" to MeowCommand { editor, state -> sync(editor, state) },
             "meow-swap-grab" to MeowCommand { editor, state -> swap(editor, state) },
         )
@@ -67,7 +67,7 @@ internal object Grab {
         }
     }
 
-    private fun grab(
+    private fun capture(
         editor: Editor,
         state: MeowState,
     ) {
@@ -100,14 +100,19 @@ internal object Grab {
         if (Edits.blockedReadOnly(editor)) return
         val grabMarker = state.grab
         val selectionModel = editor.selectionModel
-        if (grabMarker == null || !grabMarker.isValid) {
-            Ide.hint(editor, "No grab")
-            return
+        when {
+            grabMarker == null || !grabMarker.isValid -> Ide.hint(editor, "No grab")
+            !selectionModel.hasSelection() -> Ide.hint(editor, "meow-swap-grab needs a selection")
+            else -> performSwap(editor, state, grabMarker)
         }
-        if (!selectionModel.hasSelection()) {
-            Ide.hint(editor, "meow-swap-grab needs a selection")
-            return
-        }
+    }
+
+    private fun performSwap(
+        editor: Editor,
+        state: MeowState,
+        grabMarker: RangeMarker,
+    ) {
+        val selectionModel = editor.selectionModel
         val grabStart = grabMarker.startOffset
         val grabEnd = grabMarker.endOffset
         val selStart = selectionModel.selectionStart
@@ -143,12 +148,12 @@ internal object Grab {
         editor: Editor,
         state: MeowState,
     ): Boolean {
-        val grabMarker = state.grab ?: return false
-        if (!grabMarker.isValid) return false
+        val grabMarker = state.grab
+        if (grabMarker == null || !grabMarker.isValid) return false
         val start = grabMarker.startOffset
         val end = grabMarker.endOffset
         clear(editor, state)
-        Selections.select(editor, state, SelType.TRANSIENT, start, end, expand = false)
+        Selections.select(editor, state, Selections.SelectionSpec(SelType.TRANSIENT, start, end, expand = false))
         return true
     }
 
@@ -159,12 +164,20 @@ internal object Grab {
         val grabMarker = state.grab ?: return
         if (!grabMarker.isValid || grabMarker.endOffset <= grabMarker.startOffset) return
         val selectionModel = editor.selectionModel
-        if (!selectionModel.hasSelection()) return
         val selStart = selectionModel.selectionStart
         val selEnd = selectionModel.selectionEnd
-        if (selStart < grabMarker.startOffset || selEnd > grabMarker.endOffset || selEnd == selStart) return
-        val ranges = beaconRanges(editor, state, grabMarker) ?: return
-        editor.caretModel.setCaretsAndSelections(ranges.map { (start, end) -> caretState(editor, start, end) })
+        val selectionWithinGrab =
+            selectionModel.hasSelection() &&
+                selStart >= grabMarker.startOffset &&
+                selEnd <= grabMarker.endOffset &&
+                selEnd != selStart
+        if (selectionWithinGrab) {
+            beaconRanges(editor, state, grabMarker)?.let { ranges ->
+                editor.caretModel.setCaretsAndSelections(
+                    ranges.map { (start, end) -> caretState(editor, start, end) },
+                )
+            }
+        }
     }
 
     private fun beaconRanges(
@@ -202,25 +215,29 @@ internal object Grab {
         for (match in regex.findAll(region)) {
             val matchStart = grabMarker.startOffset + match.range.first
             val matchEnd = grabMarker.startOffset + match.range.last + 1
-            if (matchStart == selStart) continue
-            ranges.add(matchStart to matchEnd)
-            if (ranges.size >= MAX_BEACON_CARETS) break
+            if (matchStart != selStart) {
+                ranges.add(matchStart to matchEnd)
+                if (ranges.size >= MAX_BEACON_CARETS) break
+            }
         }
-        if (ranges.isEmpty()) return null
-        ranges.add(selStart to selEnd)
-        return ranges
+        return if (ranges.isEmpty()) {
+            null
+        } else {
+            ranges.add(selStart to selEnd)
+            ranges
+        }
     }
+}
 
-    private fun lineRanges(
-        editor: Editor,
-        grabMarker: RangeMarker,
-    ): List<Pair<Int, Int>>? {
-        val doc = editor.document
-        val first = doc.getLineNumber(grabMarker.startOffset)
-        val last = doc.getLineNumber((grabMarker.endOffset - 1).coerceAtLeast(grabMarker.startOffset))
-        if (last <= first) return null
-        return (first..last).map { ln -> doc.getLineStartOffset(ln) to doc.getLineEndOffset(ln) }
-    }
+private fun lineRanges(
+    editor: Editor,
+    grabMarker: RangeMarker,
+): List<Pair<Int, Int>>? {
+    val doc = editor.document
+    val first = doc.getLineNumber(grabMarker.startOffset)
+    val last = doc.getLineNumber((grabMarker.endOffset - 1).coerceAtLeast(grabMarker.startOffset))
+    if (last <= first) return null
+    return (first..last).map { ln -> doc.getLineStartOffset(ln) to doc.getLineEndOffset(ln) }
 }
 
 private fun caretState(

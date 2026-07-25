@@ -48,9 +48,9 @@ private class MeowWidget(
 
     override fun getPresentation(): StatusBarWidget.WidgetPresentation = this
 
-    override fun install(statusBar: StatusBar) {}
+    override fun install(statusBar: StatusBar) = Unit
 
-    override fun dispose() {}
+    override fun dispose() = Unit
 
     override fun getText(): String = Meow.statusText(project)
 

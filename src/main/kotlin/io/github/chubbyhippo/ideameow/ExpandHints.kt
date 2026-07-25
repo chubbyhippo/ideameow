@@ -26,7 +26,11 @@ import javax.swing.Timer
 object ExpandHints {
     private const val HINT_TIMEOUT_MS = 1000
 
-    private val HINT_COLOR: JBColor get() = Rc.expandHintColor()
+    private const val MAX_HINT_POSITIONS = 10
+
+    private const val LABEL_MODULO = 10
+
+    private val HINT_COLOR: JBColor get() = RcColors.expandHintColor()
 
     fun show(
         editor: Editor,
@@ -34,9 +38,9 @@ object ExpandHints {
     ) {
         clear(state)
         if (!editor.selectionModel.hasSelection()) return
-        val positions = positions(editor, state, 10)
+        val positions = positions(editor, state, MAX_HINT_POSITIONS)
         if (positions.isEmpty()) return
-        val labels = positions.mapIndexed { i, offset -> offset to ((i + 1) % 10).toString() }
+        val labels = positions.mapIndexed { i, offset -> offset to ((i + 1) % LABEL_MODULO).toString() }
         val canvas = HintsCanvas(editor, labels)
         Overlay.attach(editor, canvas)
         state.hintOverlay = canvas
@@ -120,7 +124,7 @@ object ExpandHints {
         val till = state.selType == SelType.TILL
         val positions = mutableListOf<Int>()
         for (k in 1..count) {
-            val target = nthCharTarget(text, char, caret, k, backward, till)
+            val target = nthCharTarget(text, char, caret, k, CharSearch(backward, till))
             if (target < 0) break
             positions.add(target)
         }

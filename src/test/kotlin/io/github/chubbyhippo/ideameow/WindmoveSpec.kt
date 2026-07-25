@@ -63,7 +63,7 @@ class WindmoveSpec : MeowSpec() {
 
     fun `test given editor and preview windows then ace-window labels them all`() {
         given("ace preview labels", "text")
-        AceWindow.begin(ed, st, swap = false, windows = mixedWindows(JPanel()))
+        AceWindow.begin(ed, st, AceWindow.Request(swap = false, windows = mixedWindows(JPanel())))
         assertEquals(3, st.aceWindow!!.windows.size)
         assertEquals(3, Avy.labels(st.aceWindow!!.node!!).size)
         AceWindow.cancel(st)
@@ -71,14 +71,14 @@ class WindmoveSpec : MeowSpec() {
 
     fun `test given a preview window pick then ace-window focuses its component`() {
         given("ace preview focus", "text")
-        AceWindow.begin(ed, st, swap = false, windows = mixedWindows(JPanel()))
+        AceWindow.begin(ed, st, AceWindow.Request(swap = false, windows = mixedWindows(JPanel())))
         whenKeys("s")
         assertNull(st.aceWindow)
     }
 
     fun `test given a swap pick on a preview window then ace-window hints instead of swapping`() {
         given("ace preview swap", "text")
-        AceWindow.begin(ed, st, swap = true, windows = mixedWindows(JPanel()))
+        AceWindow.begin(ed, st, AceWindow.Request(swap = true, windows = mixedWindows(JPanel())))
         whenKeys("s")
         assertNull(st.aceWindow)
     }
@@ -92,7 +92,7 @@ class WindmoveSpec : MeowSpec() {
 
     fun `test given a pick on the current window then ace-window stays and the session clears`() {
         given("ace current stay", "text")
-        AceWindow.begin(ed, st, swap = false, windows = mixedWindows(JPanel()))
+        AceWindow.begin(ed, st, AceWindow.Request(swap = false, windows = mixedWindows(JPanel())))
         whenKeys("a")
         assertNull(st.aceWindow)
     }

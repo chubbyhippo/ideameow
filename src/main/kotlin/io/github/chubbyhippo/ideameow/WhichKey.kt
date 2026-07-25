@@ -38,6 +38,9 @@ object WhichKey {
     private const val PANEL_MARGIN = 28
     private const val BOTTOM_INSET = 8
     private const val LEFT_INSET = 4
+    private const val WHICH_KEY_V_PAD = 6
+    private const val WHICH_KEY_H_PAD = 10
+    private const val TABLE_GAP_PX = 18
 
     private val THINGS =
         listOf(
@@ -63,9 +66,9 @@ object WhichKey {
     fun scheduleThings(editor: Editor) = schedule(editor) { THINGS }
 
     fun keypadRows(buffer: String): List<Pair<String, String>> {
-        val descriptions = Rc.keypadDescs()
+        val descriptions = RcLookups.keypadDescs()
         val rows = sortedMapOf<String, String>()
-        for ((seq, binding) in Rc.keypad()) {
+        for ((seq, binding) in RcLookups.keypad()) {
             if (!seq.startsWith(buffer) || seq == buffer) continue
             val child = buffer + seq[buffer.length]
             val label =
@@ -112,7 +115,7 @@ object WhichKey {
             val host = SpaceLeader.surfaceFor(editor) ?: editor.component
             val label =
                 JBLabel(gridHtml(host, rows)).apply {
-                    border = JBUI.Borders.empty(6, 10)
+                    border = JBUI.Borders.empty(WHICH_KEY_V_PAD, WHICH_KEY_H_PAD)
                 }
             val createdPopup =
                 JBPopupFactory
@@ -150,7 +153,7 @@ object WhichKey {
                         val (key, desc) = rows[index]
                         append("<td align='right'><b>").append(esc(key)).append("</b></td>")
                         append("<td>").append(SEPARATOR).append(esc(desc)).append("</td>")
-                        append("<td width='").append(JBUI.scale(18)).append("'></td>")
+                        append("<td width='").append(JBUI.scale(TABLE_GAP_PX)).append("'></td>")
                     }
                 }
                 append("</tr>")

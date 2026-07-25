@@ -43,7 +43,7 @@ class RepeatSpec : MeowSpec() {
                     editor: Editor,
                     caret: Caret?,
                     dataContext: DataContext?,
-                ) {}
+                ) = Unit
             }
         MeowEscapeHandler(noop).execute(ed, null, (ed as EditorEx).dataContext)
     }
@@ -88,7 +88,7 @@ class RepeatSpec : MeowSpec() {
 
     fun `test given home rc repeat lines then they layer per key over the bundled group`() {
         givenRc("repeat error , meow-prev\nrepeat error e <action>(ShowErrorDescription)")
-        val g = Rc.repeatGroups()["error"]!!
+        val g = RcLookups.repeatGroups()["error"]!!
         assertEquals("GotoNextError", g['.']!!.action)
         assertEquals("meow-prev", g[',']!!.command)
         assertEquals("ShowErrorDescription", g['e']!!.action)
@@ -96,7 +96,7 @@ class RepeatSpec : MeowSpec() {
 
     fun `test given a repeat member bound to ignore then the key is given back`() {
         givenRc("repeat zoom 0 ignore")
-        val g = Rc.repeatGroups()["zoom"]!!
+        val g = RcLookups.repeatGroups()["zoom"]!!
         assertFalse(g.containsKey('0'))
         assertEquals("EditorIncreaseFontSize", g['i']!!.action)
     }
@@ -235,7 +235,7 @@ class RepeatSpec : MeowSpec() {
         assertNull(Engine.repeatMap)
     }
 
-    fun `test given the bundled rc then SPC x z repeats the last command and bare z keeps repeating like Emacs C-x z`() {
+    fun `test given the bundled rc then SPC x z repeats last command and bare z keeps repeating like Emacs C-x z`() {
         given("delete run", "<caret>aaaaa")
         whenKeys("d")
         thenText("aaaa")

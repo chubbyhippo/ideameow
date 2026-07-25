@@ -38,57 +38,64 @@ internal object MeowEscape {
     fun consume(
         editor: Editor,
         state: MeowState,
-    ): Boolean {
-        if (state.avy != null) {
-            Avy.cancel(editor, state)
-            Meow.updateWidgets()
-            return true
-        }
-        if (state.aceWindow != null) {
-            AceWindow.cancel(state)
-            Meow.updateWidgets()
-            return true
-        }
-        if (state.aceClick != null) {
-            AceClick.cancel(state)
-            Meow.updateWidgets()
-            return true
-        }
-        if (state.aceResize != null) {
-            AceResize.cancel(state)
-            Meow.updateWidgets()
-            return true
-        }
-        val hadTransient = state.pending != null || Engine.repeatMap != null
-        state.pending = null
-        Engine.repeatMap = null
-        WhichKey.hide()
-        ExpandHints.clear(state)
-        return when {
-            state.mode == MeowMode.INSERT -> {
-                Meow.setMode(editor, state, MeowMode.NORMAL)
-                true
-            }
-
-            state.mode == MeowMode.KEYPAD -> {
-                Keypad.exit(editor, state)
-                true
-            }
-
-            editor.caretModel.caretCount > 1 -> {
-                editor.caretModel.removeSecondaryCarets()
+    ): Boolean =
+        when {
+            state.avy != null -> {
+                Avy.cancel(editor, state)
                 Meow.updateWidgets()
                 true
             }
 
-            editor.selectionModel.hasSelection() -> {
-                editor.selectionModel.removeSelection()
+            state.aceWindow != null -> {
+                AceWindow.cancel(state)
+                Meow.updateWidgets()
                 true
             }
 
-            else -> hadTransient
+            state.aceClick != null -> {
+                AceClick.cancel(state)
+                Meow.updateWidgets()
+                true
+            }
+
+            state.aceResize != null -> {
+                AceResize.cancel(state)
+                Meow.updateWidgets()
+                true
+            }
+
+            else -> {
+                val hadTransient = state.pending != null || Engine.repeatMap != null
+                state.pending = null
+                Engine.repeatMap = null
+                WhichKey.hide()
+                ExpandHints.clear(state)
+                when {
+                    state.mode == MeowMode.INSERT -> {
+                        Meow.setMode(editor, state, MeowMode.NORMAL)
+                        true
+                    }
+
+                    state.mode == MeowMode.KEYPAD -> {
+                        Keypad.exit(editor, state)
+                        true
+                    }
+
+                    editor.caretModel.caretCount > 1 -> {
+                        editor.caretModel.removeSecondaryCarets()
+                        Meow.updateWidgets()
+                        true
+                    }
+
+                    editor.selectionModel.hasSelection() -> {
+                        editor.selectionModel.removeSelection()
+                        true
+                    }
+
+                    else -> hadTransient
+                }
+            }
         }
-    }
 }
 
 class MeowEscapeHandler(

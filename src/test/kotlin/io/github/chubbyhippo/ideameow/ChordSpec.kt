@@ -41,7 +41,10 @@ class ChordSpec : MeowSpec() {
     fun `test given the IntelliJ spelling then it normalizes to the same key as the pressed event`() {
         assertEquals(ctrlF, ChordKey.fromKeyStroke(KeyStroke.getKeyStroke("control F")))
         assertEquals(altShiftComma, ChordKey.fromKeyStroke(KeyStroke.getKeyStroke("alt shift COMMA")))
-        assertEquals(ctrlF, ChordKey.of(pressed(KeyEvent.VK_F, InputEvent.CTRL_DOWN_MASK).keyCode, InputEvent.CTRL_DOWN_MASK))
+        assertEquals(
+            ctrlF,
+            ChordKey.of(pressed(KeyEvent.VK_F, InputEvent.CTRL_DOWN_MASK).keyCode, InputEvent.CTRL_DOWN_MASK),
+        )
         assertFalse(
             "different chords are not equal",
             ChordKey.fromKeyStroke(KeyStroke.getKeyStroke("control F")) ==
@@ -71,7 +74,7 @@ class ChordSpec : MeowSpec() {
     }
 
     fun `test given the bundled defaults then the whole Emacs chord layer resolves`() {
-        val chords = Rc.chords()
+        val chords = RcLookups.chords()
         assertEquals("forward-char", chords[ctrlF]?.command)
         assertEquals("kill-word", chords[altD]?.command)
         assertEquals("beginning-of-buffer", chords[altShiftComma]?.command)
@@ -81,17 +84,20 @@ class ChordSpec : MeowSpec() {
 
     fun `test given a home cmap override then it wins over the bundled default`() {
         givenRc("cmap control F backward-char")
-        assertEquals("backward-char", Rc.chords()[ctrlF]?.command)
+        assertEquals("backward-char", RcLookups.chords()[ctrlF]?.command)
     }
 
     fun `test given a home cmap ignore then the chord is handed back to the IDE`() {
         givenRc("cmap control F ignore")
-        assertNull("Ctrl-F is released to the IDE", Rc.chords()[ctrlF])
-        assertEquals("the rest of the layer stays intact", "kill-word", Rc.chords()[altD]?.command)
+        assertNull("Ctrl-F is released to the IDE", RcLookups.chords()[ctrlF])
+        assertEquals("the rest of the layer stays intact", "kill-word", RcLookups.chords()[altD]?.command)
     }
 
     fun `test given a pressed chord event then bindingFor resolves it and plain keys do not`() {
-        assertEquals("forward-char", ChordDispatcher.bindingFor(pressed(KeyEvent.VK_F, InputEvent.CTRL_DOWN_MASK))?.command)
+        assertEquals(
+            "forward-char",
+            ChordDispatcher.bindingFor(pressed(KeyEvent.VK_F, InputEvent.CTRL_DOWN_MASK))?.command,
+        )
         assertNull(ChordDispatcher.bindingFor(pressed(KeyEvent.VK_A, 0)))
         assertNull(ChordDispatcher.bindingFor(pressed(KeyEvent.VK_Z, InputEvent.CTRL_DOWN_MASK)))
     }
@@ -120,13 +126,13 @@ class ChordSpec : MeowSpec() {
 
     fun `test given a NORMAL editor then dispatching a chord binding runs its command`() {
         given("chord effect", "<caret>hello")
-        Engine.dispatch(ed, st, Rc.chords()[ctrlF]!!)
+        Engine.dispatch(ed, st, RcLookups.chords()[ctrlF]!!)
         thenCaretAt(1)
         thenNoSelection()
     }
 
     fun `test given the bundled defaults then SPC m exposes the M- motion and edit layer`() {
-        val k = Rc.keypad()
+        val k = RcLookups.keypad()
         assertEquals("backward-sentence", k["ma"]?.command)
         assertEquals("backward-word", k["mb"]?.command)
         assertEquals("capitalize-word", k["mc"]?.command)

@@ -23,6 +23,8 @@ internal object RcParser {
     private val ACTION_REGEX = Regex("""(?i)<action>\(([\w.$(),=-]+)\)""")
     private val WHICHKEY_LET_REGEX = Regex("""^let\s+g:WhichKeyDesc\w*\s*=\s*"(.+)"$""")
 
+    private const val REPEAT_PART_COUNT = 3
+
     fun parse(lines: List<String>): Rc.Config {
         val config = Rc.Config()
         for ((index, raw) in lines.withIndex()) {
@@ -47,12 +49,12 @@ internal object RcParser {
         var text = line
         val cut = Regex("\\s\"").find(text)?.range?.first
         if (cut != null) text = text.substring(0, cut).trimEnd()
-        if (text.isEmpty()) return
-
-        val split = text.split(Regex("\\s+"), limit = 2)
-        val command = split[0]
-        val rest = split.getOrNull(1)?.trim() ?: ""
-        dispatchCommand(config, command, rest, err)
+        if (text.isNotEmpty()) {
+            val split = text.split(Regex("\\s+"), limit = 2)
+            val command = split[0]
+            val rest = split.getOrNull(1)?.trim() ?: ""
+            dispatchCommand(config, command, rest, err)
+        }
     }
 
     private fun dispatchCommand(
@@ -85,11 +87,10 @@ internal object RcParser {
         val seqToken = after.takeWhile { !it.isWhitespace() }
         val desc = after.drop(seqToken.length).trim()
         val seq = parseKeys(seqToken, err) ?: return
-        if (seq.isEmpty()) {
-            err("empty key sequence in description: $body")
-            return
+        when {
+            seq.isEmpty() -> err("empty key sequence in description: $body")
+            else -> config.keypadDesc[seq] = desc
         }
-        config.keypadDesc[seq] = desc
     }
 
     private fun parseMap(
@@ -110,15 +111,11 @@ internal object RcParser {
 
         val binding = parseTarget(rhs, recursive, "$command $rest", err) ?: return
 
-        if (lhs.startsWith("<leader>")) {
-            if (motion) {
-                err("$command cannot define keypad entries; use map <leader>...")
-                return
-            }
-            mapLeader(config, lhs, binding, err)
-            return
+        when {
+            !lhs.startsWith("<leader>") -> mapKey(config, lhs, motion, binding, err)
+            motion -> err("$command cannot define keypad entries; use map <leader>...")
+            else -> mapLeader(config, lhs, binding, err)
         }
-        mapKey(config, lhs, motion, binding, err)
     }
 
     private fun mapLeader(
@@ -171,12 +168,14 @@ internal object RcParser {
             return
         }
         val key = ChordKey.fromKeyStroke(keyStroke)
-        if (!key.hasNonShiftModifier()) {
-            err("$command: chord '$keystrokeText' needs a Ctrl, Alt or Meta modifier")
-            return
-        }
-        val binding = parseTarget(target, recursive = command == "cmap", "$command $rest", err) ?: return
-        config.chords[key] = binding
+        val binding =
+            if (key.hasNonShiftModifier()) {
+                parseTarget(target, recursive = command == "cmap", "$command $rest", err)
+            } else {
+                err("$command: chord '$keystrokeText' needs a Ctrl, Alt or Meta modifier")
+                null
+            }
+        if (binding != null) config.chords[key] = binding
     }
 
     private fun parseTarget(
@@ -217,8 +216,8 @@ internal object RcParser {
         rest: String,
         err: (String) -> Unit,
     ) {
-        val parts = rest.split(Regex("\\s+"), limit = 3)
-        if (parts.size < 3) {
+        val parts = rest.split(Regex("\\s+"), limit = REPEAT_PART_COUNT)
+        if (parts.size < REPEAT_PART_COUNT) {
             err("repeat needs a group, a member key and a target")
             return
         }
@@ -234,8 +233,8 @@ internal object RcParser {
             }
 
             else -> {
-                val binding = parseTarget(rhs.trim(), recursive = true, "repeat $rest", err) ?: return
-                config.repeat.getOrPut(group) { LinkedHashMap() }[key[0]] = binding
+                val binding = parseTarget(rhs.trim(), recursive = true, "repeat $rest", err)
+                if (binding != null) config.repeat.getOrPut(group) { LinkedHashMap() }[key[0]] = binding
             }
         }
     }
@@ -292,11 +291,20 @@ private fun parseSetColor(
     setColor(config, color)
 }
 
+private const val HEX_RADIX = 16
+private const val RED_SHIFT = 16
+private const val GREEN_SHIFT = 8
+private const val COLOR_BYTE_MASK = 0xFF
+
 private fun parseHexColor(text: String): Color? {
     val hex = text.removePrefix("#")
     if (!HEX_COLOR_REGEX.matches(hex)) return null
-    val rgb = hex.toInt(16)
-    return Color((rgb shr 16) and 0xFF, (rgb shr 8) and 0xFF, rgb and 0xFF)
+    val rgb = hex.toInt(HEX_RADIX)
+    return Color(
+        (rgb shr RED_SHIFT) and COLOR_BYTE_MASK,
+        (rgb shr GREEN_SHIFT) and COLOR_BYTE_MASK,
+        rgb and COLOR_BYTE_MASK,
+    )
 }
 
 private fun parseKeys(
@@ -324,7 +332,8 @@ private fun parseKeys(
                 }
 
                 else -> {
-                    err("unsupported key token ${text.substring(i, close + 1)} (only printable keys reach the meow engine)")
+                    val token = text.substring(i, close + 1)
+                    err("unsupported key token $token (only printable keys reach the meow engine)")
                     return null
                 }
             }

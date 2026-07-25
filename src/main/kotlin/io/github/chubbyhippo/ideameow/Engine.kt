@@ -99,25 +99,26 @@ object Engine {
     fun handleChar(
         editor: Editor,
         key: Char,
-    ): Boolean {
-        val state = Meow.state(editor) ?: return false
-        if (routeSession(editor, state, key)) return true
-        if (state.mode == MeowMode.INSERT) return false
+    ): Boolean =
+        run {
+            val state = Meow.state(editor) ?: return@run false
+            if (routeSession(editor, state, key)) return@run true
+            if (state.mode == MeowMode.INSERT) return@run false
 
-        WhichKey.hide()
-        ExpandHints.clear(state)
+            WhichKey.hide()
+            ExpandHints.clear(state)
 
-        val pending = state.pending
-        val binding = resolveBinding(state, key, pending)
-        val command = binding?.command
+            val pending = state.pending
+            val binding = resolveBinding(state, key, pending)
+            val command = binding?.command
 
-        recordUnitKey(state, key, command, pending)
-        executeStep(editor, state, pending, binding, key)
-        recordLastKeys(state, command)
+            recordUnitKey(state, key, command, pending)
+            executeStep(editor, state, pending, binding, key)
+            recordLastKeys(state, command)
 
-        Meow.updateWidgets()
-        return true
-    }
+            Meow.updateWidgets()
+            true
+        }
 
     private fun resolveBinding(
         state: MeowState,
@@ -160,15 +161,16 @@ object Engine {
         state: MeowState,
         key: Char,
         motion: Boolean,
-    ): Rc.Binding? {
-        if (key == ' ') return KEYPAD_BINDING
-        if (state.noremapDepth == 0) {
-            val config = Rc.config()
-            (if (motion) config.motion[key] else config.normal[key])?.let { return it }
+    ): Rc.Binding? =
+        run {
+            if (key == ' ') return@run KEYPAD_BINDING
+            if (state.noremapDepth == 0) {
+                val config = Rc.config()
+                (if (motion) config.motion[key] else config.normal[key])?.let { return@run it }
+            }
+            val defaults = Rc.defaults()
+            if (motion) defaults.motion[key] else defaults.normal[key]
         }
-        val defaults = Rc.defaults()
-        return if (motion) defaults.motion[key] else defaults.normal[key]
-    }
 
     private fun resolvePending(
         editor: Editor,
@@ -211,7 +213,7 @@ object Engine {
         binding: Rc.Binding,
     ) {
         dispatch(editor, state, binding)
-        val repeatKeymap = Rc.repeatMapFor(binding) ?: return
+        val repeatKeymap = RcLookups.repeatMapFor(binding) ?: return
         if (repeatMap == null) {
             Ide.hint(editor, "Repeat with ${repeatKeymap.keys.joinToString(", ")}")
         }
@@ -223,32 +225,34 @@ object Engine {
         state: MeowState,
         binding: Rc.Binding,
     ) {
-        val command = binding.command
-        if (command != null) {
-            COMMANDS[command]?.invoke(editor, state)
-                ?: Ide.hint(editor, "Unknown meow command: $command")
-            return
-        }
-        val actionId = binding.action
-        if (actionId != null) {
-            Ide.act(editor, actionId)
-            return
-        }
-        val keys = binding.keys ?: return
-        if (state.replayDepth >= Rc.MAX_MAPPING_DEPTH) {
-            Ide.hint(editor, "ideameow: mapping recursion is too deep")
-            return
-        }
-        val savedReplaying = state.replaying
-        state.replaying = true
-        state.replayDepth++
-        if (!binding.recursive) state.noremapDepth++
-        try {
-            for (key in keys) handleChar(editor, key)
-        } finally {
-            if (!binding.recursive) state.noremapDepth--
-            state.replayDepth--
-            state.replaying = savedReplaying
+        run {
+            val command = binding.command
+            if (command != null) {
+                COMMANDS[command]?.invoke(editor, state)
+                    ?: Ide.hint(editor, "Unknown meow command: $command")
+                return@run
+            }
+            val actionId = binding.action
+            if (actionId != null) {
+                Ide.act(editor, actionId)
+                return@run
+            }
+            val keys = binding.keys ?: return@run
+            if (state.replayDepth >= Rc.MAX_MAPPING_DEPTH) {
+                Ide.hint(editor, "ideameow: mapping recursion is too deep")
+                return@run
+            }
+            val savedReplaying = state.replaying
+            state.replaying = true
+            state.replayDepth++
+            if (!binding.recursive) state.noremapDepth++
+            try {
+                for (key in keys) handleChar(editor, key)
+            } finally {
+                if (!binding.recursive) state.noremapDepth--
+                state.replayDepth--
+                state.replaying = savedReplaying
+            }
         }
     }
 }

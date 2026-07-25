@@ -72,7 +72,8 @@ class AttachSpec : BasePlatformTestCase() {
         assertTrue("block cursor in a modal state", editor.settings.isBlockCursor)
     }
 
-    private fun thenMeowStaysAway(editor: Editor) = assertNull("expected no meow state on the editor", Meow.state(editor))
+    private fun thenMeowStaysAway(editor: Editor) =
+        assertNull("expected no meow state on the editor", Meow.state(editor))
 
     fun `test given a multi-line writable dialog editor like the commit message box then meow attaches in NORMAL`() {
         val editor = givenEditor(EditorKind.UNTYPED)
