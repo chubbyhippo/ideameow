@@ -55,7 +55,7 @@ private fun stringEnd(
             j += 2
             continue
         }
-        val closed = if (triple) j + 2 < text.length && text[j + 1] == quote && text[j + 2] == quote else true
+        val closed = !triple || j + 2 < text.length && text[j + 1] == quote && text[j + 2] == quote
         if (char == quote && closed) return j + if (triple) TRIPLE_QUOTE_LEN else 1
         j++
     }
