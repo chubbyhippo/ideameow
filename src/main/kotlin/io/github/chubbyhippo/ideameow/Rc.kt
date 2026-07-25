@@ -30,10 +30,10 @@ data class ChordKey(
     fun hasNonShiftModifier(): Boolean = modifiers and NON_SHIFT != 0
 
     companion object {
-        private val ALL =
+        private const val ALL =
             InputEvent.SHIFT_DOWN_MASK or InputEvent.CTRL_DOWN_MASK or
                 InputEvent.ALT_DOWN_MASK or InputEvent.META_DOWN_MASK or InputEvent.ALT_GRAPH_DOWN_MASK
-        private val NON_SHIFT =
+        private const val NON_SHIFT =
             InputEvent.CTRL_DOWN_MASK or InputEvent.ALT_DOWN_MASK or
                 InputEvent.META_DOWN_MASK or InputEvent.ALT_GRAPH_DOWN_MASK
 
