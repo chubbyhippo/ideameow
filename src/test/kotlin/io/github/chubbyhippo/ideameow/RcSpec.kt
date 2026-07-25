@@ -151,7 +151,7 @@ class RcSpec : MeowSpec() {
     }
 
     fun `test overlay colors layer user over the bundled default`() {
-        assertEquals(Color(0xE5, 0x2B, 0x50).rgb, RcColors.overlayColor().rgb)
+        assertEquals(Color(0x2E, 0xCC, 0x71).rgb, RcColors.overlayColor().rgb)
         givenRc("set overlay-color=#010203\nset grab-color=#040506")
         assertEquals(Color(0x01, 0x02, 0x03).rgb, RcColors.overlayColor().rgb)
         assertEquals(Color(0x04, 0x05, 0x06).rgb, RcColors.grabColor().rgb)

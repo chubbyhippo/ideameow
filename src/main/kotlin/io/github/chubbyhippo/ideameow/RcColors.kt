@@ -20,7 +20,7 @@ import com.intellij.ui.JBColor
 import java.awt.Color
 
 internal object RcColors {
-    private const val OVERLAY_RGB = 0xE52B50
+    private const val OVERLAY_RGB = 0x2ECC71
     private const val EXPAND_HINT_LIGHT_RGB = 0xD05C0A
     private const val EXPAND_HINT_DARK_RGB = 0xFFB050
     private const val GRAB_LIGHT_RGB = 0xCDE8CD
