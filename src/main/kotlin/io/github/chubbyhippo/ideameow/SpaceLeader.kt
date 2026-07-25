@@ -79,8 +79,7 @@ internal object SpaceLeader {
                 swallowNextTyped = false
                 return@run true
             }
-            val active = routed
-            if (active == null) return@run armOnSpace(event)
+            val active = routed ?: return@run armOnSpace(event)
             if (active.editor.isDisposed || !wantsKeys(active.state)) {
                 reset()
                 return@run false
