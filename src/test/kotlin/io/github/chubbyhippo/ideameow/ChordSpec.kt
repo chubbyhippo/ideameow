@@ -39,8 +39,8 @@ class ChordSpec : MeowSpec() {
         ChordKey.of(KeyEvent.VK_OPEN_BRACKET, InputEvent.ALT_DOWN_MASK or InputEvent.SHIFT_DOWN_MASK)
 
     fun `test given the IntelliJ spelling then it normalizes to the same key as the pressed event`() {
-        assertEquals(ctrlF, ChordKey.fromKeyStroke(KeyStroke.getKeyStroke("control F")))
-        assertEquals(altShiftComma, ChordKey.fromKeyStroke(KeyStroke.getKeyStroke("alt shift COMMA")))
+        assertEquals(ChordKey.fromKeyStroke(KeyStroke.getKeyStroke("control F")), ctrlF)
+        assertEquals(ChordKey.fromKeyStroke(KeyStroke.getKeyStroke("alt shift COMMA")), altShiftComma)
         assertEquals(
             ctrlF,
             ChordKey.of(pressed(KeyEvent.VK_F, InputEvent.CTRL_DOWN_MASK).keyCode, InputEvent.CTRL_DOWN_MASK),
