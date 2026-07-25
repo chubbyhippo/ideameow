@@ -39,13 +39,13 @@ internal object ChordDispatcher {
     }
 
     internal fun dispatch(event: AWTEvent): Boolean {
-        if (event !is KeyEvent || event.isConsumed) return false
-        return when {
+        return !(event !is KeyEvent || event.isConsumed) && when {
             event.id == KeyEvent.KEY_TYPED -> {
                 val shouldSwallow = swallowNextTyped
                 if (shouldSwallow) swallowNextTyped = false
                 shouldSwallow
             }
+
             event.id == KeyEvent.KEY_PRESSED -> handlePress(event)
             else -> false
         }
