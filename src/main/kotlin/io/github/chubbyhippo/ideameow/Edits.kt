@@ -39,6 +39,9 @@ internal object Edits {
             put("downcase-word", MeowCommand { editor, state -> caseWord(editor, state, CaseOp.DOWNCASE) })
             put("capitalize-word", MeowCommand { editor, state -> caseWord(editor, state, CaseOp.CAPITALIZE) })
             put("kill-word", MeowCommand { editor, state -> killWord(editor, state) })
+            put("open-line", MeowCommand { editor, state -> openLineHere(editor, state) })
+            put("delete-horizontal-space", MeowCommand { editor, state -> horizontalSpace(editor, state, "") })
+            put("just-one-space", MeowCommand { editor, state -> horizontalSpace(editor, state, " ") })
         }
 
     internal fun blockedReadOnly(editor: Editor): Boolean {
@@ -141,4 +144,37 @@ private fun backwardDelete(
     if (!allowModify(editor)) return
     editCarets(editor, "Meow Backward Delete") { caret -> deleteAtCaret(editor, caret, forward = false) }
     state.selType = SelType.NONE
+}
+
+private fun openLineHere(
+    editor: Editor,
+    state: MeowState,
+) {
+    if (Edits.blockedReadOnly(editor)) return
+    Selections.collapse(editor, state)
+    val at = editor.caretModel.offset
+    Ide.runWrite(editor, "open-line") {
+        editor.document.insertString(at, "\n")
+        editor.caretModel.moveToOffset(at)
+    }
+}
+
+private fun horizontalSpace(
+    editor: Editor,
+    state: MeowState,
+    replacement: String,
+) {
+    if (Edits.blockedReadOnly(editor)) return
+    Selections.collapse(editor, state)
+    val text = editor.document.charsSequence
+    val at = editor.caretModel.offset
+    var from = at
+    while (from > 0 && isBlank(text[from - 1])) from--
+    var to = at
+    while (to < text.length && isBlank(text[to])) to++
+    if (from == to && replacement.isEmpty()) return
+    Ide.runWrite(editor, "horizontal-space") {
+        editor.document.replaceString(from, to, replacement)
+        editor.caretModel.moveToOffset(from + replacement.length)
+    }
 }

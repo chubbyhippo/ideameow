@@ -88,6 +88,10 @@ internal object Motions {
                 "move-end-of-line",
                 MeowCommand { editor, state -> moveToOrExpand(editor, state, SelType.CHAR, ::lineEndOffset) },
             )
+            put(
+                "back-to-indentation",
+                MeowCommand { editor, state -> moveToOrExpand(editor, state, SelType.CHAR, ::indentationOffset) },
+            )
             put("forward-word", MeowCommand { editor, state -> wordOrExpand(editor, state, state.takeCount(1)) })
             put("backward-word", MeowCommand { editor, state -> wordOrExpand(editor, state, -state.takeCount(1)) })
             put(

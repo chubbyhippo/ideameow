@@ -17,6 +17,19 @@
 package io.github.chubbyhippo.ideameow
 
 class EmacsMotionSpec : MeowSpec() {
+    fun `test given an indented line then back-to-indentation lands on the first real char`() {
+        given("indented", "    hel<caret>lo")
+        whenCommand("back-to-indentation")
+        thenCaretAt(4)
+    }
+
+    fun `test given a selection then back-to-indentation extends it like the other motions`() {
+        given("indented", "    hello world<caret>")
+        whenKeys("w")
+        whenCommand("back-to-indentation")
+        thenSelection("hello ")
+    }
+
     fun `test given no selection when forward-char then the caret moves right without selecting`() {
         given("plain text", "<caret>hello")
         whenCommand("forward-char")

@@ -17,6 +17,27 @@
 package io.github.chubbyhippo.ideameow
 
 class EditingSpec : MeowSpec() {
+    fun `test given a caret mid-line then open-line breaks the line and stays put`() {
+        given("one line", "hel<caret>lo")
+        whenCommand("open-line")
+        thenText("hel\nlo")
+        thenCaretAt(3)
+    }
+
+    fun `test given blanks around the caret then delete-horizontal-space removes them all`() {
+        given("spaced", "a   <caret>   b")
+        whenCommand("delete-horizontal-space")
+        thenText("ab")
+        thenCaretAt(1)
+    }
+
+    fun `test given blanks around the caret then just-one-space leaves exactly one`() {
+        given("spaced", "a   <caret>   b")
+        whenCommand("just-one-space")
+        thenText("a b")
+        thenCaretAt(2)
+    }
+
     fun `test given a selection when i then INSERT starts at the selection beginning`() {
         given("word", "<caret>hello world")
         whenKeys("wi")

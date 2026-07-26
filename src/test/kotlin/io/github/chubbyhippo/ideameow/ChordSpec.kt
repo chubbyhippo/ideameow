@@ -79,7 +79,7 @@ class ChordSpec : MeowSpec() {
         assertEquals("kill-word", chords[altD]?.command)
         assertEquals("beginning-of-buffer", chords[altShiftComma]?.command)
         assertEquals("backward-paragraph", chords[altShiftOpenBracket]?.command)
-        assertEquals("the whole chord layer is present", 18, chords.size)
+        assertEquals("the whole chord layer is present", 31, chords.size)
     }
 
     fun `test given a home cmap override then it wins over the bundled default`() {

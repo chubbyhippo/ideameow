@@ -104,3 +104,18 @@ internal fun moveToOrExpand(
     if (extend) recordExpandedSelection(editor, state, type, posBefore)
     editor.scrollingModel.scrollToCaret(ScrollType.RELATIVE)
 }
+
+internal fun isBlank(ch: Char): Boolean = ch == ' ' || ch == '\t'
+
+internal fun indentationOffset(
+    editor: Editor,
+    offset: Int,
+): Int {
+    val doc = editor.document
+    val line = doc.getLineNumber(offset.coerceIn(0, doc.textLength))
+    val end = doc.getLineEndOffset(line)
+    val text = doc.charsSequence
+    var at = doc.getLineStartOffset(line)
+    while (at < end && isBlank(text[at])) at++
+    return at
+}
