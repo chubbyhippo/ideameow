@@ -81,14 +81,9 @@ internal object MeowEscape {
                         true
                     }
 
-                    editor.caretModel.caretCount > 1 -> {
-                        editor.caretModel.removeSecondaryCarets()
+                    editor.caretModel.caretCount > 1 || editor.selectionModel.hasSelection() -> {
+                        Selections.cancelAll(editor, state)
                         Meow.updateWidgets()
-                        true
-                    }
-
-                    editor.selectionModel.hasSelection() -> {
-                        editor.selectionModel.removeSelection()
                         true
                     }
 

@@ -56,6 +56,18 @@ class ModesKeypadSpec : MeowSpec() {
         thenMode(MeowMode.NORMAL)
     }
 
+    fun `test given a selection when escape then the selection state resets too`() {
+        given("two words", "<caret>hello world")
+        whenKeys("w")
+        thenSelType(SelType.WORD)
+        assertTrue("w marks the word as expandable", st.selExpand)
+        pressEsc()
+        thenNoSelection()
+        thenSelType(SelType.NONE)
+        assertFalse("escape clears the expand flag", st.selExpand)
+        assertNull("escape forgets the last selection", st.lastSelection)
+    }
+
     fun `test given a pending find when escape then the pending key is dropped`() {
         given("word", "<caret>hello")
         whenKeys("f")
