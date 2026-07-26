@@ -43,7 +43,10 @@ internal fun kill(
     if (!allowModify(editor)) return
     val selectionModel = editor.selectionModel
     when {
-        state.selType == SelType.JOIN && selectionModel.hasSelection() -> joinKill(editor, state)
+        state.selType == SelType.JOIN && selectionModel.hasSelection() -> {
+            joinKill(editor, state)
+        }
+
         selectionModel.hasSelection() -> {
             prepareLineSelectionsForKill(editor, state)
             Ide.act(editor, IdeActions.ACTION_EDITOR_CUT)

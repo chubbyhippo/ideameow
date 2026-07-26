@@ -38,18 +38,23 @@ internal object ChordDispatcher {
         swallowNextTyped = false
     }
 
-    internal fun dispatch(event: AWTEvent): Boolean {
-        return !(event !is KeyEvent || event.isConsumed) && when {
-            event.id == KeyEvent.KEY_TYPED -> {
-                val shouldSwallow = swallowNextTyped
-                if (shouldSwallow) swallowNextTyped = false
-                shouldSwallow
-            }
+    internal fun dispatch(event: AWTEvent): Boolean =
+        !(event !is KeyEvent || event.isConsumed) &&
+            when {
+                event.id == KeyEvent.KEY_TYPED -> {
+                    val shouldSwallow = swallowNextTyped
+                    if (shouldSwallow) swallowNextTyped = false
+                    shouldSwallow
+                }
 
-            event.id == KeyEvent.KEY_PRESSED -> handlePress(event)
-            else -> false
-        }
-    }
+                event.id == KeyEvent.KEY_PRESSED -> {
+                    handlePress(event)
+                }
+
+                else -> {
+                    false
+                }
+            }
 
     @Suppress("UnstableApiUsage")
     private fun handlePress(event: KeyEvent): Boolean =

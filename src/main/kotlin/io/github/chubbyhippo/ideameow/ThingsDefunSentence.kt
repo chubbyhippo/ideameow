@@ -77,8 +77,14 @@ internal fun sentence(
     val start = sentenceStart(text, offset)
     val end = sentenceEnd(text, offset)
     return when {
-        end <= start -> null
-        inner -> Things.Bounds(start, end)
+        end <= start -> {
+            null
+        }
+
+        inner -> {
+            Things.Bounds(start, end)
+        }
+
         else -> {
             var extendedEnd = end
             while (extendedEnd < text.length && text[extendedEnd] == ' ') extendedEnd++

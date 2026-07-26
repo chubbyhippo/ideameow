@@ -180,14 +180,18 @@ private fun pick(
 ) {
     val node = session.node ?: return
     when (val child = node.children.firstOrNull { it.first == char }?.second) {
-        is Avy.Leaf -> enterHold(editor, state, session, child.offset)
+        is Avy.Leaf -> {
+            enterHold(editor, state, session, child.offset)
+        }
 
         is Avy.Branch -> {
             session.node = child
             paintLabels(session)
         }
 
-        null -> Ide.hint(editor, "No such candidate: $char")
+        null -> {
+            Ide.hint(editor, "No such candidate: $char")
+        }
     }
 }
 

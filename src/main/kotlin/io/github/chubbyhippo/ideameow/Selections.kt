@@ -165,7 +165,9 @@ internal object Selections {
                     if (back) Words.prevStart(text, caret, count, pred) else Words.nextEnd(text, caret, count, pred)
                 }
 
-                SelType.LINE -> lineExpandPoint(doc, doc.getLineNumber(caret), count, back)
+                SelType.LINE -> {
+                    lineExpandPoint(doc, doc.getLineNumber(caret), count, back)
+                }
 
                 SelType.FIND, SelType.TILL -> {
                     val char = state.lastFind ?: return
@@ -175,7 +177,9 @@ internal object Selections {
                     charTarget
                 }
 
-                else -> null
+                else -> {
+                    null
+                }
             }
         if (target != null) select(editor, state, SelectionSpec(state.selType, mark(editor), target, expand = false))
     }

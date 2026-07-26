@@ -122,7 +122,7 @@ class RepeatSpec : MeowSpec() {
     }
 
     fun `test given a repeat line edit then the reload button sees a change`() {
-        val home = Files.createTempDirectory("meow-home").toFile()
+        val home = Files.createTempDirectory("meow-home").toFile().canonicalFile
         val oldHome = System.getProperty("user.home")
         System.setProperty("user.home", home.path)
         try {

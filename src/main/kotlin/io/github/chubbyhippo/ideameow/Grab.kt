@@ -186,11 +186,17 @@ internal object Grab {
         grabMarker: RangeMarker,
     ): List<Pair<Int, Int>>? =
         when (state.selType) {
-            SelType.WORD, SelType.SYMBOL, SelType.VISIT, SelType.FIND, SelType.TILL, SelType.CHAR ->
+            SelType.WORD, SelType.SYMBOL, SelType.VISIT, SelType.FIND, SelType.TILL, SelType.CHAR -> {
                 matchRanges(editor, state, grabMarker)
+            }
 
-            SelType.LINE -> lineRanges(editor, grabMarker)
-            else -> null
+            SelType.LINE -> {
+                lineRanges(editor, grabMarker)
+            }
+
+            else -> {
+                null
+            }
         }
 
     private fun matchRanges(

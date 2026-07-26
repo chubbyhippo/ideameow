@@ -87,7 +87,9 @@ internal object Structures {
                 continue
             }
             when (val char = text[i]) {
-                in opens -> stack.addLast(i)
+                in opens -> {
+                    stack.addLast(i)
+                }
 
                 in closes -> {
                     val open = popMatchingOpen(text, stack, opens, closes.indexOf(char))

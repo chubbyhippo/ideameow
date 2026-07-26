@@ -42,6 +42,10 @@ tasks.processResources {
     from(layout.projectDirectory.file(".ideameowrc"))
 }
 
+ktlint {
+    version = "1.8.0"
+}
+
 detekt {
     buildUponDefaultConfig = true
 }

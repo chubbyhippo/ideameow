@@ -92,7 +92,9 @@ internal object MeowEscape {
                         true
                     }
 
-                    else -> hadTransient
+                    else -> {
+                        hadTransient
+                    }
                 }
             }
         }

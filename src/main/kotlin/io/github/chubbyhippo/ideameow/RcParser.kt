@@ -65,12 +65,30 @@ internal object RcParser {
     ) {
         when (command) {
             "let" -> {}
-            "set" -> parseSet(config, rest, err)
-            "desc" -> parseDescBody(config, rest, err)
-            "map", "noremap", "nmap", "nnoremap", "mmap", "mnoremap" -> parseMap(config, command, rest, err)
-            "cmap", "cnoremap" -> parseChord(config, command, rest, err)
-            "repeat" -> parseRepeat(config, rest, err)
-            else -> err("unknown command '$command'")
+
+            "set" -> {
+                parseSet(config, rest, err)
+            }
+
+            "desc" -> {
+                parseDescBody(config, rest, err)
+            }
+
+            "map", "noremap", "nmap", "nnoremap", "mmap", "mnoremap" -> {
+                parseMap(config, command, rest, err)
+            }
+
+            "cmap", "cnoremap" -> {
+                parseChord(config, command, rest, err)
+            }
+
+            "repeat" -> {
+                parseRepeat(config, rest, err)
+            }
+
+            else -> {
+                err("unknown command '$command'")
+            }
         }
     }
 
@@ -141,11 +159,17 @@ internal object RcParser {
     ) {
         val keys = parseKeys(lhs, err) ?: return
         when {
-            keys.length != 1 ->
+            keys.length != 1 -> {
                 err("${if (motion) "motion" else "normal"}-mode key must be a single printable key: $lhs")
+            }
 
-            keys == " " -> err("SPC is the keypad key and cannot be remapped")
-            else -> (if (motion) config.motion else config.normal)[keys[0]] = binding
+            keys == " " -> {
+                err("SPC is the keypad key and cannot be remapped")
+            }
+
+            else -> {
+                (if (motion) config.motion else config.normal)[keys[0]] = binding
+            }
         }
     }
 
@@ -261,7 +285,9 @@ private fun parseSet(
             if (delay != null && delay >= 0) config.whichKeyDelayMs = delay
         }
 
-        else -> parseSetColor(config, rest, err)
+        else -> {
+            parseSetColor(config, rest, err)
+        }
     }
 }
 

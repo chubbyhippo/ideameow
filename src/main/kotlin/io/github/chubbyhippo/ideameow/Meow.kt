@@ -53,13 +53,9 @@ object Meow {
         val repeat = Engine.repeatMap
         return when {
             state.mode == MeowMode.KEYPAD -> "MEOW KEYPAD  SPC ${state.keypad.chunked(1).joinToString(" ")}"
-
             beacon && state.mode == MeowMode.INSERT -> "MEOW BEACON-INSERT"
-
             beacon -> "MEOW BEACON"
-
             repeat != null -> "MEOW ${state.mode} [repeat ${repeat.keys.joinToString(" ")}]"
-
             else -> "MEOW ${state.mode}"
         }
     }

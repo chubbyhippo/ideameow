@@ -69,7 +69,9 @@ object Keypad {
                         Ide.hint(editor, "SPC ${current.toCharArray().joinToString(" ")} is undefined")
                     }
 
-                    else -> WhichKey.scheduleKeypad(editor, current)
+                    else -> {
+                        WhichKey.scheduleKeypad(editor, current)
+                    }
                 }
             }
         }

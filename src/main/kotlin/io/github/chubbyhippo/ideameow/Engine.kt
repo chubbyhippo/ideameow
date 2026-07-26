@@ -90,7 +90,9 @@ object Engine {
                 state.lastCommand = "ace-resize"
             }
 
-            else -> return false
+            else -> {
+                return false
+            }
         }
         Meow.updateWidgets()
         return true

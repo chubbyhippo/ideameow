@@ -59,8 +59,14 @@ object TreeMeow {
         val command = binding.command
         val actionId = binding.action
         when {
-            command != null -> SWING_MOTIONS[command]?.let { swing(tree, it) }
-            actionId != null -> Ide.actOn(tree, actionId)
+            command != null -> {
+                SWING_MOTIONS[command]?.let { swing(tree, it) }
+            }
+
+            actionId != null -> {
+                Ide.actOn(tree, actionId)
+            }
+
             else -> {
                 val keys = binding.keys
                 if (keys != null && depth < Rc.MAX_MAPPING_DEPTH) {

@@ -119,9 +119,13 @@ object AceWindow {
         val windows = request.windows
         val resolvedCurrent = request.current ?: windows.firstOrNull { it.editor === editor }
         when (plan(windows.size)) {
-            Plan.NONE -> return
+            Plan.NONE -> {
+                return
+            }
 
-            Plan.OTHER -> perform(editor, request.swap, otherWindow(windows, resolvedCurrent), resolvedCurrent)
+            Plan.OTHER -> {
+                perform(editor, request.swap, otherWindow(windows, resolvedCurrent), resolvedCurrent)
+            }
 
             Plan.LABELS -> {
                 val session = Session(request.swap, windows, request.layer, resolvedCurrent)

@@ -168,23 +168,14 @@ object AceClick {
         if (!component.isEnabled) return null
         return when {
             component is ActionButton -> ({ clickActionButton(component) })
-
             component is JMenuItem -> ({ clickMenuItem(component) })
-
             component is AbstractButton && !wrappedButtonChild(component.parent) -> ({ component.doClick() })
-
             component is InplaceButton -> ({ component.doClick() })
-
             component is LinkLabel<*> -> ({ component.doClick() })
-
             component is HyperlinkLabel -> ({ component.doClick() })
-
             component is JComboBox<*> -> ({ component.showPopup() })
-
             component is TabLabel -> ({ mouseClick(component) })
-
             standaloneTextInput(component) -> ({ mouseClick(component) })
-
             else -> null
         }
     }

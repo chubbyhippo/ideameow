@@ -69,12 +69,21 @@ object ExpandHints {
         val backward = editor.selectionModel.hasSelection() && caret <= editor.selectionModel.selectionStart
         val positions =
             when (state.selType) {
-                SelType.WORD, SelType.SYMBOL ->
+                SelType.WORD, SelType.SYMBOL -> {
                     wordPositions(text, caret, backward, count, state.selType == SelType.SYMBOL)
+                }
 
-                SelType.LINE -> linePositions(doc, caret, backward, count)
-                SelType.FIND, SelType.TILL -> charPositions(text, state, caret, backward, count)
-                else -> emptyList()
+                SelType.LINE -> {
+                    linePositions(doc, caret, backward, count)
+                }
+
+                SelType.FIND, SelType.TILL -> {
+                    charPositions(text, state, caret, backward, count)
+                }
+
+                else -> {
+                    emptyList()
+                }
             }
         return positions.distinct()
     }
