@@ -110,13 +110,51 @@ class ChordSpec : MeowSpec() {
         )
     }
 
-    fun `test given NORMAL then a mapped chord is claimed but INSERT and plain keys are not`() {
+    fun `test given NORMAL or MOTION then a mapped chord is claimed but INSERT and KEYPAD are not`() {
         given("chord modes", "<caret>hello")
+        assertTrue(ChordDispatcher.claims(st, pressed(KeyEvent.VK_F, InputEvent.CTRL_DOWN_MASK)))
+        st.mode = MeowMode.MOTION
         assertTrue(ChordDispatcher.claims(st, pressed(KeyEvent.VK_F, InputEvent.CTRL_DOWN_MASK)))
         st.mode = MeowMode.INSERT
         assertFalse(ChordDispatcher.claims(st, pressed(KeyEvent.VK_F, InputEvent.CTRL_DOWN_MASK)))
+        st.mode = MeowMode.KEYPAD
+        assertFalse(ChordDispatcher.claims(st, pressed(KeyEvent.VK_F, InputEvent.CTRL_DOWN_MASK)))
         st.mode = MeowMode.NORMAL
         assertFalse(ChordDispatcher.claims(st, pressed(KeyEvent.VK_A, 0)))
+    }
+
+    fun `test given the Emacs spelling then it resolves to the same chord as the IntelliJ one`() {
+        val c =
+            Rc.parse(
+                listOf(
+                    "cmap C-f forward-char",
+                    "cnoremap M-d kill-word",
+                    "cmap M-< beginning-of-buffer",
+                    "cmap M-{ backward-paragraph",
+                ),
+            )
+        assertEquals("forward-char", c.chords[ctrlF]?.command)
+        assertEquals("kill-word", c.chords[altD]?.command)
+        assertEquals("beginning-of-buffer", c.chords[altShiftComma]?.command)
+        assertEquals("backward-paragraph", c.chords[altShiftOpenBracket]?.command)
+        assertTrue(c.errors.isEmpty())
+    }
+
+    fun `test given both spellings of a punctuation chord then they collapse to one binding`() {
+        listOf(
+            "C-/" to "control SLASH",
+            "C-_" to "control shift MINUS",
+            "M-\\" to "alt BACK_SLASH",
+            "M-SPC" to "alt SPACE",
+            "M-^" to "alt shift 6",
+            "M->" to "alt shift PERIOD",
+            "M-}" to "alt shift CLOSE_BRACKET",
+            "C-o" to "control O",
+        ).forEach { (emacs, intellij) ->
+            val c = Rc.parse(listOf("cmap $emacs forward-char", "cmap $intellij forward-char"))
+            assertTrue("$emacs failed to parse", c.errors.isEmpty())
+            assertEquals("$emacs and '$intellij' are different chords", 1, c.chords.size)
+        }
     }
 
     fun `test given no armed swallow then a typed event passes through`() {

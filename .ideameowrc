@@ -139,13 +139,15 @@ mmap q <action>(HideActiveWindow)
 " The Emacs chord layer — modifier-key bindings, like the vanilla Emacs keymap
 " ----------------------------------------------------------------------------
 " Unlike the single-key layout above, these are Ctrl-/Alt- CHORDS. They fire
-" only in NORMAL and, like meow's own motions, EXTEND an active selection
-" instead of replacing it (so C-f after a selection grows it). Spelling is the
-" IntelliJ keystroke format shown by SPC i d and Settings > Keymap: zero or
-" more of "control" / "alt" / "shift" / "meta", then a key name (F, COMMA,
-" OPEN_BRACKET, ...). cnoremap resolves its target through these bundled
-" defaults; cmap through your own maps. A chord bound to `ignore` is handed
-" back to the IDE — e.g. `cmap control F ignore` restores Find. Modifier
+" in NORMAL and MOTION — never in INSERT, never mid-keypad — and, like meow's
+" own motions, EXTEND an active selection instead of replacing it (so C-f
+" after a selection grows it). Either spelling works: the Emacs one (C-f, M-<,
+" M-SPC) or the IntelliJ keystroke format shown by SPC i d and Settings >
+" Keymap (zero or more of "control" / "alt" / "shift" / "meta", then a key
+" name — F, COMMA, OPEN_BRACKET, ...). cnoremap resolves its target through
+" these bundled defaults; cmap through your own maps. A chord bound to
+" `ignore` is handed back to the IDE — e.g. `cmap control F ignore` restores
+" Find. Modifier
 " chords never reach the modal engine as typing, so they live here, not on the
 " nmap layout; ESC and un-mapped chords keep their native IDE meaning.
 " ============================================================================
@@ -178,7 +180,7 @@ cmap alt D kill-word
 " one: meow-kill's no-selection fallback is meow-C-k, so C-k kills the line and
 " C-w the region through one command; meow-save is kill-ring-save;
 " meow-cancel-selection is keyboard-quit; meow-delete is delete-forward-char.
-" These fire only in NORMAL, so the IDE keeps them while you type.
+" These never fire in INSERT, so the IDE keeps them while you type.
 cmap control SLASH meow-undo
 cmap control shift MINUS meow-undo
 cmap control D meow-delete

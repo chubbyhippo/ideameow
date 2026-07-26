@@ -17,7 +17,6 @@
 package io.github.chubbyhippo.ideameow
 
 import java.awt.Color
-import javax.swing.KeyStroke
 
 internal object RcParser {
     private val ACTION_REGEX = Regex("""(?i)<action>\(([\w.$(),=-]+)\)""")
@@ -186,9 +185,9 @@ internal object RcParser {
         }
         val target = tokens.last()
         val keystrokeText = tokens.dropLast(1).joinToString(" ")
-        val keyStroke = KeyStroke.getKeyStroke(keystrokeText)
+        val keyStroke = ChordSpelling.keyStrokeOf(keystrokeText)
         if (keyStroke == null || keyStroke.keyCode == 0) {
-            err("$command: cannot parse chord '$keystrokeText' (use e.g. 'control F', 'alt shift COMMA')")
+            err("$command: cannot parse chord '$keystrokeText' (use e.g. 'C-f', 'M-<', 'control F', 'alt shift COMMA')")
             return
         }
         val key = ChordKey.fromKeyStroke(keyStroke)
