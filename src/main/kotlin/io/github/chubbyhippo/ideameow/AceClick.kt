@@ -28,7 +28,6 @@ import com.intellij.ui.tabs.impl.TabLabel
 import java.awt.Component
 import java.awt.Container
 import java.awt.KeyboardFocusManager
-import java.awt.Point
 import java.awt.Rectangle
 import java.awt.Window
 import java.awt.event.MouseEvent
@@ -47,6 +46,7 @@ import javax.swing.MenuElement
 import javax.swing.MenuSelectionManager
 import javax.swing.RootPaneContainer
 import javax.swing.SwingUtilities
+import javax.swing.Timer
 import javax.swing.text.JTextComponent
 
 object AceClick {
@@ -99,8 +99,20 @@ object AceClick {
         paintLabels(session)
     }
 
-    private fun collect(root: Window): List<Target> {
-        val layer = (root as? RootPaneContainer)?.rootPane?.layeredPane ?: return emptyList()
+    internal fun labelOpenMenus(
+        editor: Editor,
+        state: MeowState,
+        targets: List<Target> = openMenus().flatMap(::collect),
+    ): Boolean {
+        if (targets.isEmpty()) return false
+        begin(editor, state, targets)
+        openMenus().firstOrNull()?.let { SpaceLeader.routeTo(editor, state, it) }
+        return true
+    }
+
+    private fun collect(root: Component): List<Target> {
+        val window = root as? Window ?: SwingUtilities.getWindowAncestor(root)
+        val layer = (window as? RootPaneContainer)?.rootPane?.layeredPane ?: return emptyList()
         val out = mutableListOf<Target>()
         val queue = ArrayDeque<Component>()
         queue.add(root)
@@ -124,44 +136,6 @@ object AceClick {
             is JList<*> -> listCells(component, layer)
             else -> null
         }
-    }
-
-    private fun treeRows(
-        tree: JTree,
-        layer: JLayeredPane,
-    ): List<Target> {
-        val visible = tree.visibleRect
-        if (visible.width <= 0 || visible.height <= 0 || tree.rowCount == 0) return emptyList()
-        val first = tree.getClosestRowForLocation(visible.x, visible.y).coerceAtLeast(0)
-        val last = tree.getClosestRowForLocation(visible.x, visible.y + visible.height - 1)
-        val out = mutableListOf<Target>()
-        for (row in first..last) {
-            val bounds = tree.getRowBounds(row) ?: continue
-            val clip = bounds.intersection(visible)
-            if (!clip.isEmpty) {
-                out.add(rowTarget(tree, clip, layer) { selectTreeRow(tree, row) })
-            }
-        }
-        return out
-    }
-
-    private fun listCells(
-        list: JList<*>,
-        layer: JLayeredPane,
-    ): List<Target> {
-        val visible = list.visibleRect
-        if (visible.width <= 0 || visible.height <= 0 || list.model.size == 0) return emptyList()
-        val first = list.locationToIndex(Point(visible.x, visible.y)).coerceAtLeast(0)
-        val last = list.locationToIndex(Point(visible.x, visible.y + visible.height - 1))
-        val out = mutableListOf<Target>()
-        for (index in first..last) {
-            val bounds = list.getCellBounds(index, index) ?: continue
-            val clip = bounds.intersection(visible)
-            if (!clip.isEmpty) {
-                out.add(rowTarget(list, clip, layer) { selectListCell(list, index) })
-            }
-        }
-        return out
     }
 
     internal fun clicker(component: JComponent): (() -> Unit)? {
@@ -201,6 +175,7 @@ object AceClick {
                                 MenuSelectionManager.defaultManager().clearSelectedPath()
                             }
                             runCatching { action() }.onFailure { Ide.hint(editor, "Click failed") }
+                            scheduleMenuLabels(editor, state)
                         }
                     }
                 }
@@ -238,12 +213,36 @@ object AceClick {
     }
 }
 
-private fun menuWindows(): List<Window> =
+private const val MENU_SETTLE_MS = 60
+private const val MENU_SETTLE_TRIES = 5
+
+private fun scheduleMenuLabels(
+    editor: Editor,
+    state: MeowState,
+    triesLeft: Int = MENU_SETTLE_TRIES,
+) {
+    Timer(MENU_SETTLE_MS) {
+        if (menuLabelsWanted(editor, state) && !AceClick.labelOpenMenus(editor, state) && triesLeft > 1) {
+            scheduleMenuLabels(editor, state, triesLeft - 1)
+        }
+    }.apply {
+        isRepeats = false
+        start()
+    }
+}
+
+private fun menuLabelsWanted(
+    editor: Editor,
+    state: MeowState,
+) = !editor.isDisposed && state.aceClick == null
+
+private fun openMenus(): List<JPopupMenu> =
     MenuSelectionManager
         .defaultManager()
         .selectedPath
         .filterIsInstance<JPopupMenu>()
-        .mapNotNull(SwingUtilities::getWindowAncestor)
+
+private fun menuWindows(): List<Window> = openMenus().mapNotNull(SwingUtilities::getWindowAncestor)
 
 private fun clickMenuItem(menuItem: JMenuItem) {
     if (menuItem is JMenu) {

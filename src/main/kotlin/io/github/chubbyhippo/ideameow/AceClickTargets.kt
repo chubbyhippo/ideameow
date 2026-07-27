@@ -103,3 +103,41 @@ private fun popupClick(
         component.dispatchEvent(MouseEvent(component, id, time, 0, point.x, point.y, 1, true, MouseEvent.BUTTON3))
     }
 }
+
+internal fun treeRows(
+    tree: JTree,
+    layer: JLayeredPane,
+): List<AceClick.Target> {
+    val visible = tree.visibleRect
+    if (visible.width <= 0 || visible.height <= 0 || tree.rowCount == 0) return emptyList()
+    val first = tree.getClosestRowForLocation(visible.x, visible.y).coerceAtLeast(0)
+    val last = tree.getClosestRowForLocation(visible.x, visible.y + visible.height - 1)
+    val out = mutableListOf<AceClick.Target>()
+    for (row in first..last) {
+        val bounds = tree.getRowBounds(row) ?: continue
+        val clip = bounds.intersection(visible)
+        if (!clip.isEmpty) {
+            out.add(rowTarget(tree, clip, layer) { selectTreeRow(tree, row) })
+        }
+    }
+    return out
+}
+
+internal fun listCells(
+    list: JList<*>,
+    layer: JLayeredPane,
+): List<AceClick.Target> {
+    val visible = list.visibleRect
+    if (visible.width <= 0 || visible.height <= 0 || list.model.size == 0) return emptyList()
+    val first = list.locationToIndex(Point(visible.x, visible.y)).coerceAtLeast(0)
+    val last = list.locationToIndex(Point(visible.x, visible.y + visible.height - 1))
+    val out = mutableListOf<AceClick.Target>()
+    for (index in first..last) {
+        val bounds = list.getCellBounds(index, index) ?: continue
+        val clip = bounds.intersection(visible)
+        if (!clip.isEmpty) {
+            out.add(rowTarget(list, clip, layer) { selectListCell(list, index) })
+        }
+    }
+    return out
+}

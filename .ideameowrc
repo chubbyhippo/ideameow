@@ -209,7 +209,11 @@ cmap alt shift 6 ms
 " its id and a Copy Action Id button.
 " ============================================================================
 
-" SPC SPC: ace-click — label every clickable UI element, then pick one
+" SPC SPC: ace-click — label every clickable UI element, then pick one:
+" buttons, toolbar icons, tab labels, tree and list rows, menus, fields.
+" Picking a menu (or a capital label, which right-clicks the target and opens
+" its context menu) labels whatever pops open, so a whole menu path is
+" keyboard-walkable without tapping SPC SPC again.
 desc <leader><Space> ace-click
 map <leader><Space> ace-click
 

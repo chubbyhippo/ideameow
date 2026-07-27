@@ -276,6 +276,42 @@ class AceClickSpec : MeowSpec() {
         }
     }
 
+    fun `test given a pick that leaves a menu open then ace-click labels the menu instead of ending`() {
+        given("ace-click menu relabel", "text")
+        val popup = JPopupMenu()
+        popup.add(JMenuItem("i"))
+        MenuSelectionManager.defaultManager().setSelectedPath(arrayOf<MenuElement>(popup))
+        try {
+            assertTrue(AceClick.labelOpenMenus(ed, st, targets(2, mutableListOf())))
+            assertNotNull(st.aceClick)
+            assertEquals(2, st.aceClick!!.targets.size)
+        } finally {
+            MenuSelectionManager.defaultManager().clearSelectedPath()
+            SpaceLeader.reset()
+        }
+    }
+
+    fun `test given a menu relabel then the menu routes its keys to the session`() {
+        given("ace-click menu routing", "text")
+        val popup = JPopupMenu()
+        popup.add(JMenuItem("i"))
+        MenuSelectionManager.defaultManager().setSelectedPath(arrayOf<MenuElement>(popup))
+        try {
+            AceClick.labelOpenMenus(ed, st, targets(1, mutableListOf()))
+            assertSame(popup, SpaceLeader.surfaceFor(ed))
+        } finally {
+            MenuSelectionManager.defaultManager().clearSelectedPath()
+            SpaceLeader.reset()
+        }
+    }
+
+    fun `test given no open menu then the relabel arms no session`() {
+        given("ace-click no relabel", "text")
+        assertFalse(AceClick.labelOpenMenus(ed, st, emptyList()))
+        assertNull(st.aceClick)
+        assertNull(SpaceLeader.surfaceFor(ed))
+    }
+
     fun `test given targets on two layers then each layer carries its own badge canvas`() {
         given("ace-click layers", "text")
         val panel = JPanel()

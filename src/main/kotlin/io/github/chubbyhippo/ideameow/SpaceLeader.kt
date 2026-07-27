@@ -64,7 +64,7 @@ internal object SpaceLeader {
         swallowNextTyped = false
     }
 
-    internal fun setForTest(
+    internal fun routeTo(
         editor: Editor,
         state: MeowState,
         surface: Component,
