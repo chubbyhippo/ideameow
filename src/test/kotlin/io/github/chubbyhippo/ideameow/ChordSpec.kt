@@ -38,7 +38,7 @@ class ChordSpec : MeowSpec() {
     private val altShiftOpenBracket =
         ChordKey.of(KeyEvent.VK_OPEN_BRACKET, InputEvent.ALT_DOWN_MASK or InputEvent.SHIFT_DOWN_MASK)
 
-    fun `test given the IntelliJ spelling then it normalizes to the same key as the pressed event`() {
+    fun `test given the host spelling then it normalizes to the same key as the pressed event`() {
         assertEquals(ChordKey.fromKeyStroke(KeyStroke.getKeyStroke("control F")), ctrlF)
         assertEquals(ChordKey.fromKeyStroke(KeyStroke.getKeyStroke("alt shift COMMA")), altShiftComma)
         assertEquals(
@@ -123,7 +123,7 @@ class ChordSpec : MeowSpec() {
         assertFalse(ChordDispatcher.claims(st, pressed(KeyEvent.VK_A, 0)))
     }
 
-    fun `test given the Emacs spelling then it resolves to the same chord as the IntelliJ one`() {
+    fun `test given the Emacs spelling then it resolves to the same chord as the host one`() {
         val c =
             Rc.parse(
                 listOf(

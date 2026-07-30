@@ -52,7 +52,7 @@ class SpaceLeaderSpec : MeowSpec() {
         assertTrue(nativeSpace(CheckBoxList<String>()))
     }
 
-    fun `test given a VCS changes tree then space stays native`() {
+    fun `test given a tree whose space toggles then space stays native`() {
         assertTrue("com.intellij.openapi.vcs.changes.ui.ChangesTree" in SpaceLeader.SPACE_TREES)
         assertTrue("com.intellij.ui.CheckboxTree" in SpaceLeader.SPACE_TREES)
         assertFalse(treeConsumesSpace(JTree::class.java))

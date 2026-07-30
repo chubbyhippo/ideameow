@@ -170,7 +170,7 @@ class RcSpec : MeowSpec() {
         assertTrue(c.errors.isEmpty())
     }
 
-    fun `test the bundled default ideameowrc defines the whole keymap`() {
+    fun `test the bundled rc defines the whole keymap`() {
         val d = Rc.defaults()
         assertTrue("bundled default must parse clean, got: ${d.errors}", d.errors.isEmpty())
         for ((key, cmd) in QWERTY) {

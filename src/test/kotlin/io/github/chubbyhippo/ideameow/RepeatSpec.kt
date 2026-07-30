@@ -101,7 +101,7 @@ class RepeatSpec : MeowSpec() {
         assertEquals("EditorIncreaseFontSize", g['i']!!.action)
     }
 
-    fun `test the bundled default ideameowrc declares the init el repeat groups`() {
+    fun `test the bundled rc declares the init el repeat groups`() {
         val d = Rc.defaults().repeat
         assertEquals("GotoNextError", d["error"]!!['.']!!.action)
         assertEquals("GotoPreviousError", d["error"]!![',']!!.action)
