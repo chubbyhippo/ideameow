@@ -38,6 +38,7 @@ object Engine {
             putAll(AceWindow.commands)
             putAll(AceClick.commands)
             putAll(AceResize.commands)
+            putAll(View.commands)
             put("meow-negative-argument", MeowCommand { _, state -> state.negative = true })
             put("negative-argument", MeowCommand { _, state -> state.negative = true })
             put("meow-quit", MeowCommand { editor, _ -> Ide.act(editor, "CloseContent") })

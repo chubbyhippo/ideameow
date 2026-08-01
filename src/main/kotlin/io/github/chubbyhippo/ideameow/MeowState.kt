@@ -58,6 +58,8 @@ class MeowState {
 
     var lastCommand: String? = null
 
+    var recenterPhase: Int = 0
+
     var grab: RangeMarker? = null
     var grabHighlighter: RangeHighlighter? = null
 

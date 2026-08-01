@@ -190,6 +190,11 @@ cmap alt W meow-save
 cmap control Y meow-yank
 cmap control G meow-cancel-selection
 
+" C-l recenter-top-bottom: IntelliJ has no argument-free recenter, so this is
+" a meow command with Emacs' recenter-positions cycle (center -> top -> bottom,
+" restarting whenever the previous command differs).
+cmap control L recenter-top-bottom
+
 " stock-Emacs whitespace and line chords. M-^ is meow-join + kill: killing the
 " join selection IS delete-indentation, so it needs no command of its own.
 cmap alt M back-to-indentation
