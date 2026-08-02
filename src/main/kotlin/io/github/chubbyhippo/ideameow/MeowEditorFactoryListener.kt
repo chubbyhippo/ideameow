@@ -46,7 +46,9 @@ class MeowEditorFactoryListener : EditorFactoryListener {
         val editor = event.editor
         val state = Meow.state(editor) ?: return
         Avy.cancel(editor, state)
+        AceWindow.cancel(state)
         AceClick.cancel(state)
+        AceResize.cancel(state)
         WhichKey.hide()
         ExpandHints.clear(state)
         Grab.clear(editor, state)

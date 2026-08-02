@@ -153,7 +153,7 @@ if [ "$do_plugin" -eq 1 ]; then
     set -f
     for dir in $targets; do
         mkdir -p "$dir"
-        rm -rf "$dir/ideameow"
+        rm -rf "${dir:?}/ideameow"
         unzip -q -o "$zip" -d "$dir"
         info "installed into $dir"
         installed=$((installed + 1))

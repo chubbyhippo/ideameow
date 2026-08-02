@@ -66,7 +66,7 @@ object ExpandHints {
         val text = editor.document.charsSequence
         val doc = editor.document
         val caret = editor.caretModel.offset
-        val backward = editor.selectionModel.hasSelection() && caret <= editor.selectionModel.selectionStart
+        val backward = Selections.backwardP(editor)
         val positions =
             when (state.selType) {
                 SelType.WORD, SelType.SYMBOL -> {
