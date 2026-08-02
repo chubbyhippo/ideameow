@@ -112,15 +112,15 @@ class ChordSpec : MeowSpec() {
 
     fun `test given NORMAL or MOTION then a mapped chord is claimed but INSERT and KEYPAD are not`() {
         given("chord modes", "<caret>hello")
-        assertTrue(ChordDispatcher.claims(st, pressed(KeyEvent.VK_F, InputEvent.CTRL_DOWN_MASK)))
-        st.mode = MeowMode.MOTION
-        assertTrue(ChordDispatcher.claims(st, pressed(KeyEvent.VK_F, InputEvent.CTRL_DOWN_MASK)))
-        st.mode = MeowMode.INSERT
-        assertFalse(ChordDispatcher.claims(st, pressed(KeyEvent.VK_F, InputEvent.CTRL_DOWN_MASK)))
-        st.mode = MeowMode.KEYPAD
-        assertFalse(ChordDispatcher.claims(st, pressed(KeyEvent.VK_F, InputEvent.CTRL_DOWN_MASK)))
-        st.mode = MeowMode.NORMAL
-        assertFalse(ChordDispatcher.claims(st, pressed(KeyEvent.VK_A, 0)))
+        assertTrue(ChordDispatcher.claims(state, pressed(KeyEvent.VK_F, InputEvent.CTRL_DOWN_MASK)))
+        state.mode = MeowMode.MOTION
+        assertTrue(ChordDispatcher.claims(state, pressed(KeyEvent.VK_F, InputEvent.CTRL_DOWN_MASK)))
+        state.mode = MeowMode.INSERT
+        assertFalse(ChordDispatcher.claims(state, pressed(KeyEvent.VK_F, InputEvent.CTRL_DOWN_MASK)))
+        state.mode = MeowMode.KEYPAD
+        assertFalse(ChordDispatcher.claims(state, pressed(KeyEvent.VK_F, InputEvent.CTRL_DOWN_MASK)))
+        state.mode = MeowMode.NORMAL
+        assertFalse(ChordDispatcher.claims(state, pressed(KeyEvent.VK_A, 0)))
     }
 
     fun `test given the Emacs spelling then it resolves to the same chord as the host one`() {
@@ -164,7 +164,7 @@ class ChordSpec : MeowSpec() {
 
     fun `test given a NORMAL editor then dispatching a chord binding runs its command`() {
         given("chord effect", "<caret>hello")
-        Engine.dispatch(ed, st, RcLookups.chords()[ctrlF]!!)
+        Engine.dispatch(ed, state, RcLookups.chords()[ctrlF]!!)
         thenCaretAt(1)
         thenNoSelection()
     }

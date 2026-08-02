@@ -169,8 +169,8 @@ class RepeatSpec : MeowSpec() {
         givenRc(navRc)
         whenKeys(" tn")
         assertEquals(1, caretLine())
-        st = MeowState()
-        ed.putUserData(Meow.KEY, st)
+        state = MeowState()
+        ed.putUserData(Meow.KEY, state)
         whenKeys(".")
         assertEquals(2, caretLine())
     }
@@ -192,7 +192,7 @@ class RepeatSpec : MeowSpec() {
         whenKeys("x")
         thenSelection("two")
         whenKeys(".")
-        assertEquals(Pending.BOUNDS, st.pending)
+        assertEquals(Pending.BOUNDS, state.pending)
         assertEquals(1, caretLine())
     }
 
@@ -204,7 +204,7 @@ class RepeatSpec : MeowSpec() {
         pressEsc()
         assertNull(Engine.repeatMap)
         whenKeys(".")
-        assertEquals(Pending.BOUNDS, st.pending)
+        assertEquals(Pending.BOUNDS, state.pending)
         assertEquals(1, caretLine())
     }
 

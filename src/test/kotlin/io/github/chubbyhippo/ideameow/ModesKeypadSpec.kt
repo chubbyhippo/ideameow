@@ -60,20 +60,20 @@ class ModesKeypadSpec : MeowSpec() {
         given("two words", "<caret>hello world")
         whenKeys("w")
         thenSelType(SelType.WORD)
-        assertTrue("w marks the word as expandable", st.selExpand)
+        assertTrue("w marks the word as expandable", state.selExpand)
         pressEsc()
         thenNoSelection()
         thenSelType(SelType.NONE)
-        assertFalse("escape clears the expand flag", st.selExpand)
-        assertNull("escape forgets the last selection", st.lastSelection)
+        assertFalse("escape clears the expand flag", state.selExpand)
+        assertNull("escape forgets the last selection", state.lastSelection)
     }
 
     fun `test given a pending find when escape then the pending key is dropped`() {
         given("word", "<caret>hello")
         whenKeys("f")
-        assertNotNull(st.pending)
+        assertNotNull(state.pending)
         pressEsc()
-        assertNull(st.pending)
+        assertNull(state.pending)
         whenKeys("l")
         thenCaretAt(1)
     }
@@ -151,7 +151,7 @@ class ModesKeypadSpec : MeowSpec() {
         given("word", "<caret>hello")
         whenKeys(" x")
         thenMode(MeowMode.KEYPAD)
-        assertEquals("x", st.keypad.toString())
+        assertEquals("x", state.keypad.toString())
     }
 
     fun `test given an undefined keypad sequence then KEYPAD exits back to NORMAL`() {

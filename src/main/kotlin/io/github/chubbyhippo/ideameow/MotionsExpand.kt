@@ -105,7 +105,7 @@ internal fun moveToOrExpand(
     editor.scrollingModel.scrollToCaret(ScrollType.RELATIVE)
 }
 
-internal fun isBlank(ch: Char): Boolean = ch == ' ' || ch == '\t'
+internal fun isBlank(char: Char): Boolean = char == ' ' || char == '\t'
 
 internal fun indentationOffset(
     editor: Editor,

@@ -119,19 +119,19 @@ class AceClickSpec : MeowSpec() {
 
     fun `test given twelve targets then ace-click labels follow the avy subdivision`() {
         given("ace-click subdivision", "text")
-        AceClick.begin(ed, st, targets(12, mutableListOf()))
-        val labels = Avy.labels(st.aceClick!!.node!!).map { it.second }
+        AceClick.begin(ed, state, targets(12, mutableListOf()))
+        val labels = Avy.labels(state.aceClick!!.node!!).map { it.second }
         assertEquals(listOf("a", "s", "d", "f", "g", "h", "j", "k", "la", "ls", "ld", "lf"), labels)
     }
 
     fun `test given a unique hint key then the target is clicked once and the session ends`() {
         given("ace-click unique", "text")
         val clicks = mutableListOf<Int>()
-        AceClick.begin(ed, st, targets(3, clicks))
+        AceClick.begin(ed, state, targets(3, clicks))
         whenKeys("s")
         UIUtil.dispatchAllInvocationEvents()
         assertEquals(listOf(1), clicks)
-        assertNull(st.aceClick)
+        assertNull(state.aceClick)
         thenMode(MeowMode.NORMAL)
     }
 
@@ -139,66 +139,66 @@ class AceClickSpec : MeowSpec() {
         given("ace-click left", "text")
         val lefts = mutableListOf<Int>()
         val rights = mutableListOf<Int>()
-        AceClick.begin(ed, st, listOf(splitClickTarget(lefts, rights)))
+        AceClick.begin(ed, state, listOf(splitClickTarget(lefts, rights)))
         whenKeys("a")
         UIUtil.dispatchAllInvocationEvents()
         assertEquals(listOf(0), lefts)
         assertTrue(rights.isEmpty())
-        assertNull(st.aceClick)
+        assertNull(state.aceClick)
     }
 
     fun `test given a shift-modified hint key then ace-click right-clicks the target`() {
         given("ace-click right", "text")
         val lefts = mutableListOf<Int>()
         val rights = mutableListOf<Int>()
-        AceClick.begin(ed, st, listOf(splitClickTarget(lefts, rights)))
+        AceClick.begin(ed, state, listOf(splitClickTarget(lefts, rights)))
         whenKeys("A")
         UIUtil.dispatchAllInvocationEvents()
         assertEquals(listOf(0), rights)
         assertTrue(lefts.isEmpty())
-        assertNull(st.aceClick)
+        assertNull(state.aceClick)
     }
 
     fun `test given a subtree key then the remaining suffixes stay pending`() {
         given("ace-click subtree", "text")
         val clicks = mutableListOf<Int>()
-        AceClick.begin(ed, st, targets(12, clicks))
+        AceClick.begin(ed, state, targets(12, clicks))
         whenKeys("l")
         UIUtil.dispatchAllInvocationEvents()
         assertTrue(clicks.isEmpty())
-        assertEquals(listOf("a", "s", "d", "f"), Avy.labels(st.aceClick!!.node!!).map { it.second })
+        assertEquals(listOf("a", "s", "d", "f"), Avy.labels(state.aceClick!!.node!!).map { it.second })
         whenKeys("d")
         UIUtil.dispatchAllInvocationEvents()
         assertEquals(listOf(10), clicks)
-        assertNull(st.aceClick)
+        assertNull(state.aceClick)
     }
 
     fun `test given a bad hint key then ace-click hints and stays`() {
         given("ace-click bad key", "text")
         val clicks = mutableListOf<Int>()
-        AceClick.begin(ed, st, targets(3, clicks))
+        AceClick.begin(ed, state, targets(3, clicks))
         whenKeys("x")
         UIUtil.dispatchAllInvocationEvents()
         assertTrue(clicks.isEmpty())
-        assertNotNull(st.aceClick)
+        assertNotNull(state.aceClick)
     }
 
     fun `test given ESC during ace-click then the session cancels without a click`() {
         given("ace-click escape", "text")
         val clicks = mutableListOf<Int>()
-        AceClick.begin(ed, st, targets(3, clicks))
-        assertTrue(MeowEscape.wants(ed, st))
+        AceClick.begin(ed, state, targets(3, clicks))
+        assertTrue(MeowEscape.wants(ed, state))
         pressEsc()
         UIUtil.dispatchAllInvocationEvents()
-        assertNull(st.aceClick)
+        assertNull(state.aceClick)
         assertTrue(clicks.isEmpty())
     }
 
     fun `test given a single target then ace-click labels instead of auto-clicking`() {
         given("ace-click single", "text")
         val clicks = mutableListOf<Int>()
-        AceClick.begin(ed, st, targets(1, clicks))
-        assertNotNull(st.aceClick)
+        AceClick.begin(ed, state, targets(1, clicks))
+        assertNotNull(state.aceClick)
         assertTrue(clicks.isEmpty())
         whenKeys("a")
         UIUtil.dispatchAllInvocationEvents()
@@ -208,11 +208,11 @@ class AceClickSpec : MeowSpec() {
     fun `test given a detached target then the click is skipped`() {
         given("ace-click detached target", "text")
         val clicks = mutableListOf<Int>()
-        AceClick.begin(ed, st, listOf(AceClick.Target(Rectangle(0, 0, 10, 10), JButton()) { clicks.add(0) }))
+        AceClick.begin(ed, state, listOf(AceClick.Target(Rectangle(0, 0, 10, 10), JButton()) { clicks.add(0) }))
         whenKeys("a")
         UIUtil.dispatchAllInvocationEvents()
         assertTrue(clicks.isEmpty())
-        assertNull(st.aceClick)
+        assertNull(state.aceClick)
     }
 
     fun `test given a target hidden after badging then the pick still clicks it`() {
@@ -220,7 +220,7 @@ class AceClickSpec : MeowSpec() {
         val clicks = mutableListOf<Int>()
         val hidden = targets(1, clicks)
         hidden[0].component.isVisible = false
-        AceClick.begin(ed, st, hidden)
+        AceClick.begin(ed, state, hidden)
         whenKeys("a")
         UIUtil.dispatchAllInvocationEvents()
         assertEquals(listOf(0), clicks)
@@ -228,8 +228,8 @@ class AceClickSpec : MeowSpec() {
 
     fun `test given no targets then ace-click arms no session`() {
         given("ace-click empty", "text")
-        AceClick.begin(ed, st, emptyList())
-        assertNull(st.aceClick)
+        AceClick.begin(ed, state, emptyList())
+        assertNull(state.aceClick)
     }
 
     fun `test given a menu then ace-click opens it by selecting its path`() {
@@ -266,7 +266,7 @@ class AceClickSpec : MeowSpec() {
         val clicks = mutableListOf<Int>()
         MenuSelectionManager.defaultManager().setSelectedPath(arrayOf<MenuElement>(JPopupMenu()))
         try {
-            AceClick.begin(ed, st, targets(1, clicks))
+            AceClick.begin(ed, state, targets(1, clicks))
             whenKeys("a")
             UIUtil.dispatchAllInvocationEvents()
             assertEquals(listOf(0), clicks)
@@ -282,9 +282,9 @@ class AceClickSpec : MeowSpec() {
         popup.add(JMenuItem("i"))
         MenuSelectionManager.defaultManager().setSelectedPath(arrayOf<MenuElement>(popup))
         try {
-            assertTrue(AceClick.labelOpenMenus(ed, st, targets(2, mutableListOf())))
-            assertNotNull(st.aceClick)
-            assertEquals(2, st.aceClick!!.targets.size)
+            assertTrue(AceClick.labelOpenMenus(ed, state, targets(2, mutableListOf())))
+            assertNotNull(state.aceClick)
+            assertEquals(2, state.aceClick!!.targets.size)
         } finally {
             MenuSelectionManager.defaultManager().clearSelectedPath()
             SpaceLeader.reset()
@@ -297,7 +297,7 @@ class AceClickSpec : MeowSpec() {
         popup.add(JMenuItem("i"))
         MenuSelectionManager.defaultManager().setSelectedPath(arrayOf<MenuElement>(popup))
         try {
-            AceClick.labelOpenMenus(ed, st, targets(1, mutableListOf()))
+            AceClick.labelOpenMenus(ed, state, targets(1, mutableListOf()))
             assertSame(popup, SpaceLeader.surfaceFor(ed))
         } finally {
             MenuSelectionManager.defaultManager().clearSelectedPath()
@@ -307,8 +307,8 @@ class AceClickSpec : MeowSpec() {
 
     fun `test given no open menu then the relabel arms no session`() {
         given("ace-click no relabel", "text")
-        assertFalse(AceClick.labelOpenMenus(ed, st, emptyList()))
-        assertNull(st.aceClick)
+        assertFalse(AceClick.labelOpenMenus(ed, state, emptyList()))
+        assertNull(state.aceClick)
         assertNull(SpaceLeader.surfaceFor(ed))
     }
 
@@ -321,13 +321,13 @@ class AceClickSpec : MeowSpec() {
         val other = JButton().also { panel.add(it) }
         AceClick.begin(
             ed,
-            st,
+            state,
             listOf(
                 AceClick.Target(Rectangle(0, 0, 10, 10), button, first) { },
                 AceClick.Target(Rectangle(10, 0, 10, 10), other, second) { },
             ),
         )
-        assertEquals(2, st.aceClick!!.canvases.size)
+        assertEquals(2, state.aceClick!!.canvases.size)
         assertEquals(1, first.componentCount)
         assertEquals(1, second.componentCount)
         pressEsc()
@@ -343,7 +343,7 @@ class AceClickSpec : MeowSpec() {
         val leftmost = JButton().also { panel.add(it) }
         AceClick.begin(
             ed,
-            st,
+            state,
             listOf(
                 AceClick.Target(Rectangle(0, 0, 10, 10), rightmost, null, Rectangle(100, 0, 10, 10)) {
                     clicks.add("right")
@@ -363,7 +363,7 @@ class AceClickSpec : MeowSpec() {
         whenKeys("i")
         thenMode(MeowMode.INSERT)
         val clicks = mutableListOf<Int>()
-        AceClick.begin(ed, st, targets(1, clicks))
+        AceClick.begin(ed, state, targets(1, clicks))
         whenKeys("a")
         UIUtil.dispatchAllInvocationEvents()
         assertEquals(listOf(0), clicks)

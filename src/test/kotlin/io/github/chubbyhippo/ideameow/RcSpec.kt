@@ -408,7 +408,7 @@ class RcSpec : MeowSpec() {
     fun `test given a motion rebinding then MOTION-state editors use it`() {
         given("three lines", "<caret>one\ntwo\nthree")
         givenRc("mmap n meow-next")
-        st.mode = MeowMode.MOTION
+        state.mode = MeowMode.MOTION
         whenKeys("n")
         assertEquals(1, doc.getLineNumber(ed.caretModel.offset))
         whenKeys("j")

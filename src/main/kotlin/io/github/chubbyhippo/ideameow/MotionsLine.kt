@@ -28,9 +28,9 @@ internal fun line(
     val doc = editor.document
     if (doc.textLength == 0) return
     val count = state.takeCount(1)
-    val ln = doc.getLineNumber(editor.caretModel.offset)
+    val caretLine = doc.getLineNumber(editor.caretModel.offset)
     if (state.selType == SelType.LINE && state.selExpand && editor.selectionModel.hasSelection()) {
-        val point = lineExpandPoint(doc, ln, abs(count), Selections.backwardP(editor))
+        val point = lineExpandPoint(doc, caretLine, abs(count), Selections.backwardP(editor))
         Selections.select(
             editor,
             state,
@@ -40,9 +40,10 @@ internal fun line(
     }
     val (mark, point) =
         if (count < 0) {
-            doc.getLineEndOffset(ln) to doc.getLineStartOffset((ln + count + 1).coerceAtLeast(0))
+            doc.getLineEndOffset(caretLine) to doc.getLineStartOffset((caretLine + count + 1).coerceAtLeast(0))
         } else {
-            doc.getLineStartOffset(ln) to doc.getLineEndOffset((ln + count - 1).coerceAtMost(doc.lineCount - 1))
+            doc.getLineStartOffset(caretLine) to
+                doc.getLineEndOffset((caretLine + count - 1).coerceAtMost(doc.lineCount - 1))
         }
     Selections.select(editor, state, Selections.SelectionSpec(SelType.LINE, mark, point, expand = true))
 }
@@ -53,13 +54,13 @@ internal fun gotoLine(
 ) {
     val input = Messages.showInputDialog(editor.project, "Goto line:", "Meow", null) ?: return
     val doc = editor.document
-    val ln = if (doc.textLength == 0) null else parsedLineNumber(input, doc.lineCount)
-    if (ln != null) {
+    val targetLine = if (doc.textLength == 0) null else parsedLineNumber(input, doc.lineCount)
+    if (targetLine != null) {
         val spec =
             Selections.SelectionSpec(
                 SelType.LINE,
-                doc.getLineStartOffset(ln),
-                doc.getLineEndOffset(ln),
+                doc.getLineStartOffset(targetLine),
+                doc.getLineEndOffset(targetLine),
                 expand = true,
             )
         Selections.select(editor, state, spec)

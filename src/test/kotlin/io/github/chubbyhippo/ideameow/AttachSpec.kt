@@ -66,9 +66,9 @@ class AttachSpec : BasePlatformTestCase() {
         editor: Editor,
         mode: MeowMode,
     ) {
-        val st = Meow.state(editor)
-        assertNotNull("expected meow state on the editor", st)
-        assertEquals("meow mode", mode, st!!.mode)
+        val state = Meow.state(editor)
+        assertNotNull("expected meow state on the editor", state)
+        assertEquals("meow mode", mode, state!!.mode)
         assertTrue("block cursor in a modal state", editor.settings.isBlockCursor)
     }
 

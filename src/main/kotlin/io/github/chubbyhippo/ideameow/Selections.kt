@@ -161,8 +161,8 @@ internal object Selections {
                 }
 
                 SelType.WORD, SelType.SYMBOL -> {
-                    val pred = charPred(state.selType == SelType.SYMBOL)
-                    if (back) Words.prevStart(text, caret, count, pred) else Words.nextEnd(text, caret, count, pred)
+                    val isWord = charPred(state.selType == SelType.SYMBOL)
+                    if (back) Words.prevStart(text, caret, count, isWord) else Words.nextEnd(text, caret, count, isWord)
                 }
 
                 SelType.LINE -> {
@@ -187,14 +187,14 @@ internal object Selections {
 
 internal fun lineExpandPoint(
     doc: Document,
-    ln: Int,
+    line: Int,
     count: Int,
     back: Boolean,
 ): Int =
     if (back) {
-        doc.getLineStartOffset((ln - count).coerceAtLeast(0))
+        doc.getLineStartOffset((line - count).coerceAtLeast(0))
     } else {
-        doc.getLineEndOffset((ln + count).coerceAtMost(doc.lineCount - 1))
+        doc.getLineEndOffset((line + count).coerceAtMost(doc.lineCount - 1))
     }
 
 private fun reverse(editor: Editor) {

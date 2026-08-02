@@ -243,7 +243,7 @@ private fun lineRanges(
     val first = doc.getLineNumber(grabMarker.startOffset)
     val last = doc.getLineNumber((grabMarker.endOffset - 1).coerceAtLeast(grabMarker.startOffset))
     if (last <= first) return null
-    return (first..last).map { ln -> doc.getLineStartOffset(ln) to doc.getLineEndOffset(ln) }
+    return (first..last).map { line -> doc.getLineStartOffset(line) to doc.getLineEndOffset(line) }
 }
 
 private fun caretState(

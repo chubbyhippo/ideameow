@@ -104,7 +104,7 @@ class FindSearchSpec : MeowSpec() {
 
     fun `test given a selection that does not match the pattern when n then the selection text becomes the pattern`() {
         given("repeats", "foo <caret>bar foo bar")
-        st.searchHistory.addLast(Regex("zzz"))
+        state.searchHistory.addLast(Regex("zzz"))
         whenKeys(",e")
         whenKeys("n")
         thenSelection("bar")

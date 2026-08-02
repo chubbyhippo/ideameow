@@ -76,7 +76,7 @@ class SpaceLeaderSpec : MeowSpec() {
         whenKeys(" ")
         thenMode(MeowMode.KEYPAD)
         val panel = JPanel()
-        SpaceLeader.routeTo(ed, st, panel)
+        SpaceLeader.routeTo(ed, state, panel)
         assertSame(panel, SpaceLeader.surfaceFor(ed))
         assertTrue(SpaceLeader.dispatch(typed(panel, 'w')))
         thenMode(MeowMode.KEYPAD)
@@ -87,10 +87,10 @@ class SpaceLeaderSpec : MeowSpec() {
         given("space leader insert", "text")
         whenKeys("i")
         thenMode(MeowMode.INSERT)
-        SpaceLeader.openKeypad(ed, st)
+        SpaceLeader.openKeypad(ed, state)
         thenMode(MeowMode.KEYPAD)
         val panel = JPanel()
-        SpaceLeader.routeTo(ed, st, panel)
+        SpaceLeader.routeTo(ed, state, panel)
         assertTrue(SpaceLeader.dispatch(typed(panel, '3')))
         thenMode(MeowMode.INSERT)
         assertNull(SpaceLeader.surfaceFor(ed))
@@ -100,7 +100,7 @@ class SpaceLeaderSpec : MeowSpec() {
         given("space leader terminal", "text")
         whenKeys(" ")
         val panel = JPanel()
-        SpaceLeader.routeTo(ed, st, panel)
+        SpaceLeader.routeTo(ed, state, panel)
         assertTrue(SpaceLeader.dispatch(typed(panel, '3')))
         thenMode(MeowMode.NORMAL)
         assertNull(SpaceLeader.surfaceFor(ed))
@@ -110,7 +110,7 @@ class SpaceLeaderSpec : MeowSpec() {
         given("space leader escape", "text")
         whenKeys(" ")
         val panel = JPanel()
-        SpaceLeader.routeTo(ed, st, panel)
+        SpaceLeader.routeTo(ed, state, panel)
         val esc =
             KeyEvent(
                 panel,
@@ -134,17 +134,17 @@ class SpaceLeaderSpec : MeowSpec() {
                 AceWindow.Window(Rectangle(40, 0, 40, 24), null, panel),
                 AceWindow.Window(Rectangle(80, 0, 40, 24), null, JPanel()),
             )
-        AceWindow.begin(ed, st, AceWindow.Request(swap = false, windows = windows))
-        SpaceLeader.routeTo(ed, st, panel)
+        AceWindow.begin(ed, state, AceWindow.Request(swap = false, windows = windows))
+        SpaceLeader.routeTo(ed, state, panel)
         assertTrue(SpaceLeader.dispatch(typed(panel, 's')))
-        assertNull(st.aceWindow)
+        assertNull(state.aceWindow)
         assertNull(SpaceLeader.surfaceFor(ed))
     }
 
     fun `test given the keypad already left then a routed key passes through and clears`() {
         given("space leader stale", "text")
         val panel = JPanel()
-        SpaceLeader.routeTo(ed, st, panel)
+        SpaceLeader.routeTo(ed, state, panel)
         assertFalse(SpaceLeader.dispatch(typed(panel, 'x')))
         assertNull(SpaceLeader.surfaceFor(ed))
     }
@@ -152,7 +152,7 @@ class SpaceLeaderSpec : MeowSpec() {
     fun `test given a reset then no surface is reported for any editor`() {
         given("space leader reset", "text")
         val panel = JPanel()
-        SpaceLeader.routeTo(ed, st, panel)
+        SpaceLeader.routeTo(ed, state, panel)
         assertSame(panel, SpaceLeader.surfaceFor(ed))
         SpaceLeader.reset()
         assertNull(SpaceLeader.surfaceFor(ed))

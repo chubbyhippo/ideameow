@@ -21,9 +21,9 @@ class GrabBeaconSpec : MeowSpec() {
         given("word", "<caret>hello world")
         whenKeys("wG")
         thenNoSelection()
-        assertNotNull(st.grab)
-        assertEquals(0, st.grab!!.startOffset)
-        assertEquals(5, st.grab!!.endOffset)
+        assertNotNull(state.grab)
+        assertEquals(0, state.grab!!.startOffset)
+        assertEquals(5, state.grab!!.endOffset)
     }
 
     fun `test given a grab and a selection elsewhere when R then the two texts swap (meow-swap-grab)`() {
@@ -38,16 +38,16 @@ class GrabBeaconSpec : MeowSpec() {
         assertEquals(
             "grab now holds the swapped-in text",
             "three",
-            doc.text.substring(st.grab!!.startOffset, st.grab!!.endOffset),
+            doc.text.substring(state.grab!!.startOffset, state.grab!!.endOffset),
         )
     }
 
     fun `test given no selection when G then an existing grab is cancelled (meow 1-5-0 body)`() {
         given("word", "<caret>hello world")
         whenKeys("wG")
-        assertNotNull(st.grab)
+        assertNotNull(state.grab)
         whenKeys("G")
-        assertNull(st.grab)
+        assertNull(state.grab)
     }
 
     fun `test given no grab when R then nothing changes`() {
@@ -72,8 +72,8 @@ class GrabBeaconSpec : MeowSpec() {
         givenCaretAt(6)
         whenKeys("wY")
         thenNoSelection()
-        assertEquals(6, st.grab!!.startOffset)
-        assertEquals(11, st.grab!!.endOffset)
+        assertEquals(6, state.grab!!.startOffset)
+        assertEquals(11, state.grab!!.endOffset)
     }
 
     fun `test given a grab when marking a word inside it then a caret lands on every occurrence (BEACON)`() {

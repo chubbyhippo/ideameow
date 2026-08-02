@@ -170,16 +170,16 @@ class SelectionSpec : MeowSpec() {
             "no inline inlays may shift the text",
             ed.inlayModel.getInlineElementsInRange(0, doc.textLength).isEmpty(),
         )
-        assertNotNull("hint canvas is painted above the editor", st.hintOverlay)
-        assertSame(ed.contentComponent, st.hintOverlay!!.parent)
+        assertNotNull("hint canvas is painted above the editor", state.hintOverlay)
+        assertSame(ed.contentComponent, state.hintOverlay!!.parent)
         whenKeys("g")
-        assertNull(st.hintOverlay)
+        assertNull(state.hintOverlay)
     }
 
     fun `test given a find selection when the target char sits at the caret then the first hint marks it`() {
         given("chars", "<caret>aXX")
         whenKeys("fX")
-        assertNotNull("a digit hint must paint over the X at the caret", st.hintOverlay)
+        assertNotNull("a digit hint must paint over the X at the caret", state.hintOverlay)
     }
 
     fun `test given digits after w then the selection expands by that many words`() {
@@ -278,10 +278,10 @@ class SelectionSpec : MeowSpec() {
     fun `test given no history but a grab when z then the grab becomes the selection (meow-pop-grab fallback)`() {
         given("two words", "<caret>hello world")
         whenKeys("wG")
-        st.selectionHistory.clear()
+        state.selectionHistory.clear()
         whenKeys("z")
         thenSelection("hello")
-        assertNull("grab is consumed by pop", st.grab)
+        assertNull("grab is consumed by pop", state.grab)
     }
 
     fun `test given g then the selection is cancelled`() {

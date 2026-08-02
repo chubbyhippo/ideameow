@@ -23,7 +23,7 @@ import com.intellij.openapi.editor.actionSystem.EditorActionHandler
 import com.intellij.openapi.editor.ex.EditorEx
 
 class AvySpec : MeowSpec() {
-    private fun timeout() = Avy.finishInput(ed, st)
+    private fun timeout() = Avy.finishInput(ed, state)
 
     private fun pressEsc() {
         val noop =
@@ -44,7 +44,7 @@ class AvySpec : MeowSpec() {
         timeout()
         whenKeys("s")
         thenCaretAt(8)
-        assertNull("session ends after the jump", st.avy)
+        assertNull("session ends after the jump", state.avy)
     }
 
     fun `test given a single candidate then avy jumps immediately (avy-single-candidate-jump)`() {
@@ -53,18 +53,18 @@ class AvySpec : MeowSpec() {
         whenKeys("gam")
         timeout()
         thenCaretAt(11)
-        assertNull(st.avy)
+        assertNull(state.avy)
     }
 
     fun `test given S then the input timeout is awaited only once a char is typed (avy-timeout-seconds)`() {
         given("words", "<caret>foo foo foo")
         whenKeys("S")
-        assertNull(st.avy?.timer)
+        assertNull(state.avy?.timer)
         whenKeys("f")
-        assertNotNull(st.avy?.timer)
+        assertNotNull(state.avy?.timer)
         timeout()
-        assertEquals(Avy.Phase.SELECTING, st.avy?.phase)
-        assertNotNull(st.avy)
+        assertEquals(Avy.Phase.SELECTING, state.avy?.phase)
+        assertNotNull(state.avy)
     }
 
     fun `test given no candidates then the session ends where it started`() {
@@ -73,7 +73,7 @@ class AvySpec : MeowSpec() {
         whenKeys("zz")
         timeout()
         thenCaretAt(0)
-        assertNull(st.avy)
+        assertNull(state.avy)
         whenKeys("l")
         thenCaretAt(1)
     }
@@ -103,7 +103,7 @@ class AvySpec : MeowSpec() {
         whenKeys("xx")
         timeout()
         whenKeys("z")
-        assertNotNull(st.avy)
+        assertNotNull(state.avy)
         whenKeys("d")
         thenCaretAt(6)
     }
@@ -114,7 +114,7 @@ class AvySpec : MeowSpec() {
         whenKeys("e")
         timeout()
         whenKeys("l")
-        assertNotNull(st.avy)
+        assertNotNull(state.avy)
         whenKeys("s")
         thenCaretAt(18)
     }
@@ -124,19 +124,19 @@ class AvySpec : MeowSpec() {
         whenKeys("S")
         whenKeys("foo")
         timeout()
-        assertNotNull(st.avy)
+        assertNotNull(state.avy)
         pressEsc()
-        assertNull(st.avy)
+        assertNull(state.avy)
         thenCaretAt(0)
     }
 
     fun `test given Q then visible lines are labeled and a key jumps to that line`() {
         given("four lines", "one\ntwo\nthr<caret>ee\nfour")
         whenKeys("Q")
-        assertNotNull(st.avy)
+        assertNotNull(state.avy)
         whenKeys("f")
         thenCaretAt(14)
-        assertNull(st.avy)
+        assertNull(state.avy)
     }
 
     fun `test given Q then a digit switches to the goto-line number prompt`() {
@@ -144,7 +144,7 @@ class AvySpec : MeowSpec() {
         givenMinibufferAnswers("3")
         whenKeys("Q3")
         thenCaretAt(8)
-        assertNull(st.avy)
+        assertNull(state.avy)
     }
 
     fun `test the avy-subdiv distribution matches avy 0-5-0`() {

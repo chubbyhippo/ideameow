@@ -37,12 +37,12 @@ internal fun paragraph(
         val range = doc.charsSequence.subSequence(doc.getLineStartOffset(line), doc.getLineEndOffset(line))
         return range.isBlank()
     }
-    val ln = doc.getLineNumber(offset.coerceIn(0, doc.textLength))
-    return if (blank(ln)) {
+    val line = doc.getLineNumber(offset.coerceIn(0, doc.textLength))
+    return if (blank(line)) {
         null
     } else {
-        var first = ln
-        var last = ln
+        var first = line
+        var last = line
         while (first > 0 && !blank(first - 1)) first--
         while (last < doc.lineCount - 1 && !blank(last + 1)) last++
         val start = doc.getLineStartOffset(first)
@@ -63,12 +63,12 @@ internal fun line(
     inner: Boolean,
 ): Things.Bounds {
     val doc = editor.document
-    val ln = doc.getLineNumber(offset.coerceIn(0, doc.textLength))
-    val end = doc.getLineEndOffset(ln)
+    val lineNumber = doc.getLineNumber(offset.coerceIn(0, doc.textLength))
+    val end = doc.getLineEndOffset(lineNumber)
     return if (inner) {
-        Things.Bounds(doc.getLineStartOffset(ln), end)
+        Things.Bounds(doc.getLineStartOffset(lineNumber), end)
     } else {
-        Things.Bounds(doc.getLineStartOffset(ln), (end + 1).coerceAtMost(doc.textLength))
+        Things.Bounds(doc.getLineStartOffset(lineNumber), (end + 1).coerceAtMost(doc.textLength))
     }
 }
 

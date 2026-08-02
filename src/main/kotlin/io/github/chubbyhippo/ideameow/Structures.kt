@@ -197,16 +197,16 @@ internal object Structures {
 
         fun blank(line: Int) = text.subSequence(doc.getLineStartOffset(line), doc.getLineEndOffset(line)).isBlank()
 
-        val ln = doc.getLineNumber(editor.caretModel.offset)
+        val caretLine = doc.getLineNumber(editor.caretModel.offset)
         val lines: Pair<Int, Int>? =
             if (count >= 0) {
-                var previousLine = ln - 1
+                var previousLine = caretLine - 1
                 while (previousLine >= 0 && blank(previousLine)) previousLine--
-                if (previousLine < 0) null else previousLine to ln
+                if (previousLine < 0) null else previousLine to caretLine
             } else {
-                var nextLine = ln + 1
+                var nextLine = caretLine + 1
                 while (nextLine <= doc.lineCount - 1 && blank(nextLine)) nextLine++
-                if (nextLine > doc.lineCount - 1) null else ln to nextLine
+                if (nextLine > doc.lineCount - 1) null else caretLine to nextLine
             }
         val (markLine, pointLine) = lines ?: return
         val mark = doc.getLineEndOffset(markLine)

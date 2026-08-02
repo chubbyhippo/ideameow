@@ -49,8 +49,8 @@ internal fun movedLineOffset(
     column: Int,
 ): Int {
     val doc = editor.document
-    val ln = doc.getLineNumber(offset)
-    val target = ln + dy
+    val line = doc.getLineNumber(offset)
+    val target = line + dy
     return when {
         target < 0 -> {
             0

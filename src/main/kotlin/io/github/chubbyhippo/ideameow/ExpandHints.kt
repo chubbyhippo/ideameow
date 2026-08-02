@@ -95,11 +95,11 @@ object ExpandHints {
         count: Int,
         symbol: Boolean,
     ): List<Int> {
-        val pred = charPred(symbol)
+        val isWord = charPred(symbol)
         val positions = mutableListOf<Int>()
         var i = caret
         repeat(count) {
-            i = if (backward) Words.prevStart(text, i, 1, pred) else Words.nextEnd(text, i, 1, pred)
+            i = if (backward) Words.prevStart(text, i, 1, isWord) else Words.nextEnd(text, i, 1, isWord)
             if (if (backward) i <= 0 else i >= text.length) return@repeat
             positions.add(i)
         }
@@ -113,11 +113,11 @@ object ExpandHints {
         count: Int,
     ): List<Int> {
         val positions = mutableListOf<Int>()
-        var ln = doc.getLineNumber(caret)
+        var line = doc.getLineNumber(caret)
         repeat(count) {
-            ln += if (backward) -1 else 1
-            if (ln < 0 || ln > doc.lineCount - 1) return@repeat
-            positions.add(if (backward) doc.getLineStartOffset(ln) else doc.getLineEndOffset(ln))
+            line += if (backward) -1 else 1
+            if (line < 0 || line > doc.lineCount - 1) return@repeat
+            positions.add(if (backward) doc.getLineStartOffset(line) else doc.getLineEndOffset(line))
         }
         return positions
     }

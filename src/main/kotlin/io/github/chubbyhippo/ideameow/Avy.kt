@@ -73,14 +73,16 @@ object Avy {
         count: Int,
         base: Int,
     ): List<Int> {
-        val power = kotlin.math.floor(ln(count.toDouble()) / ln(base.toDouble()) + LOG_EPSILON).toInt() - 1
-        var x1 = 1
-        repeat(power) { x1 *= base }
-        val x2 = base * x1
-        val delta = count - x2
-        val n2 = delta / (x2 - x1)
-        val n1 = base - n2 - 1
-        return List(n1) { x1 } + listOf(count - n1 * x1 - n2 * x2) + List(n2) { x2 }
+        val depth = kotlin.math.floor(ln(count.toDouble()) / ln(base.toDouble()) + LOG_EPSILON).toInt() - 1
+        var shallowWidth = 1
+        repeat(depth) { shallowWidth *= base }
+        val deepWidth = base * shallowWidth
+        val delta = count - deepWidth
+        val deepBuckets = delta / (deepWidth - shallowWidth)
+        val shallowBuckets = base - deepBuckets - 1
+        return List(shallowBuckets) { shallowWidth } +
+            listOf(count - shallowBuckets * shallowWidth - deepBuckets * deepWidth) +
+            List(deepBuckets) { deepWidth }
     }
 
     fun tree(
@@ -302,8 +304,8 @@ private fun promptGotoLine(
             null,
         ) ?: return
     val doc = editor.document
-    val ln = parsedLineNumber(input, doc.lineCount) ?: return
-    jump(editor, doc.getLineStartOffset(ln))
+    val line = parsedLineNumber(input, doc.lineCount) ?: return
+    jump(editor, doc.getLineStartOffset(line))
 }
 
 private fun jump(

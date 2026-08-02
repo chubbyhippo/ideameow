@@ -96,26 +96,26 @@ class AceResizeSpec : MeowSpec() {
 
     fun `test given twelve dividers then ace-resize labels follow the avy subdivision`() {
         given("ace-resize labels", "text")
-        AceResize.begin(ed, st, targets(12))
-        val labels = Avy.labels(st.aceResize!!.node!!).map { it.second }
+        AceResize.begin(ed, state, targets(12))
+        val labels = Avy.labels(state.aceResize!!.node!!).map { it.second }
         assertEquals(listOf("a", "s", "d", "f", "g", "h", "j", "k", "la", "ls", "ld", "lf"), labels)
-        assertEquals(AceResize.Phase.PICK, st.aceResize!!.phase)
+        assertEquals(AceResize.Phase.PICK, state.aceResize!!.phase)
     }
 
     fun `test given a hint key then ace-resize enters the hold on that divider`() {
         given("ace-resize pick", "text")
-        AceResize.begin(ed, st, targets(3))
+        AceResize.begin(ed, state, targets(3))
         whenKeys("s")
-        assertNotNull(st.aceResize)
-        assertEquals(AceResize.Phase.HOLD, st.aceResize!!.phase)
+        assertNotNull(state.aceResize)
+        assertEquals(AceResize.Phase.HOLD, state.aceResize!!.phase)
     }
 
     fun `test given a held divider then h l j k resize it and the hold stays`() {
         given("ace-resize hold keys", "text")
         val moves = mutableListOf<AceResize.Dir>()
-        AceResize.begin(ed, st, listOf(AceResize.Target(Rectangle(0, 0, 10, 10)) { moves.add(it) }))
+        AceResize.begin(ed, state, listOf(AceResize.Target(Rectangle(0, 0, 10, 10)) { moves.add(it) }))
         whenKeys("a")
-        assertEquals(AceResize.Phase.HOLD, st.aceResize!!.phase)
+        assertEquals(AceResize.Phase.HOLD, state.aceResize!!.phase)
         whenKeys("l")
         whenKeys("k")
         whenKeys("h")
@@ -124,7 +124,7 @@ class AceResizeSpec : MeowSpec() {
             listOf(AceResize.Dir.RIGHT, AceResize.Dir.UP, AceResize.Dir.LEFT, AceResize.Dir.DOWN),
             moves,
         )
-        assertNotNull(st.aceResize)
+        assertNotNull(state.aceResize)
     }
 
     fun `test given each axis then accepts admits only its directions`() {
@@ -144,7 +144,7 @@ class AceResizeSpec : MeowSpec() {
         val moves = mutableListOf<AceResize.Dir>()
         AceResize.begin(
             ed,
-            st,
+            state,
             listOf(AceResize.Target(Rectangle(0, 0, 10, 10), AceResize.Axis.HORIZONTAL) { moves.add(it) }),
         )
         whenKeys("a")
@@ -153,7 +153,7 @@ class AceResizeSpec : MeowSpec() {
         whenKeys("j")
         whenKeys("k")
         assertEquals(listOf(AceResize.Dir.RIGHT, AceResize.Dir.LEFT), moves)
-        assertNotNull(st.aceResize)
+        assertNotNull(state.aceResize)
     }
 
     fun `test given a vertical divider then only j and k resize it and h l stay held`() {
@@ -161,7 +161,7 @@ class AceResizeSpec : MeowSpec() {
         val moves = mutableListOf<AceResize.Dir>()
         AceResize.begin(
             ed,
-            st,
+            state,
             listOf(AceResize.Target(Rectangle(0, 0, 10, 10), AceResize.Axis.VERTICAL) { moves.add(it) }),
         )
         whenKeys("a")
@@ -170,7 +170,7 @@ class AceResizeSpec : MeowSpec() {
         whenKeys("h")
         whenKeys("l")
         assertEquals(listOf(AceResize.Dir.DOWN, AceResize.Dir.UP), moves)
-        assertNotNull(st.aceResize)
+        assertNotNull(state.aceResize)
     }
 
     fun `test given plain arrow presses then arrowDir maps them and modified or non-arrow keys are null`() {
@@ -187,73 +187,73 @@ class AceResizeSpec : MeowSpec() {
         val moves = mutableListOf<AceResize.Dir>()
         AceResize.begin(
             ed,
-            st,
+            state,
             listOf(AceResize.Target(Rectangle(0, 0, 10, 10), AceResize.Axis.HORIZONTAL) { moves.add(it) }),
         )
         whenKeys("a")
-        assertTrue(AceResize.holdArrow(st, AceResize.Dir.RIGHT))
-        assertTrue(AceResize.holdArrow(st, AceResize.Dir.UP))
-        assertTrue(AceResize.holdArrow(st, AceResize.Dir.LEFT))
+        assertTrue(AceResize.holdArrow(state, AceResize.Dir.RIGHT))
+        assertTrue(AceResize.holdArrow(state, AceResize.Dir.UP))
+        assertTrue(AceResize.holdArrow(state, AceResize.Dir.LEFT))
         assertEquals(listOf(AceResize.Dir.RIGHT, AceResize.Dir.LEFT), moves)
-        assertNotNull(st.aceResize)
+        assertNotNull(state.aceResize)
     }
 
     fun `test given no hold or the pick phase then holdArrow does not consume`() {
         given("ace-resize arrows idle", "text")
-        assertFalse(AceResize.holdArrow(st, AceResize.Dir.LEFT))
-        AceResize.begin(ed, st, targets(3))
-        assertEquals(AceResize.Phase.PICK, st.aceResize!!.phase)
-        assertFalse(AceResize.holdArrow(st, AceResize.Dir.LEFT))
+        assertFalse(AceResize.holdArrow(state, AceResize.Dir.LEFT))
+        AceResize.begin(ed, state, targets(3))
+        assertEquals(AceResize.Phase.PICK, state.aceResize!!.phase)
+        assertFalse(AceResize.holdArrow(state, AceResize.Dir.LEFT))
     }
 
     fun `test given any non-hjkl key during the hold then ace-resize exits`() {
         given("ace-resize exit", "text")
         val moves = mutableListOf<AceResize.Dir>()
-        AceResize.begin(ed, st, listOf(AceResize.Target(Rectangle(0, 0, 10, 10)) { moves.add(it) }))
+        AceResize.begin(ed, state, listOf(AceResize.Target(Rectangle(0, 0, 10, 10)) { moves.add(it) }))
         whenKeys("a")
         whenKeys("x")
-        assertNull(st.aceResize)
+        assertNull(state.aceResize)
         assertTrue(moves.isEmpty())
     }
 
     fun `test given a subtree key then ace-resize keeps the remaining suffixes in the pick`() {
         given("ace-resize subtree", "text")
-        AceResize.begin(ed, st, targets(12))
+        AceResize.begin(ed, state, targets(12))
         whenKeys("l")
-        assertEquals(AceResize.Phase.PICK, st.aceResize!!.phase)
-        assertEquals(listOf("a", "s", "d", "f"), Avy.labels(st.aceResize!!.node!!).map { it.second })
+        assertEquals(AceResize.Phase.PICK, state.aceResize!!.phase)
+        assertEquals(listOf("a", "s", "d", "f"), Avy.labels(state.aceResize!!.node!!).map { it.second })
     }
 
     fun `test given a bad hint key then ace-resize hints and stays in the pick`() {
         given("ace-resize bad key", "text")
-        AceResize.begin(ed, st, targets(3))
+        AceResize.begin(ed, state, targets(3))
         whenKeys("x")
-        assertNotNull(st.aceResize)
-        assertEquals(AceResize.Phase.PICK, st.aceResize!!.phase)
+        assertNotNull(state.aceResize)
+        assertEquals(AceResize.Phase.PICK, state.aceResize!!.phase)
     }
 
     fun `test given ESC during the pick then ace-resize cancels`() {
         given("ace-resize esc pick", "text")
-        AceResize.begin(ed, st, targets(3))
-        assertTrue(MeowEscape.wants(ed, st))
+        AceResize.begin(ed, state, targets(3))
+        assertTrue(MeowEscape.wants(ed, state))
         pressEsc()
-        assertNull(st.aceResize)
+        assertNull(state.aceResize)
     }
 
     fun `test given ESC during the hold then ace-resize cancels`() {
         given("ace-resize esc hold", "text")
-        AceResize.begin(ed, st, listOf(AceResize.Target(Rectangle(0, 0, 10, 10)) {}))
+        AceResize.begin(ed, state, listOf(AceResize.Target(Rectangle(0, 0, 10, 10)) {}))
         whenKeys("a")
-        assertEquals(AceResize.Phase.HOLD, st.aceResize!!.phase)
-        assertTrue(MeowEscape.wants(ed, st))
+        assertEquals(AceResize.Phase.HOLD, state.aceResize!!.phase)
+        assertTrue(MeowEscape.wants(ed, state))
         pressEsc()
-        assertNull(st.aceResize)
+        assertNull(state.aceResize)
     }
 
     fun `test given no dividers then ace-resize arms no session`() {
         given("ace-resize empty", "text")
-        AceResize.begin(ed, st, emptyList())
-        assertNull(st.aceResize)
+        AceResize.begin(ed, state, emptyList())
+        assertNull(state.aceResize)
     }
 
     fun `test given the bundled rc then SPC w r runs ace-resize`() {

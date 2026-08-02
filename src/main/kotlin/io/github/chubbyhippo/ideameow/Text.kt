@@ -189,12 +189,12 @@ object Words {
         text: CharSequence,
         from: Int,
         count: Int,
-        pred: (Char) -> Boolean,
+        isWord: (Char) -> Boolean,
     ): Int {
         var i = from.coerceIn(0, text.length)
         repeat(count) {
-            while (i < text.length && !pred(text[i])) i++
-            while (i < text.length && pred(text[i])) i++
+            while (i < text.length && !isWord(text[i])) i++
+            while (i < text.length && isWord(text[i])) i++
         }
         return i
     }
@@ -203,12 +203,12 @@ object Words {
         text: CharSequence,
         from: Int,
         count: Int,
-        pred: (Char) -> Boolean,
+        isWord: (Char) -> Boolean,
     ): Int {
         var i = from.coerceIn(0, text.length)
         repeat(count) {
-            while (i > 0 && !pred(text[i - 1])) i--
-            while (i > 0 && pred(text[i - 1])) i--
+            while (i > 0 && !isWord(text[i - 1])) i--
+            while (i > 0 && isWord(text[i - 1])) i--
         }
         return i
     }
@@ -217,18 +217,18 @@ object Words {
         text: CharSequence,
         from: Int,
         count: Int,
-        pred: (Char) -> Boolean,
-    ): Int = if (count >= 0) nextEnd(text, from, count, pred) else prevStart(text, from, -count, pred)
+        isWord: (Char) -> Boolean,
+    ): Int = if (count >= 0) nextEnd(text, from, count, isWord) else prevStart(text, from, -count, isWord)
 
     fun spanAt(
         text: CharSequence,
         offset: Int,
-        pred: (Char) -> Boolean,
+        isWord: (Char) -> Boolean,
     ): Pair<Int, Int> {
         var start = offset
         var end = offset
-        while (start > 0 && pred(text[start - 1])) start--
-        while (end < text.length && pred(text[end])) end++
+        while (start > 0 && isWord(text[start - 1])) start--
+        while (end < text.length && isWord(text[end])) end++
         return start to end
     }
 
@@ -236,33 +236,40 @@ object Words {
         text: CharSequence,
         pos: Int,
         mark: Int,
-        pred: (Char) -> Boolean,
+        isWord: (Char) -> Boolean,
     ): Int {
         val probe = (if (mark > pos) pos else pos - 1).coerceIn(0, (text.length - 1).coerceAtLeast(0))
-        val bounds = boundsAt(text, probe, pred) ?: return mark
+        val bounds = boundsAt(text, probe, isWord) ?: return mark
         return if (mark > pos) minOf(mark, bounds.second) else maxOf(mark, bounds.first)
     }
 
     fun boundsAt(
         text: CharSequence,
         offset: Int,
-        pred: (Char) -> Boolean,
+        isWord: (Char) -> Boolean,
     ): Pair<Int, Int>? {
-        var index = offset
-        if (index >= text.length || !pred(text[index])) {
-            when {
-                index > 0 && pred(text[index - 1]) -> {
-                    index--
-                }
+        val index = offsetInWord(text, offset, isWord) ?: return null
+        return spanAt(text, index, isWord)
+    }
 
-                else -> {
-                    var next = index
-                    while (next < text.length && !pred(text[next])) next++
-                    if (next >= text.length) return null
-                    index = next
-                }
-            }
+    private fun offsetInWord(
+        text: CharSequence,
+        offset: Int,
+        isWord: (Char) -> Boolean,
+    ): Int? =
+        when {
+            offset < text.length && isWord(text[offset]) -> offset
+            offset > 0 && isWord(text[offset - 1]) -> offset - 1
+            else -> firstWordOffsetFrom(text, offset, isWord)
         }
-        return spanAt(text, index, pred)
+
+    private fun firstWordOffsetFrom(
+        text: CharSequence,
+        from: Int,
+        isWord: (Char) -> Boolean,
+    ): Int? {
+        var next = from
+        while (next < text.length && !isWord(text[next])) next++
+        return if (next >= text.length) null else next
     }
 }

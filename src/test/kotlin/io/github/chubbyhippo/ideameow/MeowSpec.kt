@@ -25,7 +25,7 @@ import java.awt.datatransfer.DataFlavor
 import java.awt.datatransfer.StringSelection
 
 abstract class MeowSpec : BasePlatformTestCase() {
-    protected lateinit var st: MeowState
+    protected lateinit var state: MeowState
 
     protected val ed: Editor get() = myFixture.editor
     protected val doc get() = ed.document
@@ -51,8 +51,8 @@ abstract class MeowSpec : BasePlatformTestCase() {
         text: String,
     ) {
         myFixture.configureByText("$description.txt", text)
-        st = MeowState()
-        ed.putUserData(Meow.KEY, st)
+        state = MeowState()
+        ed.putUserData(Meow.KEY, state)
     }
 
     protected fun givenRc(text: String) {
@@ -76,7 +76,7 @@ abstract class MeowSpec : BasePlatformTestCase() {
     }
 
     protected fun whenCommand(name: String) {
-        Engine.COMMANDS.getValue(name).invoke(ed, st)
+        Engine.COMMANDS.getValue(name).invoke(ed, state)
     }
 
     protected fun thenSelection(expected: String) =
@@ -94,9 +94,9 @@ abstract class MeowSpec : BasePlatformTestCase() {
 
     protected fun thenText(expected: String) = assertEquals("buffer text", expected, doc.text)
 
-    protected fun thenMode(expected: MeowMode) = assertEquals("meow mode", expected, st.mode)
+    protected fun thenMode(expected: MeowMode) = assertEquals("meow mode", expected, state.mode)
 
-    protected fun thenSelType(expected: SelType) = assertEquals("selection type", expected, st.selType)
+    protected fun thenSelType(expected: SelType) = assertEquals("selection type", expected, state.selType)
 
     protected fun thenClipboard(expected: String) =
         assertEquals(

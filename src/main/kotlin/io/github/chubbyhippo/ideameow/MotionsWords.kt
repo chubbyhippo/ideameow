@@ -27,8 +27,8 @@ internal fun wordOrExpand(
     count: Int,
 ) {
     val text = editor.document.charsSequence
-    val pred = charPred(symbol = false)
-    moveToOrExpand(editor, state, SelType.WORD) { _, offset -> Words.move(text, offset, count, pred) }
+    val isWord = charPred(symbol = false)
+    moveToOrExpand(editor, state, SelType.WORD) { _, offset -> Words.move(text, offset, count, isWord) }
 }
 
 internal fun sentenceOrExpand(
@@ -78,8 +78,8 @@ internal fun nextLineStart(
 ): Int {
     val doc = editor.document
     if (doc.textLength == 0) return 0
-    val ln = doc.getLineNumber(offset.coerceIn(0, doc.textLength))
-    return if (ln >= doc.lineCount - 1) doc.textLength else doc.getLineStartOffset(ln + 1)
+    val line = doc.getLineNumber(offset.coerceIn(0, doc.textLength))
+    return if (line >= doc.lineCount - 1) doc.textLength else doc.getLineStartOffset(line + 1)
 }
 
 internal fun wordMotion(
@@ -91,18 +91,18 @@ internal fun wordMotion(
     if (count == 0) return
     val text = editor.document.charsSequence
     val type = wordType(symbol)
-    val pred = charPred(symbol)
+    val isWord = charPred(symbol)
     val selectionModel = editor.selectionModel
     if (!(selectionModel.hasSelection() && state.selType == type)) Selections.cancel(editor, state)
     val extend = state.selExpand && state.selType == type && selectionModel.hasSelection()
     val start = wordMotionStart(editor, selectionModel, extend, count)
-    val target = Words.move(text, start, count, pred)
+    val target = Words.move(text, start, count, isWord)
     if (target == start) return
     val anchor =
         if (extend) {
             wordMotionAnchor(selectionModel, count)
         } else {
-            Words.fixSelectionMark(text, target, start, pred)
+            Words.fixSelectionMark(text, target, start, isWord)
         }
     Selections.select(editor, state, Selections.SelectionSpec(type, anchor, target, expand = extend))
 }

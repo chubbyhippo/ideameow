@@ -30,11 +30,11 @@ private fun casified(
     }
 
 private fun capitalizedWords(slice: String): String {
-    val pred = charPred(symbol = false)
+    val isWord = charPred(symbol = false)
     val out = StringBuilder(slice.length)
     var inWord = false
     for (char in slice) {
-        if (pred(char)) {
+        if (isWord(char)) {
             out.append(if (inWord) char.lowercaseChar() else char.uppercaseChar())
             inWord = true
         } else {
@@ -54,11 +54,11 @@ internal fun caseWord(
     val count = state.takeCount(1)
     if (count == 0) return
     val hadSelection = editor.selectionModel.hasSelection()
-    val pred = charPred(symbol = false)
+    val isWord = charPred(symbol = false)
     editCarets(editor, op.commandName) { caret ->
         val text = editor.document.charsSequence
         val from = caret.offset
-        val target = Words.move(text, from, count, pred)
+        val target = Words.move(text, from, count, isWord)
         val start = minOf(from, target)
         val end = maxOf(from, target)
         if (start == end) return@editCarets
@@ -76,11 +76,11 @@ internal fun killWord(
     val count = state.takeCount(1)
     if (count == 0) return
     val text = editor.document.charsSequence
-    val pred = charPred(symbol = false)
+    val isWord = charPred(symbol = false)
     var any = false
     for (caret in editor.caretModel.allCarets) {
         val from = caret.offset
-        val target = Words.move(text, from, count, pred)
+        val target = Words.move(text, from, count, isWord)
         if (target == from) {
             caret.removeSelection()
             continue

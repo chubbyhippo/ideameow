@@ -42,7 +42,7 @@ class RecenterSpec : MeowSpec() {
         val seen =
             (1..4).map {
                 whenCommand(View.RECENTER_COMMAND)
-                View.recenterPosition(st.recenterPhase)
+                View.recenterPosition(state.recenterPhase)
             }
         assertEquals(listOf(RevealAt.CENTER, RevealAt.TOP, RevealAt.BOTTOM, RevealAt.CENTER), seen)
     }
@@ -52,7 +52,7 @@ class RecenterSpec : MeowSpec() {
         whenCommand(View.RECENTER_COMMAND)
         whenKeys("h")
         whenCommand(View.RECENTER_COMMAND)
-        assertEquals(RevealAt.CENTER, View.recenterPosition(st.recenterPhase))
+        assertEquals(RevealAt.CENTER, View.recenterPosition(state.recenterPhase))
     }
 
     fun `test given the bundled rc then C-l runs recenter-top-bottom`() {
