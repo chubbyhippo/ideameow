@@ -26,7 +26,7 @@ internal fun string(
     var i = 0
     while (i < text.length) {
         val quote = text[i]
-        if (quote != '"' && quote != '\'' && quote != '`') {
+        if (!isQuote(quote)) {
             i++
             continue
         }

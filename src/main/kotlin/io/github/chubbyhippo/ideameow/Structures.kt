@@ -75,8 +75,6 @@ internal object Structures {
         start: Int,
         end: Int,
     ): PairRange? {
-        val opens = "([{"
-        val closes = ")]}"
         val stack = ArrayDeque<Int>()
         var best: PairRange? = null
         var i = 0
@@ -87,12 +85,12 @@ internal object Structures {
                 continue
             }
             when (val char = text[i]) {
-                in opens -> {
+                in OPEN_BRACKETS -> {
                     stack.addLast(i)
                 }
 
-                in closes -> {
-                    val open = popMatchingOpen(text, stack, opens, closes.indexOf(char))
+                in CLOSE_BRACKETS -> {
+                    val open = popMatchingOpen(text, stack, CLOSE_BRACKETS.indexOf(char))
                     if (open >= 0 && encloses(open, i, start, end) && tighterThan(best, open, i)) {
                         best = PairRange(open, i)
                     }
@@ -108,7 +106,7 @@ internal object Structures {
         offset: Int,
     ): Int {
         val quote = text[offset]
-        if (quote != '"' && quote != '\'' && quote != '`') return offset
+        if (!isQuote(quote)) return offset
         var j = offset + 1
         while (j < text.length && text[j] != quote && text[j] != '\n') {
             if (text[j] == '\\') j++
@@ -120,12 +118,11 @@ internal object Structures {
     private fun popMatchingOpen(
         text: CharSequence,
         stack: ArrayDeque<Int>,
-        opens: String,
         closeKind: Int,
     ): Int {
         while (stack.isNotEmpty()) {
             val open = stack.removeLast()
-            if (opens.indexOf(text[open]) == closeKind) return open
+            if (OPEN_BRACKETS.indexOf(text[open]) == closeKind) return open
         }
         return -1
     }

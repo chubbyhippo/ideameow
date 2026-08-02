@@ -122,3 +122,11 @@ private fun scanForwardToClose(
 }
 
 internal const val SENTENCE_ENDERS = ".!?"
+
+internal const val OPEN_BRACKETS = "([{"
+
+internal const val CLOSE_BRACKETS = ")]}"
+
+internal const val QUOTES = "\"'`"
+
+internal fun isQuote(char: Char) = char in QUOTES

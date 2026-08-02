@@ -32,49 +32,76 @@ object Keypad {
         char: Char,
     ) {
         WhichKey.hide()
-        val bindings = RcLookups.keypad()
-        val buffer = state.keypad.toString()
         when {
-            buffer == "/" -> {
-                describe(editor, char)
+            state.keypad.toString() == "/" -> describeKey(editor, state, char)
+            state.keypad.isEmpty() -> beginSequence(editor, state, char)
+            else -> extendSequence(editor, state, char)
+        }
+    }
+
+    private fun beginSequence(
+        editor: Editor,
+        state: MeowState,
+        char: Char,
+    ) {
+        when {
+            char in '0'..'9' -> takeCountDigit(editor, state, char)
+            char == '?' -> showCheatsheet(editor, state)
+            char == '/' -> state.keypad.append('/')
+            else -> extendSequence(editor, state, char)
+        }
+    }
+
+    private fun extendSequence(
+        editor: Editor,
+        state: MeowState,
+        char: Char,
+    ) {
+        state.keypad.append(char)
+        val sequence = state.keypad.toString()
+        val bindings = RcLookups.keypad()
+        val binding = bindings[sequence]
+        when {
+            binding != null -> {
                 exit(editor, state)
+                Engine.runBinding(editor, state, binding)
             }
 
-            buffer.isEmpty() && char in '0'..'9' -> {
-                state.pendingCount = state.pendingCount * DECIMAL_BASE + (char - '0')
+            bindings.keys.none { it.startsWith(sequence) } -> {
                 exit(editor, state)
-            }
-
-            buffer.isEmpty() && char == '?' -> {
-                exit(editor, state)
-                Messages.showInfoMessage(editor.project, CHEATSHEET, "Meow Cheatsheet")
-            }
-
-            buffer.isEmpty() && char == '/' -> {
-                state.keypad.append('/')
+                Ide.hint(editor, "SPC ${sequence.toCharArray().joinToString(" ")} is undefined")
             }
 
             else -> {
-                state.keypad.append(char)
-                val current = state.keypad.toString()
-                val binding = bindings[current]
-                when {
-                    binding != null -> {
-                        exit(editor, state)
-                        Engine.runBinding(editor, state, binding)
-                    }
-
-                    bindings.keys.none { it.startsWith(current) } -> {
-                        exit(editor, state)
-                        Ide.hint(editor, "SPC ${current.toCharArray().joinToString(" ")} is undefined")
-                    }
-
-                    else -> {
-                        WhichKey.scheduleKeypad(editor, current)
-                    }
-                }
+                WhichKey.scheduleKeypad(editor, sequence)
             }
         }
+    }
+
+    private fun takeCountDigit(
+        editor: Editor,
+        state: MeowState,
+        char: Char,
+    ) {
+        state.pendingCount = state.pendingCount * DECIMAL_BASE + (char - '0')
+        exit(editor, state)
+    }
+
+    private fun showCheatsheet(
+        editor: Editor,
+        state: MeowState,
+    ) {
+        exit(editor, state)
+        Messages.showInfoMessage(editor.project, CHEATSHEET, "Meow Cheatsheet")
+    }
+
+    private fun describeKey(
+        editor: Editor,
+        state: MeowState,
+        char: Char,
+    ) {
+        describe(editor, char)
+        exit(editor, state)
     }
 
     fun exit(

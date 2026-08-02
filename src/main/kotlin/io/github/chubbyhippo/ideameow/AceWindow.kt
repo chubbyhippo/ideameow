@@ -23,7 +23,6 @@ import com.intellij.openapi.fileEditor.ex.FileEditorManagerEx
 import com.intellij.openapi.wm.IdeFocusManager
 import com.intellij.openapi.wm.ToolWindowManager
 import java.awt.Component
-import java.awt.Container
 import java.awt.FontMetrics
 import java.awt.Graphics2D
 import java.awt.KeyboardFocusManager
@@ -143,24 +142,22 @@ object AceWindow {
     ) {
         val session = state.aceWindow ?: return
         val node = session.node ?: return
-        when (val child = node.children.firstOrNull { it.first == char }?.second) {
-            is Avy.Leaf -> {
-                val target = session.windows.getOrNull(child.offset)
+        Avy.descend(
+            node,
+            char,
+            onLeaf = { offset ->
+                val target = session.windows.getOrNull(offset)
                 val swap = session.swap
                 val current = session.current
                 cancel(state)
                 if (target != null) perform(editor, swap, target, current)
-            }
-
-            is Avy.Branch -> {
+            },
+            onBranch = { child ->
                 session.node = child
                 paintLabels(session)
-            }
-
-            null -> {
-                Ide.hint(editor, "No such candidate: $char")
-            }
-        }
+            },
+            onMiss = { hintNoSuchCandidate(editor, char) },
+        )
     }
 
     fun cancel(state: MeowState) {
@@ -302,20 +299,12 @@ private fun toolWindowPanels(
     }
 }
 
-internal fun panes(root: Component): List<JComponent> {
-    val out = mutableListOf<JComponent>()
-    val queue = ArrayDeque<Component>()
-    queue.add(root)
-    while (queue.isNotEmpty()) {
-        val component = queue.removeFirst()
-        if (!component.isVisible) continue
-        when (component) {
-            is JTree, is JTable, is JList<*> -> out.add(component as JComponent)
-            is Container -> queue += component.components
-        }
-    }
-    return out
-}
+internal fun panes(root: Component): List<JComponent> =
+    visibleComponents(root) { !isPane(it) }
+        .filter(::isPane)
+        .map { it as JComponent }
+
+private fun isPane(component: Component): Boolean = component is JTree || component is JTable || component is JList<*>
 
 internal fun paneHost(component: JComponent): Component =
     SwingUtilities.getAncestorOfClass(JScrollPane::class.java, component) ?: component

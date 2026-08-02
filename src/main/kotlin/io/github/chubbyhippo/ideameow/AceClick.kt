@@ -113,17 +113,9 @@ object AceClick {
     private fun collect(root: Component): List<Target> {
         val window = root as? Window ?: SwingUtilities.getWindowAncestor(root)
         val layer = (window as? RootPaneContainer)?.rootPane?.layeredPane ?: return emptyList()
-        val out = mutableListOf<Target>()
-        val queue = ArrayDeque<Component>()
-        queue.add(root)
-        while (queue.isNotEmpty()) {
-            val component = queue.removeFirst()
-            if (!component.isVisible) continue
-            if (component is Container) queue += component.components
-            val rows = rowTargets(component, layer)
-            if (rows != null) out.addAll(rows) else targetOf(component, layer)?.let { out.add(it) }
+        return visibleComponents(root).flatMap { component ->
+            rowTargets(component, layer) ?: listOfNotNull(targetOf(component, layer))
         }
-        return out
     }
 
     private fun rowTargets(
@@ -163,31 +155,36 @@ object AceClick {
         val node = session.node ?: return
         val lower = char.lowercaseChar()
         val secondary = char != lower
-        when (val child = node.children.firstOrNull { it.first == lower }?.second) {
-            is Avy.Leaf -> {
-                val target = session.targets.getOrNull(child.offset)
+        Avy.descend(
+            node,
+            lower,
+            onLeaf = { offset ->
+                val target = session.targets.getOrNull(offset)
                 cancel(state)
-                if (target != null) {
-                    val action = if (secondary) target.rightClick else target.click
-                    ApplicationManager.getApplication().invokeLater {
-                        if (!editor.isDisposed && target.component.parent != null) {
-                            if (target.component !is MenuElement) {
-                                MenuSelectionManager.defaultManager().clearSelectedPath()
-                            }
-                            runCatching { action() }.onFailure { Ide.hint(editor, "Click failed") }
-                            scheduleMenuLabels(editor, state)
-                        }
-                    }
-                }
-            }
-
-            is Avy.Branch -> {
+                if (target != null) scheduleClick(editor, state, target, secondary)
+            },
+            onBranch = { child ->
                 session.node = child
                 paintLabels(session)
-            }
+            },
+            onMiss = { hintNoSuchCandidate(editor, char) },
+        )
+    }
 
-            null -> {
-                Ide.hint(editor, "No such candidate: $char")
+    private fun scheduleClick(
+        editor: Editor,
+        state: MeowState,
+        target: Target,
+        secondary: Boolean,
+    ) {
+        val action = if (secondary) target.rightClick else target.click
+        ApplicationManager.getApplication().invokeLater {
+            if (!editor.isDisposed && target.component.parent != null) {
+                if (target.component !is MenuElement) {
+                    MenuSelectionManager.defaultManager().clearSelectedPath()
+                }
+                runCatching { action() }.onFailure { Ide.hint(editor, "Click failed") }
+                scheduleMenuLabels(editor, state)
             }
         }
     }

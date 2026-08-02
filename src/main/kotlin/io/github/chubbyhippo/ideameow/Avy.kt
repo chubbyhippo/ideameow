@@ -102,6 +102,20 @@ object Avy {
         return Branch(children)
     }
 
+    fun descend(
+        node: Branch,
+        char: Char,
+        onLeaf: (Int) -> Unit,
+        onBranch: (Branch) -> Unit,
+        onMiss: () -> Unit,
+    ) {
+        when (val child = node.children.firstOrNull { it.first == char }?.second) {
+            is Leaf -> onLeaf(child.offset)
+            is Branch -> onBranch(child)
+            null -> onMiss()
+        }
+    }
+
     fun labels(node: Branch): List<Pair<Int, String>> {
         val out = mutableListOf<Pair<Int, String>>()
 
@@ -116,27 +130,6 @@ object Avy {
         }
         walk(node, "")
         return out
-    }
-
-    private fun startCharTimer(
-        editor: Editor,
-        state: MeowState,
-    ) {
-        cancel(editor, state)
-        state.avy = Session(gotoLine = false)
-    }
-
-    private fun startGotoLine(
-        editor: Editor,
-        state: MeowState,
-    ) {
-        cancel(editor, state)
-        val session = Session(gotoLine = true)
-        state.avy = session
-        val doc = editor.document
-        val (first, last) = Ide.visibleLines(editor)
-        val candidates = (first..last).map { doc.getLineStartOffset(it) }
-        toSelecting(editor, session, candidates)
     }
 
     fun key(
@@ -249,6 +242,27 @@ object Avy {
     }
 }
 
+private fun startCharTimer(
+    editor: Editor,
+    state: MeowState,
+) {
+    Avy.cancel(editor, state)
+    state.avy = Avy.Session(gotoLine = false)
+}
+
+private fun startGotoLine(
+    editor: Editor,
+    state: MeowState,
+) {
+    Avy.cancel(editor, state)
+    val session = Avy.Session(gotoLine = true)
+    state.avy = session
+    val doc = editor.document
+    val (first, last) = Ide.visibleLines(editor)
+    val candidates = (first..last).map { doc.getLineStartOffset(it) }
+    toSelecting(editor, session, candidates)
+}
+
 private fun toSelecting(
     editor: Editor,
     session: Avy.Session,
@@ -271,22 +285,25 @@ private fun select(
         return
     }
     val node = session.node ?: return
-    when (val child = node.children.firstOrNull { it.first == char }?.second) {
-        is Avy.Leaf -> {
+    Avy.descend(
+        node,
+        char,
+        onLeaf = { offset ->
             Avy.cancel(editor, state)
-            jump(editor, child.offset)
-        }
-
-        is Avy.Branch -> {
+            jump(editor, offset)
+        },
+        onBranch = { child ->
             session.node = child
             Avy.paintLabels(editor, session)
-        }
-
-        null -> {
-            Ide.hint(editor, "No such candidate: $char")
-        }
-    }
+        },
+        onMiss = { hintNoSuchCandidate(editor, char) },
+    )
 }
+
+internal fun hintNoSuchCandidate(
+    editor: Editor,
+    char: Char,
+) = Ide.hint(editor, "No such candidate: $char")
 
 private fun promptGotoLine(
     editor: Editor,

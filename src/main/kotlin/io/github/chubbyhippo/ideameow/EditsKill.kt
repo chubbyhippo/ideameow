@@ -19,6 +19,8 @@ package io.github.chubbyhippo.ideameow
 import com.intellij.openapi.actionSystem.IdeActions
 import com.intellij.openapi.editor.Editor
 
+private const val TIGHT_FOLLOWERS = CLOSE_BRACKETS + ".,;:"
+
 private fun prepareLineSelectionsForKill(
     editor: Editor,
     state: MeowState,
@@ -84,8 +86,8 @@ private fun joinKill(
                 after != '\n' &&
                 !before.isWhitespace() &&
                 !after.isWhitespace() &&
-                after !in ")]}.,;:" &&
-                before !in "([{"
+                after !in TIGHT_FOLLOWERS &&
+                before !in OPEN_BRACKETS
         if (needsSpace) editor.document.insertString(start, " ")
         editor.caretModel.moveToOffset(start)
     }

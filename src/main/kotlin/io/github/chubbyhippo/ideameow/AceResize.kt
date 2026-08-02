@@ -22,7 +22,6 @@ import com.intellij.openapi.ui.Splitter
 import com.intellij.openapi.wm.ToolWindowAnchor
 import com.intellij.openapi.wm.ToolWindowManager
 import java.awt.Component
-import java.awt.Container
 import java.awt.Font
 import java.awt.Graphics
 import java.awt.Graphics2D
@@ -179,20 +178,16 @@ private fun pick(
     char: Char,
 ) {
     val node = session.node ?: return
-    when (val child = node.children.firstOrNull { it.first == char }?.second) {
-        is Avy.Leaf -> {
-            enterHold(editor, state, session, child.offset)
-        }
-
-        is Avy.Branch -> {
+    Avy.descend(
+        node,
+        char,
+        onLeaf = { offset -> enterHold(editor, state, session, offset) },
+        onBranch = { child ->
             session.node = child
             paintLabels(session)
-        }
-
-        null -> {
-            Ide.hint(editor, "No such candidate: $char")
-        }
-    }
+        },
+        onMiss = { hintNoSuchCandidate(editor, char) },
+    )
 }
 
 private fun enterHold(
@@ -258,20 +253,11 @@ private fun paintHold(session: AceResize.Session) {
 private fun splitterTargets(
     frame: Window,
     layer: JLayeredPane?,
-): List<AceResize.Target> {
-    val out = mutableListOf<AceResize.Target>()
-    val queue = ArrayDeque<Component>()
-    queue.add(frame)
-    while (queue.isNotEmpty()) {
-        val component = queue.removeFirst()
-        if (!component.isVisible) continue
-        if (component is Splitter && component.firstComponent != null && component.secondComponent != null) {
-            splitterTarget(component, layer)?.let { out.add(it) }
-        }
-        if (component is Container) queue += component.components
-    }
-    return out
-}
+): List<AceResize.Target> =
+    visibleComponents(frame)
+        .filterIsInstance<Splitter>()
+        .filter { it.firstComponent != null && it.secondComponent != null }
+        .mapNotNull { splitterTarget(it, layer) }
 
 private fun splitterTarget(
     splitter: Splitter,
