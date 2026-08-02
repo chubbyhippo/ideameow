@@ -1,137 +1,131 @@
-# ideameow — meow modal editing for IntelliJ
+# ideameow
 
-If you love [meow](https://github.com/meow-edit/meow) in Emacs and sigh every
-time you open IntelliJ, this plugin is for you. It implements meow's suggested
-**QWERTY layout** as a native modal editing engine — no IdeaVim underneath, no
-vim emulation in the middle. Just meow: select first, then act.
+[meow](https://github.com/meow-edit/meow)-style modal editing for IntelliJ —
+meow's suggested **QWERTY layout** as a native modal engine, with no IdeaVim
+and no vim emulation underneath. Select first, then act.
 
-(Do disable IdeaVim while this is enabled — both plugins intercept typing, and
-they will fight.)
+Disable IdeaVim while this is enabled — both plugins intercept typing.
 
-## What you get
+## States
 
-The states you know from meow:
+| State | What |
+|---|---|
+| **NORMAL** | keys are commands, block cursor; you start here |
+| **INSERT** | keys type text — `i a c I A` enter, `ESC` leaves |
+| **MOTION** | meow's reduced state, rebindable with `mmap`; what answers to it is tool-window trees |
+| **KEYPAD** | `SPC` as the leader, dispatching IDE actions Emacs-style (`SPC x f` open file, `SPC w v` split); which-key lists the options on a pause |
+| **BEACON** | meow's multi-edit on IntelliJ's native multiple carets — grab with `G`, select inside it, a caret lands on every similar range; `ESC` collapses |
 
-- **NORMAL** — keys are commands, block cursor. You start here.
-- **INSERT** — keys type text. `i a c I A` get you in, `ESC` gets you out.
-- **MOTION** — meow's reduced state for special contexts, rebindable with
-  `mmap`. Read-only editors do *not* use it: like read-only buffers in Emacs
-  they stay in NORMAL — every motion, selection, search and avy jump works,
-  and the modify commands are simply inert (meow's `meow--allow-modify-p`).
-  What *does* answer to it, like special buffers in Emacs: tool-window
-  trees — see below.
-- **KEYPAD** — `SPC` as the leader, dispatching IDE actions Emacs-style
-  (`SPC x f` = open file, `SPC w v` = split…). A which-key popup lists your
-  options whenever you pause on a prefix.
-- **BEACON** — meow's multi-edit, built on IntelliJ's native multiple carets:
-  grab a region with `G`, select something inside it, and a caret lands on
-  every similar range. Edit them all at once; `ESC` collapses.
+The status bar always shows the current state.
 
-The status bar always tells you which state you're in.
+## Where meow attaches
 
-Meow runs in main file editors, in diff views (the editable side gets full
-NORMAL editing; the read-only revision side gets the same full layout with
-edits blocked — navigate, select, search, avy-jump), and in multi-line
-writable dialog fields such as the VCS commit message box (like IdeaVim's
-`ideavimsupport=dialog`). One-line fields and consoles keep native editing,
-and `ESC` in a diff still closes it when there is nothing meow-related to
-cancel.
+| Surface | Behavior |
+|---|---|
+| Main file editors | full NORMAL editing |
+| Diff views | editable side full NORMAL; read-only revision side full layout with edits blocked |
+| Multi-line writable dialog fields (VCS commit message) | full meow editing — IdeaVim's `ideavimsupport=dialog` |
+| One-line fields, consoles | native editing |
+| Read-only editors | stay in NORMAL, not MOTION — motions, selection, search and avy work; modify commands are inert (meow's `meow--allow-modify-p`) |
+| `ESC` in a diff | still closes it when there is nothing meow-related to cancel |
 
-**Tool-window trees** — the project view, structure, TODO, find results, and
-every other tree — answer to the MOTION map, like special buffers in Emacs:
-`j`/`k` move the selection, `h` collapses or goes to the parent, `l` expands
-or enters, `q` hides the tool window. Everything else stays native: `Enter`
-opens, and any *unmapped* letter still starts speed search. Add your own
-tree keys with `mmap` lines in `~/.ideameowrc`, e.g.
-`mmap o <action>(EditSource)` or `mmap r <action>(SynchronizeCurrentFile)`;
-`mmap <key> ignore` gives a key back to the tree (so `mmap q ignore` makes
-`q` type into speed search again). Meow commands other than the four
-motions have no tree meaning and are simply inert there.
+### Tool-window trees
 
-**Double-ESC leaves any tool window** — a single `ESC` already returns you
-to the editor from most tool windows (the platform's own escape), but the
-terminal and AI-chat windows swallow every `ESC` themselves — a shell or a
-TUI needs the key. Press `ESC` twice quickly (within 500 ms) in the same
-tool window and focus jumps back to the editor; the first press still
-reaches the terminal untouched.
+The project view, structure, TODO, find results and every other tree answer to
+the MOTION map.
 
-**Windows** — `(windmove-default-keybindings)` from `init.el`, ported
-natively: `Shift+←→↑↓` select the editor window in that direction, measured
-from the caret like windmove — with three stacked splits on the left,
-`S-left` enters the one at your caret's row. The "windows" are every visible
-editor, so the same keys move between the two sides of a diff (which
-splitter cycling never reaches), into consoles, and into the commit message
-box. No wrap-around, and where Emacs would complain, ideameow does too:
-"No window left from selected window". The same four actions live on
-`SPC w h/j/k/l`, mirroring init.el's `C-c w` window map — and the capitals
-mirror them as the swaps: `SPC w H/J/K/L` (windmove-swap-states) push your
-file and the focus into the neighbouring split and bring its file back
-(editor splits only; a diff pane can't be swapped). The Shift+arrow
-chords sit on the IDE keymap (modifier chords never reach the modal
-engine) — rebind them under *Settings → Keymap → Windmove* — and they
-shadow shift-selection in editors, the exact tradeoff the Emacs binding
-makes (select with meow instead; trees and dialogs keep native
-shift-selection, since the actions only enable on editors).
+| Key | Does |
+|---|---|
+| `j` / `k` | move the selection |
+| `h` | collapse, or go to the parent |
+| `l` | expand, or enter |
+| `q` | hide the tool window |
+| `Enter`, any unmapped letter | native — speed search still starts |
 
-**Ace-window** — `SPC w w` (and `SPC x o`, the `C-x o` slot) is a native
-port of ace-window: with three or more windows every visible editor gets a
-home-row label painted at its top-left (`a s d f g h j k l`, the same keys
-and label style as avy, multi-char past nine windows) and the next key
-jumps there; with exactly two windows it hops straight to the other one,
-like `other-window`; `Esc` cancels. `SPC w W` is `ace-swap-window`: pick a
-window by label and it exchanges files with yours, focus following the
-swap (editor splits only — picking a window that isn't a tab group, a
-diff pane say, hints instead). ace-window's extra dispatch keys
-(`x`, `m`, `c`…) are deliberately not ported — the keypad's own `w` group
-already covers splitting, deleting, and swapping.
+| rc line | Effect |
+|---|---|
+| `mmap o <action>(EditSource)` | add your own tree key |
+| `mmap r <action>(SynchronizeCurrentFile)` | same |
+| `mmap q ignore` | give `q` back to the tree, so it types into speed search |
 
-**Emacs chords** — `Ctrl+f/b/n/p/a/e` and `Alt+f/b/a/e` are the real
-Emacs point motions (`forward/backward-char`, `next/previous-line`,
-`move-beginning/end-of-line`, `forward/backward-word`,
-`backward/forward-sentence`), not meow commands: meow itself never rebinds
-these chords — its state keymaps hold only single printable keys, so every
-chord falls through to the vanilla Emacs keymap ("Compatible with the
-vanilla Emacs keymap", meow's own README) — and, since a meow
-selection is an active Emacs mark, that same point motion stretches an
-already-active selection for free, with no special-casing. ideameow ports
-that: with no selection the chord just moves the caret, and with one active
-it extends it, anchored exactly like meow's own `H J K L` char/line expand —
-so `w` then `Ctrl+f Ctrl+f` grows the marked word one character at a time,
-and `;` (reverse) flips which end subsequent chords grow from. `Alt+n` /
-`Alt+p` are deliberately left unbound: stock Emacs has no default binding
-for them either (only the unrelated `M-g n` / `M-g p` error-navigation
-prefix exists) — verified against the GNU Emacs manual, not guessed.
+Meow commands other than the four motions have no tree meaning and are inert
+there.
 
-The same treatment covers the rest of the portable Emacs chord layer:
-`Alt+Shift+,` / `Alt+Shift+.` are `beginning/end-of-buffer` (Emacs `M-<` /
-`M->` — a count lands N/10 of the way in, snapping to the next line start,
-exactly the stock behavior), `Alt+Shift+[` / `Alt+Shift+]` are
-`backward/forward-paragraph` (Emacs `M-{` / `M-}` — paragraphs are
-blank-line-delimited; forward lands on the separator line, backward on the
-paragraph start with one adjacent empty line joining it), `Alt+u` /
-`Alt+l` / `Alt+c` are
-`upcase/downcase/capitalize-word` (from the caret through the word's end; a
-negative count — `-` then the chord — reaches back without moving the
-caret), and `Alt+d` is `kill-word` (into the clipboard; negative count
-kills backward). The four `Alt+letter` chords and the `Alt+Shift+[` / `]`
-bracket pair are unbound in the IDE's
-default keymap, so nothing native is displaced; `Alt+Shift+,` / `.` shadow
-the global font-size zoom in NORMAL only — the same tradeoff `Ctrl+f`
-makes with Find above, and the zoom keeps `Ctrl+wheel`, `SPC w` and INSERT.
-Emacs chords whose IDE default matters more (`Ctrl+v` paste, `Ctrl+o`
-override-methods, `Ctrl+l` find-next, `Alt+Backspace` undo, `Alt+q`
-context-info...) deliberately stay with the IDE, and Emacs `M-/` needs no
-port at all: the IDE's own `Alt+/` is HippieCompletion, named after the
-hippie-expand it implements. Like Windmove's Shift+arrows above, all of
-these sit on the IDE keymap (modifier chords never reach the modal
-engine) — rebind under *Settings → Keymap* — and they answer in NORMAL
-mode, yielding to the IDE's own chords in INSERT.
+### Double-ESC leaves any tool window
 
-And one idea borrowed straight from meow itself: **the plugin binds no keys in
-code.** The entire keymap — the NORMAL/MOTION layout *and* the whole `SPC`
-keypad table — lives in an `.ideameowrc` file bundled inside the plugin, and a
-`~/.ideameowrc` in your home directory overrides it entry by entry. Rebind
-anything; relayout everything.
+| Press | In | Result |
+|---|---|---|
+| `ESC` | most tool windows | the platform's own escape returns you to the editor |
+| `ESC` ×2 within 500 ms | the same tool window | focus jumps back to the editor |
+| the first of the two | terminal, AI-chat windows | still reaches the terminal untouched |
+
+## Windows
+
+`(windmove-default-keybindings)` from `init.el`, ported natively.
+
+| Key | Does |
+|---|---|
+| `Shift+←→↑↓` | select the editor window in that direction, measured from the caret like windmove |
+| `SPC w h/j/k/l` | the same four actions, mirroring init.el's `C-c w` window map |
+| `SPC w H/J/K/L` | `windmove-swap-states` — push your file and the focus into the neighbouring split, bringing its file back (editor splits only; a diff pane cannot be swapped) |
+
+| Fact | Value |
+|---|---|
+| What counts as a window | every visible editor — so the same keys cross the two sides of a diff, enter consoles, and reach the commit message box |
+| Wrap-around | none |
+| At the edge | "No window left from selected window", as in Emacs |
+| Where the chords live | the IDE keymap — modifier chords never reach the modal engine; rebind under *Settings → Keymap → Windmove* |
+| Tradeoff | they shadow shift-selection in editors, exactly as the Emacs binding does; trees and dialogs keep native shift-selection |
+
+### Ace-window
+
+| Key | Does |
+|---|---|
+| `SPC w w`, `SPC x o` | ace-window: three or more windows each get a home-row label (`a s d f g h j k l`, avy's style, multi-char past nine) at the top-left and the next key jumps there; exactly two hops straight across, like `other-window`; `Esc` cancels |
+| `SPC w W` | `ace-swap-window` — pick a label and it exchanges files with yours, focus following the swap (editor splits only; a diff pane hints instead) |
+
+ace-window's extra dispatch keys (`x`, `m`, `c`…) are not ported — the keypad's
+`w` group already covers splitting, deleting and swapping.
+
+## Emacs chords
+
+| Behavior | Value |
+|---|---|
+| Bound to | the real Emacs point motions, not meow commands |
+| With no selection | the chord moves the caret |
+| With one active | it extends it, anchored exactly like meow's own `H J K L` expand — `w` then `Ctrl+f Ctrl+f` grows the marked word one character at a time |
+| `;` (reverse) | flips which end subsequent chords grow from |
+
+| Chord | Command |
+|---|---|
+| `Ctrl+f` / `Ctrl+b` | `forward/backward-char` |
+| `Ctrl+n` / `Ctrl+p` | `next/previous-line` |
+| `Ctrl+a` / `Ctrl+e` | `move-beginning/end-of-line` |
+| `Alt+f` / `Alt+b` | `forward/backward-word` |
+| `Alt+a` / `Alt+e` | `backward/forward-sentence` |
+| `Alt+Shift+,` / `Alt+Shift+.` | `beginning/end-of-buffer` (`M-<` / `M->`) — a count lands N/10 of the way in, snapping to the next line start |
+| `Alt+Shift+[` / `Alt+Shift+]` | `backward/forward-paragraph` (`M-{` / `M-}`) — blank-line-delimited; forward lands on the separator line, backward on the paragraph start with one adjacent empty line joining it |
+| `Alt+u` / `Alt+l` / `Alt+c` | `upcase/downcase/capitalize-word` — from the caret through the word's end; `-` then the chord reaches back without moving the caret |
+| `Alt+d` | `kill-word` into the clipboard; a negative count kills backward |
+
+| Chord | Why not bound |
+|---|---|
+| `Alt+n` / `Alt+p` | stock Emacs has no default binding either — only the unrelated `M-g n` / `M-g p` prefix |
+| `Ctrl+v`, `Ctrl+o`, `Ctrl+l`, `Alt+Backspace`, `Alt+q` … | the IDE default matters more |
+| `Alt+/` | needs no port — the IDE's own `Alt+/` is HippieCompletion, named after the hippie-expand it implements |
+
+| Fact | Value |
+|---|---|
+| Where they live | the IDE keymap — rebind under *Settings → Keymap* |
+| Active in | NORMAL; they yield to the IDE's own chords in INSERT |
+| Displacement | the four `Alt+letter` chords and the `Alt+Shift+[` / `]` pair are unbound in the IDE default keymap; `Alt+Shift+,` / `.` shadow font-size zoom in NORMAL only, which keeps `Ctrl+wheel`, `SPC w` and INSERT |
+
+## No keys in code
+
+| Layer | What |
+|---|---|
+| Bundled `.ideameowrc` | the entire keymap — the NORMAL/MOTION layout *and* the whole `SPC` keypad table |
+| `~/.ideameowrc` | overrides it entry by entry |
 
 ## Build & install
 
@@ -144,76 +138,107 @@ cd ideameow
 gradle buildPlugin          # or: gradle runIde  (sandbox IDE for a test drive)
 ```
 
-Prefer clicking? *Settings → Plugins → ⚙ → Install Plugin from Disk…* and pick
-`build/distributions/ideameow-0.1.0.zip`.
-
-You'll need a JDK 21 toolchain (`mise.toml` pins it; `setup.sh` handles the
-rest). The plugin targets IDE 2026.1 and anything newer.
+| Item | Value |
+|---|---|
+| By hand | *Settings → Plugins → ⚙ → Install Plugin from Disk…*, pick `build/distributions/ideameow-0.1.0.zip` |
+| Toolchain | JDK 21, pinned in `mise.toml` |
+| Target | IDE 2026.1 and newer |
 
 ## The layout
 
-This is meow's suggested QWERTY layout (`KEYBINDING_QWERTY`), verified against
-meow's source — not reconstructed from vim habits. The bundled `.ideameowrc`
-spells it out as one `nmap <key> <meow-command>` line per key, so the file
-doubles as the authoritative reference; what follows is the guided tour.
+| Item | Value |
+|---|---|
+| Layout | meow's suggested QWERTY layout (`KEYBINDING_QWERTY`), verified against meow's source |
+| Authoritative reference | the bundled `.ideameowrc` — one `nmap <key> <meow-command>` line per key |
 
-**Moving and selecting.** `h j k l` move (a char-selection survives movement,
-any other selection is cancelled), and `H J K L` extend a char selection.
-`w`/`W` mark the word/symbol at point — and push it to the search ring, which
-is why `n` finds the next occurrence right afterwards. `e`/`E` and `b`/`B` go
-to the next/previous word or symbol, and after a `w` they *extend* the
-selection instead of replacing it (meow's `(expand . word)` rule). `x` selects
-the line — repeat it or press digits to take more lines. `Q`/`X` go to a line,
-`f`/`t` find/till a character, `o`/`O` select the enclosing block / to its
-end, `m` selects the join region, and `,` `.` `[` `]` select inner/bounds/
-begin/end of a *thing* (`r` round, `s` square, `c` curly, `g` string, `e`
-symbol, `w` window, `b` buffer, `p` paragraph, `l` line, `v` visual line, `d`
-defun, `.` sentence). `;` reverses the selection, `z` pops back to the
-previous one, `v` visits a regexp, `n` continues the search (backward when the
-selection is reversed). Digits expand the selection by N units — little
-painted hints show you where each digit lands (`0` = 10) — or act as a count
-when nothing is selected. `-` is the negative argument.
+### Moving and selecting
 
-**Editing.** `i`/`a` insert at the selection's start/end, `I`/`A` open a line
-above/below, `c` change, `s` kill (cut), `d`/`D` delete forward/backward, `y`
-save (copy), `p` yank (paste), `r` replace the selection with the clipboard,
-`u` undo, `'` repeats the last command — counts and all, so `'` after `2fa`
-finds the second `a` again. `g` cancels, `q` closes the tab, `ESC` always
-brings you back to NORMAL.
+| Key | Does |
+|---|---|
+| `h j k l` | move — a char-selection survives, any other selection is cancelled |
+| `H J K L` | extend a char selection |
+| `w` / `W` | mark the word / symbol at point, and push it to the search ring, so `n` finds the next occurrence |
+| `e` / `E`, `b` / `B` | next / previous word or symbol; after a `w` they extend rather than replace (meow's `(expand . word)` rule) |
+| `x` | select the line — repeat or press digits to take more |
+| `Q` / `X` | go to a line |
+| `f` / `t` | find / till a character |
+| `o` / `O` | select the enclosing block / to its end |
+| `m` | select the join region |
+| `,` `.` `[` `]` | inner / bounds / begin / end of a *thing* |
+| `;` | reverse the selection |
+| `z` | pop back to the previous selection |
+| `v` | visit a regexp |
+| `n` | continue the search — backward when the selection is reversed |
+| `1`-`9`, `0` | expand by N units (`0` = 10), painted hints showing where each digit lands; a count when nothing is selected |
+| `-` | negative argument |
 
-**Grab and beacon.** `G` grabs the selection (you'll see it highlighted).
-While a grab is active, any selection you make inside it — `w`, `x`, `f`… —
-drops a caret on every similar range: change them all, then `ESC`. `R`
-swap-grab exchanges the selection and grab texts; `Y` sync-grab re-stashes.
+| Thing | Char |
+|---|---|
+| round / square / curly | `r` / `s` / `c` |
+| string / symbol | `g` / `e` |
+| window / buffer | `w` / `b` |
+| paragraph / line / visual line | `p` / `l` / `v` |
+| defun / sentence | `d` / `.` |
 
-**Keypad.** `SPC x/c/m/w …` mirror the Emacs/meow keypad of the companion
-`.ideavimrc`/`init.el` (GotoFile, SaveAll, splits, font size…); `SPC b` is
-bookmarks (`m` set, `0-9` numbered slots, `j` jump, `b` recent files). `SPC 1-9` is a
-digit argument, `SPC ?` opens the cheatsheet, `SPC /` describes a key, and
-`SPC c m` / `SPC c M` edit / reload your config.
+### Editing
 
-## ~/.ideameowrc — configuring everything
+| Key | Does |
+|---|---|
+| `i` / `a` | insert at the selection's start / end |
+| `I` / `A` | open a line above / below |
+| `c` | change |
+| `s` | kill (cut) |
+| `d` / `D` | delete forward / backward |
+| `y` | save (copy) |
+| `p` | yank (paste) |
+| `r` | replace the selection with the clipboard |
+| `u` | undo |
+| `'` | repeat the last command, counts and all — `'` after `2fa` finds the second `a` again |
+| `g` | cancel |
+| `q` | close the tab |
+| `ESC` | back to NORMAL |
 
-ideameow reads an `.ideavimrc`-style file from your home directory:
-`~/.ideameowrc` on Linux/macOS, `C:\Users\<you>\.ideameowrc` on Windows.
+### Grab and beacon
 
-**Getting started is two steps:**
+| Key | Does |
+|---|---|
+| `G` | grab the selection (highlighted) |
+| any selection inside a grab | drops a caret on every similar range — change them all, then `ESC` |
+| `R` | swap-grab: exchange the selection and grab texts |
+| `Y` | sync-grab: re-stash |
 
-1. Press `SPC c m` in the IDE — the first press creates `~/.ideameowrc` as a
-   full copy of the bundled defaults and opens it: the complete layout and
-   keypad table, ready to edit. (The bundled defaults also stay underneath
-   and overrides apply entry by entry, so deleting a line just falls back to
-   the default — bind `ignore` to disable a key — and a pared-down file of
-   only your overrides works exactly the same.)
-2. Edit, then reload — either with `SPC c M`, or with the floating
-   **Reload** button that appears in the top-right of the rc file's editor
-   whenever its content differs from the loaded config (comment and
-   formatting edits don't count — the comparison is on the parsed config,
-   IdeaVim-style). Unsaved edits are flushed for you. A balloon tells you
-   how many mappings loaded — and lists any parse problems with their line
-   numbers.
+### Keypad
 
-**Syntax reference**
+| Sequence | Does |
+|---|---|
+| `SPC x/c/m/w …` | the Emacs/meow keypad of the companion `.ideavimrc`/`init.el` — GotoFile, SaveAll, splits, font size… |
+| `SPC b` | bookmarks — `m` set, `0-9` numbered slots, `j` jump, `b` recent files |
+| `SPC 1-9` | digit argument |
+| `SPC ?` | the cheatsheet |
+| `SPC /` | describe a key |
+| `SPC c m` / `SPC c M` | edit / reload your config |
+
+## ~/.ideameowrc
+
+| Item | Value |
+|---|---|
+| Path | `~/.ideameowrc` on Linux/macOS, `C:\Users\<you>\.ideameowrc` on Windows |
+| Format | `.ideavimrc`-style |
+| Precedence | the bundled defaults stay underneath; overrides apply entry by entry, so deleting a line falls back to the default |
+| Disable a key | bind it to `ignore` |
+
+| Step | Do |
+|---|---|
+| 1 | `SPC c m` — the first press creates `~/.ideameowrc` as a full copy of the bundled defaults and opens it |
+| 2 | Edit, then `SPC c M`, or the floating **Reload** button in the rc editor's top-right |
+
+| Reload detail | Value |
+|---|---|
+| When the button appears | whenever the file's content differs from the loaded config — comparison is on the parsed config, IdeaVim-style, so comment and formatting edits do not count |
+| Unsaved edits | flushed for you |
+| Feedback | a balloon with the mapping count, and any parse problems with their line numbers |
+
+### Syntax reference
 
 | Line | Meaning |
 |---|---|
@@ -234,90 +259,80 @@ ideameow reads an `.ideavimrc`-style file from your home directory:
 | `set expand-hint-color=#d05c0a` | the `0`–`9` expand-hint color (theme-split by default) |
 | `set grab-color=#c0f0cd` | the grab / beacon highlight color (theme-split by default) |
 
-Key notation: plain printable characters, plus `<Space>` and `<lt>`. To find
-an action's id, press `SPC i d` — it toggles action-id tracking, ideameow's
-port of IdeaVim's *Track Action IDs*: while it is on, every action you
-perform (menus, shortcuts, keypad entries…) pops a balloon with its id and a
-*Copy Action Id* button; press `SPC i d` again (or the balloon's *Stop
-Tracking*) to turn it off. They're the same ids `.ideavimrc` uses in
-`<action>(...)`.
+| Item | Value |
+|---|---|
+| Key notation | plain printable characters, plus `<Space>` and `<lt>` |
+| Finding an action id | `SPC i d` toggles action-id tracking — ideameow's port of IdeaVim's *Track Action IDs*: every action you perform pops a balloon with its id and a *Copy Action Id* button; `SPC i d` again (or the balloon's *Stop Tracking*) turns it off. Same ids `.ideavimrc` uses in `<action>(...)` |
 
-**Relayouting (Dvorak, Colemak, …).** The layout section of the bundled
-`.ideameowrc` IS the default keymap — an `nmap`/`mmap` line per key, exactly
-like a `meow-normal-define-key` block in Emacs. The command names are meow's
-own (`meow-next-word`, `meow-kill`, …) plus `repeat` and `ignore`, so that
-section doubles as the full command reference. A right-hand side that names a
-known command binds it; `ignore` disables a key; a misspelled `meow-*` name is
-reported as an error; anything else is replayed as keys. A key you don't
-mention keeps its bundled binding.
+### Relayouting (Dvorak, Colemak, …)
 
-**A few semantics worth knowing:**
+The layout section of the bundled `.ideameowrc` IS the default keymap — an
+`nmap`/`mmap` line per key, like a `meow-normal-define-key` block in Emacs.
 
-- Mapped keys work with `'` (repeat), and key-replay mappings are
-  recursion-guarded — a self-referencing map stops at depth 8 with a hint
-  instead of freezing your IDE.
-- `repeat` is itself a bindable command, so even `'` can be reassigned.
-- Reserved: keypad `0-9` (digit argument), `?` (cheatsheet), `/` (describe
-  key); `SPC` is always the keypad key. Only printable keys reach the modal
-  engine — `<CR>`, `<Esc>`, and modifier chords belong on the IDE keymap
-  (that's where the bundled Emacs motion chords live too — see above).
-- Unknown `set` options and `let` lines are ignored, so pasting your whole
-  `.ideavimrc` won't error; only the lines ideameow understands take effect.
+| Right-hand side | Effect |
+|---|---|
+| a known command name | binds it — meow's own names (`meow-next-word`, `meow-kill`, …) plus `repeat` and `ignore` |
+| `ignore` | disables the key |
+| a misspelled `meow-*` name | reported as an error |
+| anything else | replayed as keys |
+| a key you do not mention | keeps its bundled binding |
 
-**which-key.** Pause on any pending prefix — a keypad `SPC` sequence, or the
-`,` `.` `[` `]` thing table — and after `timeoutlen` ms a panel appears along
-the bottom of the editor listing the continuations in columns, exactly like
-Emacs' which-key. It never takes focus and never interrupts: just keep typing
-the sequence; `ESC` cancels through the editor as usual, and deeper prefixes
-in the same chain refresh the panel instantly. Terminal entries show their
-`desc` (falling back to the action id), groups show the group's `desc`
-(falling back to `+more`).
+### Semantics worth knowing
 
-**What the bundled default gives you.** The full meow QWERTY layout, the
-complete keypad table, and a 1:1 port of the companion `.ideavimrc` leader
-scheme: the IntelliJ groups (`SPC ;` settings, `SPC a` tool windows,
-`SPC d/e/f/g/h/i/j/k/l/n/o/p/q/r/s/t/u/v` …) with which-key labels, `S`/`Q`
-as the avy jumps from `init.el` (a native port of avy — no plugin needed:
-type chars, pause, hit a label; `Q` labels visible lines and digits switch to
-a line-number prompt), windmove on `SPC w h/j/k/l` (and `Shift+arrows` on
-the IDE keymap — see above), split resizing on
-`=` `_` `+`, and `SPC .`/`SPC ,` for next/prev change, diff, and error. The
-file's footer lists what deliberately *isn't* ported, with reasons. Two
-divergences to know about: `-` keeps meow's negative-argument (this engine has
-real negative counts, so it doesn't need vim's split-resize workaround), and
-since a later line for the same key wins, `Q` ends up on the avy line jump —
-put `nmap Q meow-goto-line` in your home rc if you want meow's own binding
-back (`X` has it regardless).
+| Fact | Value |
+|---|---|
+| Repeat | mapped keys work with `'`; key-replay mappings are recursion-guarded — a self-referencing map stops at depth 8 with a hint |
+| `repeat` | itself a bindable command, so even `'` can be reassigned |
+| Reserved | keypad `0-9` (digit argument), `?` (cheatsheet), `/` (describe key); `SPC` is always the keypad key |
+| Reach | only printable keys reach the modal engine — `<CR>`, `<Esc>` and modifier chords belong on the IDE keymap |
+| Unknown `set` / `let` lines | ignored, so pasting a whole `.ideavimrc` will not error |
+
+### which-key
+
+| Fact | Value |
+|---|---|
+| Trigger | pause on any pending prefix — a keypad `SPC` sequence, or the `,` `.` `[` `]` thing table — for `timeoutlen` ms |
+| Appearance | a panel along the bottom of the editor listing the continuations in columns, like Emacs' which-key |
+| Focus | never takes it, never interrupts — keep typing the sequence |
+| Deeper prefixes | refresh the panel instantly |
+| Terminal entries | show their `desc`, falling back to the action id |
+| Groups | show the group's `desc`, falling back to `+more` |
+
+### What the bundled default gives you
+
+| Item | Value |
+|---|---|
+| Layout | the full meow QWERTY layout and the complete keypad table |
+| Leader scheme | a 1:1 port of the companion `.ideavimrc` — `SPC ;` settings, `SPC a` tool windows, `SPC d/e/f/g/h/i/j/k/l/n/o/p/q/r/s/t/u/v` …, with which-key labels |
+| `S` / `Q` | the avy jumps from `init.el` — a native port, no plugin needed: type chars, pause, hit a label; `Q` labels visible lines and digits switch to a line-number prompt |
+| Windmove | `SPC w h/j/k/l`, plus `Shift+arrows` on the IDE keymap |
+| Split resizing | `=` `_` `+` |
+| `SPC .` / `SPC ,` | next/prev change, diff, and error |
+| The rc footer | lists what deliberately is not ported, with reasons |
+
+| Divergence | Detail |
+|---|---|
+| `-` | keeps meow's negative argument — this engine has real negative counts, so it does not need vim's split-resize workaround |
+| `Q` | a later line for the same key wins, so `Q` ends up on the avy line jump; `nmap Q meow-goto-line` in your home rc restores meow's binding (`X` has it regardless) |
 
 ## Known deviations from meow
 
-All deliberate, none accidental:
+All deliberate, none accidental.
 
-- `U` (meow-undo-in-selection) falls back to plain undo — IntelliJ's undo
-  stack cannot be scoped to a region.
-- Beacon uses native multiple carets instead of kmacro recording.
-- The avy jumps (`S`/`Q`, `SPC c j`) are a native port of avy 0.5.0's
-  goto-char-timer and goto-line: same keys (`a s d f g h j k l`), same
-  label tree, same timeout flow — scoped to the current editor's visible
-  area instead of all windows, with no DEL/RET editing during input (the
-  0.25 s pause ends it).
-- Block/string/defun "things" use a text scan (same-line strings skipped) plus
-  a PSI heuristic for defun — close to, but not literally, Emacs' syntax-ppss.
-- The kill-ring is the system clipboard (`meow-use-clipboard` behavior);
-  `kill-line` does not append consecutive kills.
-- Read-only editors (file viewers, the diff revision side) stay in NORMAL
-  with modifications gated like meow's `meow--allow-modify-p`: kill / change /
-  backspace / replace are silently inert, delete / yank / open / swap-grab
-  answer "Buffer is read-only". `i`/`a` still switch to INSERT (as in Emacs)
-  but typing is refused by the platform. No *editor* attaches to MOTION by
-  default, but tool-window trees answer to the `mmap` map (`j k h l` are the
-  arrow keys, `q` quits — dired-style; unmapped keys, `Enter`, and speed
-  search stay native); the commit message box gets full meow editing.
+| Deviation | Detail |
+|---|---|
+| `U` (meow-undo-in-selection) | falls back to plain undo — IntelliJ's undo stack cannot be scoped to a region |
+| Beacon | native multiple carets instead of kmacro recording |
+| The avy jumps (`S` / `Q`, `SPC c j`) | a native port of avy 0.5.0's goto-char-timer and goto-line — same keys, same label tree, same timeout flow, but scoped to the current editor's visible area and with no DEL/RET editing during input (the 0.25 s pause ends it) |
+| Block/string/defun "things" | a text scan (same-line strings skipped) plus a PSI heuristic for defun — close to, but not literally, Emacs' syntax-ppss |
+| The kill-ring | the system clipboard (`meow-use-clipboard` behavior); `kill-line` does not append consecutive kills |
+| Read-only editors | stay in NORMAL with modification gated like `meow--allow-modify-p` — kill / change / backspace / replace silently inert; delete / yank / open / swap-grab answer "Buffer is read-only"; `i`/`a` still enter INSERT but typing is refused by the platform |
+| MOTION | no *editor* attaches to it by default; tool-window trees answer to the `mmap` map, and the commit message box gets full meow editing |
 
 ## Hacking on it
 
-The code keeps one rule from meow: commands are data. Every command registers
-under its meow name, and keys only ever resolve through rc bindings.
+Commands are data: every command registers under its meow name, and keys only
+ever resolve through rc bindings.
 
 | Where | What |
 |---|---|
@@ -333,11 +348,11 @@ under its meow name, and keys only ever resolve through rc bindings.
 | `Keypad.kt` / `WhichKey.kt` / `ExpandHints.kt` | the SPC leader, the popup, the digit hints |
 | `MeowTypedHandler` / `MeowEscapeHandler` / `MeowEditorFactoryListener` | the three platform hooks: raw typing, escape, editor attach |
 
-Behavior is pinned by the BDD specs in `src/test` (given/whenKeys/then…) —
-every assertion there was cross-checked against meow's source, so treat a red
-spec as "you changed meow's semantics", not "update the test". Run them with
-`gradle test` (platform fixtures; the first run downloads the IDE, and on WSL
-`/mnt/c` expect several minutes).
+| Item | Value |
+|---|---|
+| Specs | `src/test`, given/whenKeys/then…, every assertion cross-checked against meow's source |
+| A red spec means | "you changed meow's semantics", not "update the test" |
+| Run | `gradle test` — platform fixtures; the first run downloads the IDE, and on WSL `/mnt/c` expect several minutes |
 
 ## License
 
