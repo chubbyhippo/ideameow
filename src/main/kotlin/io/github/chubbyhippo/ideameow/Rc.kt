@@ -79,8 +79,7 @@ object Rc {
     private var loaded = false
 
     @Volatile
-    var config: Config = Config()
-        private set
+    private var config: Config = Config()
 
     @Volatile
     private var defaultsLoaded = false

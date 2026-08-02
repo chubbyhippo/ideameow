@@ -92,7 +92,7 @@ internal object RcReload {
         flushUnsavedRc()
         Rc.load()
         TreeMeow.refresh()
-        val config = Rc.config
+        val config = Rc.config()
         notify(
             "Reloaded ~/${Rc.FILE_NAME}: ${config.normal.size} normal map(s), " +
                 "${config.motion.size} motion map(s), " +
