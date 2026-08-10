@@ -37,6 +37,7 @@ class ChordSpec : MeowSpec() {
     private val altShiftComma = ChordKey.of(KeyEvent.VK_COMMA, InputEvent.ALT_DOWN_MASK or InputEvent.SHIFT_DOWN_MASK)
     private val altShiftOpenBracket =
         ChordKey.of(KeyEvent.VK_OPEN_BRACKET, InputEvent.ALT_DOWN_MASK or InputEvent.SHIFT_DOWN_MASK)
+    private val ctrlS = ChordKey.of(KeyEvent.VK_S, InputEvent.CTRL_DOWN_MASK)
 
     fun `test given the host spelling then it normalizes to the same key as the pressed event`() {
         assertEquals(ChordKey.fromKeyStroke(KeyStroke.getKeyStroke("control F")), ctrlF)
@@ -61,6 +62,12 @@ class ChordSpec : MeowSpec() {
         assertTrue(c.errors.isEmpty())
     }
 
+    fun `test given a cmap line with an action target then it parses into an action chord binding`() {
+        val c = Rc.parse(listOf("cmap control S <action>(Find)"))
+        assertEquals("Find", c.chords[ctrlS]?.action)
+        assertTrue(c.errors.isEmpty())
+    }
+
     fun `test given a cmap with no modifier or a bad keystroke then errors are collected`() {
         val c =
             Rc.parse(
@@ -79,7 +86,8 @@ class ChordSpec : MeowSpec() {
         assertEquals("kill-word", chords[altD]?.command)
         assertEquals("beginning-of-buffer", chords[altShiftComma]?.command)
         assertEquals("backward-paragraph", chords[altShiftOpenBracket]?.command)
-        assertEquals("the whole chord layer is present", 32, chords.size)
+        assertEquals("Find", chords[ctrlS]?.action)
+        assertEquals("the whole chord layer is present", 33, chords.size)
     }
 
     fun `test given a home cmap override then it wins over the bundled default`() {

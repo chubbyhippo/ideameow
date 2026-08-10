@@ -195,6 +195,11 @@ cmap control G meow-cancel-selection
 " restarting whenever the previous command differs).
 cmap control L recenter-top-bottom
 
+" C-s isearch-forward: no incremental-search action exists on the platform, so
+" this reaches for the same Find action the SPC s s / SPC m s s keypad slots
+" use (the closest analog: live highlighting as you type).
+cmap control S <action>(Find)
+
 " stock-Emacs whitespace and line chords. M-^ is meow-join + kill: killing the
 " join selection IS delete-indentation, so it needs no command of its own.
 cmap alt M back-to-indentation
