@@ -16,15 +16,20 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package io.github.chubbyhippo.ideameow
 
+import com.intellij.ide.DataManager
 import com.intellij.ide.IdeEventQueue
+import com.intellij.openapi.actionSystem.CommonDataKeys
 import com.intellij.openapi.application.WriteIntentReadAction
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.editor.EditorFactory
+import com.intellij.openapi.fileEditor.FileEditorManager
 import java.awt.AWTEvent
 import java.awt.Component
 import java.awt.KeyboardFocusManager
 import java.awt.event.KeyEvent
 import javax.swing.SwingUtilities
+
+private const val REACH_ANY_FOCUS_COMMAND = "ace-click"
 
 internal object ChordDispatcher {
     private var swallowNextTyped = false
@@ -62,15 +67,24 @@ internal object ChordDispatcher {
             val binding = bindingFor(event) ?: return@run false
             if (IdeEventQueue.getInstance().isPopupActive) return@run false
             val focus = KeyboardFocusManager.getCurrentKeyboardFocusManager().focusOwner ?: return@run false
-            val editor = chordEditorAt(focus) ?: return@run false
-            val state = Meow.state(editor) ?: return@run false
+            val (editor, state) = resolveTarget(focus, binding) ?: return@run false
             swallowNextTyped = true
             WriteIntentReadAction.compute {
-                Engine.dispatch(editor, state, binding)
+                perform(editor, state, binding, focus)
                 Meow.updateWidgets()
             }
             true
         }
+
+    private fun perform(
+        editor: Editor,
+        state: MeowState,
+        binding: Rc.Binding,
+        focus: Component,
+    ) {
+        if (binding.command == REACH_ANY_FOCUS_COMMAND) routeIfOutsideEditor(editor, state, focus)
+        Engine.dispatch(editor, state, binding)
+    }
 
     internal fun isChord(event: KeyEvent): Boolean =
         event.keyCode != KeyEvent.VK_UNDEFINED && ChordKey.of(event.keyCode, event.modifiersEx).hasNonShiftModifier()
@@ -84,9 +98,29 @@ internal object ChordDispatcher {
         state: MeowState,
         event: KeyEvent,
     ): Boolean = state.mode.takesChords && bindingFor(event) != null
+}
 
-    private fun chordEditorAt(focus: Component): Editor? =
-        EditorFactory.getInstance().allEditors.firstOrNull {
-            Meow.state(it)?.mode?.takesChords == true && SwingUtilities.isDescendingFrom(focus, it.contentComponent)
-        }
+internal fun resolveTarget(
+    focus: Component,
+    binding: Rc.Binding,
+): Pair<Editor, MeowState>? =
+    run {
+        chordEditorAt(focus)?.let { editor -> return@run Meow.state(editor)?.let { editor to it } }
+        if (binding.command != REACH_ANY_FOCUS_COMMAND || focusInAnyEditor(focus)) return@run null
+        val editor = anchorEditor(focus) ?: return@run null
+        Meow.state(editor)?.let { editor to it }
+    }
+
+internal fun focusInAnyEditor(focus: Component): Boolean =
+    EditorFactory.getInstance().allEditors.any { SwingUtilities.isDescendingFrom(focus, it.contentComponent) }
+
+private fun chordEditorAt(focus: Component): Editor? =
+    EditorFactory.getInstance().allEditors.firstOrNull {
+        Meow.state(it)?.mode?.takesChords == true && SwingUtilities.isDescendingFrom(focus, it.contentComponent)
+    }
+
+private fun anchorEditor(focus: Component): Editor? {
+    val context = DataManager.getInstance().getDataContext(focus)
+    val project = CommonDataKeys.PROJECT.getData(context) ?: return null
+    return FileEditorManager.getInstance(project).selectedTextEditor
 }

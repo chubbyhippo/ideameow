@@ -19,6 +19,7 @@ package io.github.chubbyhippo.ideameow
 import java.awt.event.InputEvent
 import java.awt.event.KeyEvent
 import javax.swing.JPanel
+import javax.swing.JTree
 import javax.swing.KeyStroke
 
 class ChordSpec : MeowSpec() {
@@ -40,6 +41,7 @@ class ChordSpec : MeowSpec() {
     private val ctrlS = ChordKey.of(KeyEvent.VK_S, InputEvent.CTRL_DOWN_MASK)
     private val ctrlR = ChordKey.of(KeyEvent.VK_R, InputEvent.CTRL_DOWN_MASK)
     private val altY = ChordKey.of(KeyEvent.VK_Y, InputEvent.ALT_DOWN_MASK)
+    private val ctrlSemicolon = ChordKey.of(KeyEvent.VK_SEMICOLON, InputEvent.CTRL_DOWN_MASK)
 
     fun `test given the host spelling then it normalizes to the same key as the pressed event`() {
         assertEquals(ChordKey.fromKeyStroke(KeyStroke.getKeyStroke("control F")), ctrlF)
@@ -95,7 +97,8 @@ class ChordSpec : MeowSpec() {
         assertEquals("beginning-of-buffer", chords[altShiftComma]?.command)
         assertEquals("backward-paragraph", chords[altShiftOpenBracket]?.command)
         assertEquals("Find", chords[ctrlS]?.action)
-        assertEquals("the whole chord layer is present", 35, chords.size)
+        assertEquals("ace-click", chords[ctrlSemicolon]?.command)
+        assertEquals("the whole chord layer is present", 36, chords.size)
     }
 
     fun `test given a home cmap override then it wins over the bundled default`() {
@@ -183,6 +186,34 @@ class ChordSpec : MeowSpec() {
         Engine.dispatch(ed, state, RcLookups.chords()[ctrlF]!!)
         thenCaretAt(1)
         thenNoSelection()
+    }
+
+    fun `test given focus inside an editor's content component then it counts as any-editor focus`() {
+        given("chord focus inside", "<caret>hello")
+        assertTrue(focusInAnyEditor(ed.contentComponent))
+    }
+
+    fun `test given focus outside every editor then it does not count as any-editor focus`() {
+        given("chord focus outside", "<caret>hello")
+        assertFalse(focusInAnyEditor(JTree()))
+    }
+
+    fun `test given a NORMAL editor focus then resolveTarget resolves it for a plain chord`() {
+        given("chord resolve inside normal", "<caret>hello")
+        val target = resolveTarget(ed.contentComponent, Rc.Binding(command = "forward-char"))
+        assertSame(ed, target?.first)
+        assertSame(state, target?.second)
+    }
+
+    fun `test given focus outside every editor then resolveTarget rejects a plain chord`() {
+        given("chord resolve outside plain", "<caret>hello")
+        assertNull(resolveTarget(JTree(), Rc.Binding(command = "forward-char")))
+    }
+
+    fun `test given focus inside an editor in INSERT then resolveTarget rejects ace-click too`() {
+        given("chord resolve insert ace-click", "<caret>hello")
+        state.mode = MeowMode.INSERT
+        assertNull(resolveTarget(ed.contentComponent, Rc.Binding(command = "ace-click")))
     }
 
     fun `test given the bundled defaults then SPC m exposes the M- motion and edit layer`() {

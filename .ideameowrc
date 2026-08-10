@@ -149,7 +149,11 @@ mmap q <action>(HideActiveWindow)
 " `ignore` is handed back to the IDE — e.g. `cmap control F ignore` restores
 " Find. Modifier
 " chords never reach the modal engine as typing, so they live here, not on the
-" nmap layout; ESC and un-mapped chords keep their native IDE meaning.
+" nmap layout; ESC and un-mapped chords keep their native IDE meaning. ONE
+" exception to "fires in NORMAL/MOTION only": a chord bound to `ace-click`
+" (below) is also reachable when the keyboard focus sits outside any editor
+" entirely (checkbox trees, tool windows, dialogs) — everywhere else, "never
+" in INSERT" still means the focus must be a meow editor in NORMAL or MOTION.
 " ============================================================================
 
 " point motions (C-f C-b C-n C-p C-a C-e, M-f M-b M-a M-e)
@@ -210,6 +214,14 @@ cmap control R <action>(FindPrevious)
 " bundled Emacs keymap's choice for this exact binding.
 cmap alt Y <action>(PasteMultiple)
 
+" C-; ace-click: not a stock-Emacs chord (no init.el analog — nearest kin is
+" ace-link), ideameow-only, free on $default. Unlike every other chord above,
+" this one is allowed to fire even when the keyboard focus sits OUTSIDE any
+" editor — checkbox trees included, where a lone SPC toggles the row's own
+" checkbox instead of reaching the SPC SPC leader. SPC SPC still works from
+" inside an editor; C-; is the one way to reach ace-click from anywhere else.
+cmap control SEMICOLON ace-click
+
 " stock-Emacs whitespace and line chords. M-^ is meow-join + kill: killing the
 " join selection IS delete-indentation, so it needs no command of its own.
 cmap alt M back-to-indentation
@@ -233,7 +245,10 @@ cmap alt shift 6 ms
 " buttons, toolbar icons, tab labels, tree and list rows, menus, fields.
 " Picking a menu (or a capital label, which right-clicks the target and opens
 " its context menu) labels whatever pops open, so a whole menu path is
-" keyboard-walkable without tapping SPC SPC again.
+" keyboard-walkable without tapping SPC SPC again. The `cmap control
+" SEMICOLON ace-click` chord above starts the same session from ANY focus,
+" checkbox trees included, where SPC SPC can't be reached (a lone SPC toggles
+" the row's own checkbox instead of reaching the SPC leader there).
 desc <leader><Space> ace-click
 map <leader><Space> ace-click
 

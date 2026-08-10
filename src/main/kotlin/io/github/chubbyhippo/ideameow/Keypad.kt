@@ -164,11 +164,14 @@ object Keypad {
           BEACON   grab a region (G), then select w/x/f... inside it:
                    a caret lands on every match — edit them all, ESC to finish
 
-        EMACS CHORDS (IDE keymap, not rc-configurable — Settings > Keymap)
+        EMACS CHORDS (cmap/cnoremap in ~/.ideameowrc — every one rebindable)
           C-f/b/n/p  char/line move            C-a/e      beginning/end of line
           M-f/b      word move                 M-a/e      backward/forward sentence
                      no selection: just moves; with one active: extends it
                      (point motion over an active Emacs mark) — same rule ; reverses
+          C-;        ace-click — reaches SPC SPC's session from ANY focus,
+                     checkbox trees included (the one chord that also fires
+                     outside a NORMAL/MOTION editor focus)
 
         KEYPAD (SPC — or Alt+; from ANY state, INSERT included; returns there)
           SPC b bookmarks/buffers   SPC x file/buffer/window   SPC c commands   SPC m meta
@@ -176,6 +179,10 @@ object Keypad {
           SPC c m edit ~/.ideameowrc   SPC c M reload it
           SPC i d track action ids — every performed action shows the id
                   to use in <action>(...) mappings
+          SPC SPC   ace-click (label every clickable UI element); C-; above
+                  reaches the same session from checkbox trees and other
+                  non-editor focus, where a lone SPC toggles the row's own
+                  checkbox instead of reaching this leader
           REPEAT  some entries start a run (Emacs repeat-mode): after
                   SPC . e keep tapping . / , to walk errors, after SPC w i
                   keep tapping i (or = - o u 0) to keep zooming — any other

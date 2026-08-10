@@ -157,4 +157,23 @@ class SpaceLeaderSpec : MeowSpec() {
         SpaceLeader.reset()
         assertNull(SpaceLeader.surfaceFor(ed))
     }
+
+    fun `test given a focus outside any editor then routeIfOutsideEditor arms the surface`() {
+        given("space leader route outside", "text")
+        val tree = JTree()
+        routeIfOutsideEditor(ed, state, tree)
+        assertSame(tree, SpaceLeader.surfaceFor(ed))
+    }
+
+    fun `test given a focus inside the editor then routeIfOutsideEditor arms nothing`() {
+        given("space leader route inside", "text")
+        routeIfOutsideEditor(ed, state, ed.contentComponent)
+        assertNull(SpaceLeader.surfaceFor(ed))
+    }
+
+    fun `test given a null focus then routeIfOutsideEditor arms nothing`() {
+        given("space leader route null", "text")
+        routeIfOutsideEditor(ed, state, null)
+        assertNull(SpaceLeader.surfaceFor(ed))
+    }
 }

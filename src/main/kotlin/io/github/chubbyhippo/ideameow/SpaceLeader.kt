@@ -200,6 +200,14 @@ private fun inAnyEditor(focus: Component): Boolean =
         SwingUtilities.isDescendingFrom(focus, it.contentComponent)
     }
 
+internal fun routeIfOutsideEditor(
+    editor: Editor,
+    state: MeowState,
+    focus: Component?,
+) {
+    if (focus != null && !inAnyEditor(focus)) SpaceLeader.routeTo(editor, state, focus)
+}
+
 private fun windowChainContains(
     from: Window?,
     target: Window?,
