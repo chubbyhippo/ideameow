@@ -42,6 +42,7 @@ class ChordSpec : MeowSpec() {
     private val ctrlR = ChordKey.of(KeyEvent.VK_R, InputEvent.CTRL_DOWN_MASK)
     private val altY = ChordKey.of(KeyEvent.VK_Y, InputEvent.ALT_DOWN_MASK)
     private val ctrlSemicolon = ChordKey.of(KeyEvent.VK_SEMICOLON, InputEvent.CTRL_DOWN_MASK)
+    private val altSemicolon = ChordKey.of(KeyEvent.VK_SEMICOLON, InputEvent.ALT_DOWN_MASK)
 
     fun `test given the host spelling then it normalizes to the same key as the pressed event`() {
         assertEquals(ChordKey.fromKeyStroke(KeyStroke.getKeyStroke("control F")), ctrlF)
@@ -98,7 +99,8 @@ class ChordSpec : MeowSpec() {
         assertEquals("backward-paragraph", chords[altShiftOpenBracket]?.command)
         assertEquals("Find", chords[ctrlS]?.action)
         assertEquals("ace-click", chords[ctrlSemicolon]?.command)
-        assertEquals("the whole chord layer is present", 36, chords.size)
+        assertEquals("ace-window", chords[altSemicolon]?.command)
+        assertEquals("the whole chord layer is present", 37, chords.size)
     }
 
     fun `test given a home cmap override then it wins over the bundled default`() {

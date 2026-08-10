@@ -222,6 +222,14 @@ cmap alt Y <action>(PasteMultiple)
 " inside an editor; C-; is the one way to reach ace-click from anywhere else.
 cmap control SEMICOLON ace-click
 
+" M-; ace-window: alt SEMICOLON is ALSO the plugin.xml `Ideameow.Keypad`
+" action's $default shortcut (the M-SPC-from-INSERT analog) — this cmap only
+" shadows it in NORMAL/MOTION, where SPC already opens the keypad, so INSERT's
+" alt+; round-trip is untouched (the ChordDispatcher never claims a chord
+" outside NORMAL/MOTION, so the press falls through to the IDE action there).
+" Same reasoning already declined M-; comment-dwim for this key.
+cmap alt SEMICOLON ace-window
+
 " stock-Emacs whitespace and line chords. M-^ is meow-join + kill: killing the
 " join selection IS delete-indentation, so it needs no command of its own.
 cmap alt M back-to-indentation
