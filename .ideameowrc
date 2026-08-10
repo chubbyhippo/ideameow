@@ -197,8 +197,18 @@ cmap control L recenter-top-bottom
 
 " C-s isearch-forward: no incremental-search action exists on the platform, so
 " this reaches for the same Find action the SPC s s / SPC m s s keypad slots
-" use (the closest analog: live highlighting as you type).
+" use (the closest analog: live highlighting as you type). C-r isearch-backward
+" reaches for FindPrevious, the same pairing IntelliJ's own bundled Emacs
+" keymap chooses (control S -> Find, control R -> FindPrevious) — verified
+" against the platform's shipped keymaps/Emacs.xml, not guessed.
 cmap control S <action>(Find)
+cmap control R <action>(FindPrevious)
+
+" M-y yank-pop: no kill-ring-cycling command exists, so this reaches for the
+" same PasteMultiple action the SPC m y keypad slot uses (clipboard history is
+" the closest analog) — alt Y is free on $default and is IntelliJ's own
+" bundled Emacs keymap's choice for this exact binding.
+cmap alt Y <action>(PasteMultiple)
 
 " stock-Emacs whitespace and line chords. M-^ is meow-join + kill: killing the
 " join selection IS delete-indentation, so it needs no command of its own.
