@@ -42,6 +42,12 @@ tasks.processResources {
     from(layout.projectDirectory.file(".ideameowrc"))
 }
 
+tasks.test {
+    minHeapSize = "512m"
+    maxHeapSize = "3g"
+    forkEvery = 100
+}
+
 ktlint {
     version = "1.8.0"
 }
