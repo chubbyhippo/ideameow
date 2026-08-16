@@ -43,9 +43,21 @@ tasks.processResources {
 }
 
 tasks.test {
-    minHeapSize = "512m"
-    maxHeapSize = "3g"
-    forkEvery = 100
+    // Pre-allocate heap to avoid dynamic resizing and GC pause overhead during IDE bootstrap
+    minHeapSize = "2g"
+    maxHeapSize = "2g"
+    jvmArgs(
+        // High-throughput GC for batch test workloads
+        "-XX:+UseParallelGC",
+        // Pre-touch memory pages upfront to eliminate runtime page faults
+        "-XX:+AlwaysPreTouch",
+        // Run in headless mode to prevent GUI window initialization during tests
+        "-Djava.awt.headless=true",
+        // Disable unnecessary platform diagnostics and subsystems
+        "-Didea.is.internal=false",
+        "-Didea.auto.welcome=false",
+        "-Dsun.awt.enableExtraMouseButtons=false",
+    )
 }
 
 ktlint {
