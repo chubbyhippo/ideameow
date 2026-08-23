@@ -247,4 +247,22 @@ class RepeatSpec : MeowSpec() {
         thenText("a")
         thenMode(MeowMode.NORMAL)
     }
+
+    fun `test given the bundled rc then SPC e e expands region and comma contracts and dot expands more`() {
+        val d = Rc.defaults().keypad
+        assertEquals("EditorSelectWord", d["ee"]?.action)
+        val repeatGroup = Rc.defaults().repeat["expand"]!!
+        assertEquals("EditorSelectWord", repeatGroup['.']!!.action)
+        assertEquals("EditorUnSelectWord", repeatGroup[',']!!.action)
+
+        given("nested structure", "foo(\"<caret>bar\")")
+        whenKeys(" ee")
+        thenSelection("bar")
+        assertEquals(setOf('.', ','), Engine.repeatMap?.keys)
+        whenKeys(".")
+        thenSelection("\"bar\"")
+        whenKeys(",")
+        thenSelection("bar")
+        thenMode(MeowMode.NORMAL)
+    }
 }
