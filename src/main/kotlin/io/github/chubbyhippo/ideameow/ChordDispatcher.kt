@@ -83,7 +83,7 @@ internal object ChordDispatcher {
         focus: Component,
     ) {
         if (binding.command == REACH_ANY_FOCUS_COMMAND) routeIfOutsideEditor(editor, state, focus)
-        Engine.dispatch(editor, state, binding)
+        Engine.runBinding(editor, state, binding)
     }
 
     internal fun isChord(event: KeyEvent): Boolean =

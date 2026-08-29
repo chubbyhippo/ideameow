@@ -200,6 +200,17 @@ class ChordSpec : MeowSpec() {
         thenNoSelection()
     }
 
+    fun `test given a chord targeting expand region then running it arms repeat and comma and dot repeat in normal mode`() {
+        given("nested structure", "foo(\"<caret>bar\")")
+        Engine.runBinding(ed, state, RcLookups.chords()[altR]!!)
+        thenSelection("bar")
+        assertEquals(setOf('.', ','), Engine.repeatMap?.keys)
+        whenKeys(".")
+        thenSelection("\"bar\"")
+        whenKeys(",")
+        thenSelection("bar")
+    }
+
     fun `test given focus inside an editor's content component then it counts as any-editor focus`() {
         given("chord focus inside", "<caret>hello")
         assertTrue(focusInAnyEditor(ed.contentComponent))

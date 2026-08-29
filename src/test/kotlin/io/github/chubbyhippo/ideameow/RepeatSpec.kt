@@ -265,4 +265,21 @@ class RepeatSpec : MeowSpec() {
         thenSelection("bar")
         thenMode(MeowMode.NORMAL)
     }
+
+    fun `test given alt r expands region then repeat group arms and comma contracts and dot expands in normal mode`() {
+        val chords = RcLookups.chords()
+        val altR = ChordKey.of(java.awt.event.KeyEvent.VK_R, java.awt.event.InputEvent.ALT_DOWN_MASK)
+        val altRBinding = chords[altR]!!
+        assertEquals("EditorSelectWord", altRBinding.action)
+
+        given("nested structure", "foo(\"<caret>bar\")")
+        Engine.runBinding(ed, state, altRBinding)
+        thenSelection("bar")
+        assertEquals(setOf('.', ','), Engine.repeatMap?.keys)
+        whenKeys(".")
+        thenSelection("\"bar\"")
+        whenKeys(",")
+        thenSelection("bar")
+        thenMode(MeowMode.NORMAL)
+    }
 }
