@@ -43,6 +43,8 @@ class ChordSpec : MeowSpec() {
     private val altY = ChordKey.of(KeyEvent.VK_Y, InputEvent.ALT_DOWN_MASK)
     private val ctrlSemicolon = ChordKey.of(KeyEvent.VK_SEMICOLON, InputEvent.CTRL_DOWN_MASK)
     private val altSemicolon = ChordKey.of(KeyEvent.VK_SEMICOLON, InputEvent.ALT_DOWN_MASK)
+    private val altR = ChordKey.of(KeyEvent.VK_R, InputEvent.ALT_DOWN_MASK)
+    private val altShiftR = ChordKey.of(KeyEvent.VK_R, InputEvent.ALT_DOWN_MASK or InputEvent.SHIFT_DOWN_MASK)
 
     fun `test given the host spelling then it normalizes to the same key as the pressed event`() {
         assertEquals(ChordKey.fromKeyStroke(KeyStroke.getKeyStroke("control F")), ctrlF)
@@ -79,6 +81,12 @@ class ChordSpec : MeowSpec() {
         assertEquals("PasteMultiple", chords[altY]?.action)
     }
 
+    fun `test given the bundled defaults then M-r and M-R resolve to expand and contract region action ids`() {
+        val chords = RcLookups.chords()
+        assertEquals("EditorSelectWord", chords[altR]?.action)
+        assertEquals("EditorUnSelectWord", chords[altShiftR]?.action)
+    }
+
     fun `test given a cmap with no modifier or a bad keystroke then errors are collected`() {
         val c =
             Rc.parse(
@@ -100,7 +108,7 @@ class ChordSpec : MeowSpec() {
         assertEquals("Find", chords[ctrlS]?.action)
         assertEquals("ace-click", chords[ctrlSemicolon]?.command)
         assertEquals("ace-window", chords[altSemicolon]?.command)
-        assertEquals("the whole chord layer is present", 37, chords.size)
+        assertEquals("the whole chord layer is present", 39, chords.size)
     }
 
     fun `test given a home cmap override then it wins over the bundled default`() {
@@ -171,6 +179,8 @@ class ChordSpec : MeowSpec() {
             "M->" to "alt shift PERIOD",
             "M-}" to "alt shift CLOSE_BRACKET",
             "C-o" to "control O",
+            "M-r" to "alt R",
+            "M-R" to "alt shift R",
         ).forEach { (emacs, intellij) ->
             val c = Rc.parse(listOf("cmap $emacs forward-char", "cmap $intellij forward-char"))
             assertTrue("$emacs failed to parse", c.errors.isEmpty())

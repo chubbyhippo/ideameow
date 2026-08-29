@@ -214,6 +214,9 @@ cmap control R <action>(FindPrevious)
 " bundled Emacs keymap's choice for this exact binding.
 cmap alt Y <action>(PasteMultiple)
 
+cmap alt R <action>(EditorSelectWord)
+cmap alt shift R <action>(EditorUnSelectWord)
+
 " C-; ace-click: not a stock-Emacs chord (no init.el analog — nearest kin is
 " ace-link), ideameow-only, free on $default. Unlike every other chord above,
 " this one is allowed to fire even when the keyboard focus sits OUTSIDE any
