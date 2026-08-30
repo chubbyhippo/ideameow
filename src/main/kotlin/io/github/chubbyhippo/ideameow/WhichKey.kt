@@ -44,7 +44,7 @@ object WhichKey {
 
     private val THINGS =
         listOf(
-            "r" to "round ( )",
+            "r, ()" to "round ( )",
             "s" to "square [ ]",
             "c" to "curly { }",
             "t" to "tag < >",

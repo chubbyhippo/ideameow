@@ -25,6 +25,40 @@ class ThingsSpec : MeowSpec() {
         thenCaretAtSelectionEnd()
     }
 
+    fun `test given caret inside parens when comma or dot with parens then performs same as r`() {
+        given("round pair", "foo (b<caret>ar baz) qux")
+        whenKeys(",(")
+        thenSelection("bar baz")
+        thenSelType(SelType.TRANSIENT)
+        thenCaretAtSelectionEnd()
+
+        given("round pair", "foo (b<caret>ar baz) qux")
+        whenKeys(",)")
+        thenSelection("bar baz")
+        thenSelType(SelType.TRANSIENT)
+        thenCaretAtSelectionEnd()
+
+        given("round pair", "foo (b<caret>ar baz) qux")
+        whenKeys(".(")
+        thenSelection("(bar baz)")
+        thenCaretAtSelectionStart()
+
+        given("round pair", "foo (b<caret>ar baz) qux")
+        whenKeys(".)")
+        thenSelection("(bar baz)")
+        thenCaretAtSelectionStart()
+
+        given("round pair", "foo (b<caret>ar baz) qux")
+        whenKeys("[(")
+        thenSelection("b")
+        thenCaretAtSelectionStart()
+
+        given("round pair", "foo (b<caret>ar baz) qux")
+        whenKeys("])")
+        thenSelection("ar baz")
+        thenCaretAtSelectionEnd()
+    }
+
     fun `test given caret inside parens when dot r then bounds include the parens and select backward`() {
         given("round pair", "foo (b<caret>ar baz) qux")
         whenKeys(".r")

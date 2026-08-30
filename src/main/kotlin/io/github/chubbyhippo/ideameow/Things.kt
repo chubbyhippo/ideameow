@@ -45,7 +45,7 @@ private fun compute(
 ): Things.Bounds? {
     val text = editor.document.charsSequence
     return when (char) {
-        'r' -> pair(text, offset, '(', ')', inner)
+        'r', '(', ')' -> pair(text, offset, '(', ')', inner)
         's' -> pair(text, offset, '[', ']', inner)
         'c' -> pair(text, offset, '{', '}', inner)
         't' -> tag(text, offset, inner)
