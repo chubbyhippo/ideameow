@@ -46,7 +46,7 @@ object WhichKey {
         listOf(
             "r, ()" to "round ( )",
             "s, []" to "square [ ]",
-            "c" to "curly { }",
+            "c, {}" to "curly { }",
             "t" to "tag < >",
             "g" to "string",
             "e" to "symbol",
