@@ -224,6 +224,50 @@ class ThingsSpec : MeowSpec() {
         thenSelection("'hi there'")
     }
 
+    fun `test given single or double quotes when comma or dot with quote chars then performs same as g`() {
+        given("single quotes", "say 'hi th<caret>ere' now")
+        whenKeys(",'")
+        thenSelection("hi there")
+        thenSelType(SelType.TRANSIENT)
+        thenCaretAtSelectionEnd()
+
+        given("single quotes", "say 'hi th<caret>ere' now")
+        whenKeys(".'")
+        thenSelection("'hi there'")
+        thenCaretAtSelectionStart()
+
+        given("single quotes", "say 'hi th<caret>ere' now")
+        whenKeys("['")
+        thenSelection("hi th")
+        thenCaretAtSelectionStart()
+
+        given("single quotes", "say 'hi th<caret>ere' now")
+        whenKeys("]'")
+        thenSelection("ere")
+        thenCaretAtSelectionEnd()
+
+        given("double quotes", "say \"hi th<caret>ere\" now")
+        whenKeys(",\"")
+        thenSelection("hi there")
+        thenSelType(SelType.TRANSIENT)
+        thenCaretAtSelectionEnd()
+
+        given("double quotes", "say \"hi th<caret>ere\" now")
+        whenKeys(".\"")
+        thenSelection("\"hi there\"")
+        thenCaretAtSelectionStart()
+
+        given("double quotes", "say \"hi th<caret>ere\" now")
+        whenKeys("[\"")
+        thenSelection("hi th")
+        thenCaretAtSelectionStart()
+
+        given("double quotes", "say \"hi th<caret>ere\" now")
+        whenKeys("]\"")
+        thenSelection("ere")
+        thenCaretAtSelectionEnd()
+    }
+
     fun `test given a backtick string when comma g then inner selects the run and dot g keeps the backticks`() {
         given("backticks", "say `hi th<caret>ere` now")
         whenKeys(",g")

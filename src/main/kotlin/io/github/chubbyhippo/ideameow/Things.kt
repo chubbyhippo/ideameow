@@ -49,7 +49,7 @@ private fun compute(
         's', '[', ']' -> pair(text, offset, '[', ']', inner)
         'c', '{', '}' -> pair(text, offset, '{', '}', inner)
         't' -> tag(text, offset, inner)
-        'g' -> string(text, offset, inner)
+        'g', '\'', '"' -> string(text, offset, inner)
         'e' -> symbol(text, offset)
         'w' -> window(editor)
         'b' -> Things.Bounds(0, text.length)
