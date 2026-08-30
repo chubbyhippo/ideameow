@@ -48,6 +48,64 @@ class ThingsSpec : MeowSpec() {
         thenSelection("{b c}")
     }
 
+    fun `test given tag thing when comma t then selects between angle brackets and dot t selects the whole tag`() {
+        given("tag", "foo <tag>con<caret>tent</tag> bar")
+        whenKeys(",t")
+        thenSelection("content")
+        thenSelType(SelType.TRANSIENT)
+        thenCaretAtSelectionEnd()
+
+        whenKeys(".t")
+        thenSelection("<tag>content</tag>")
+        thenCaretAtSelectionStart()
+    }
+
+    fun `test given nested tags when comma t then innermost tag is selected`() {
+        given("nested tags", "<div><span>he<caret>llo</span></div>")
+        whenKeys(",t")
+        thenSelection("hello")
+        whenKeys(".t")
+        thenSelection("<span>hello</span>")
+    }
+
+    fun `test given tag with attributes when comma t and dot t then tag is properly selected`() {
+        given("tag with attributes", "<tag class=\"foo\" attr='bar'>val<caret>ue</tag>")
+        whenKeys(",t")
+        thenSelection("value")
+        whenKeys(".t")
+        thenSelection("<tag class=\"foo\" attr='bar'>value</tag>")
+    }
+
+    fun `test given tag with attribute containing angle bracket when comma t then inner is selected`() {
+        given("tag with angle in attribute", "<tag attr=\"a > b\">inn<caret>er</tag>")
+        whenKeys(",t")
+        thenSelection("inner")
+        whenKeys(".t")
+        thenSelection("<tag attr=\"a > b\">inner</tag>")
+    }
+
+    fun `test given caret on opening or closing tag when comma t then inner is selected`() {
+        given("caret on open tag", "<<caret>div>hello</div>")
+        whenKeys(",t")
+        thenSelection("hello")
+
+        given("caret on close tag", "<div>hello</di<caret>v>")
+        whenKeys(",t")
+        thenSelection("hello")
+    }
+
+    fun `test given open and close bracket t then selects to start and end of tag`() {
+        given("tag", "foo <tag>con<caret>tent</tag> bar")
+        whenKeys("[t")
+        thenSelection("con")
+        thenCaretAtSelectionStart()
+
+        given("tag", "foo <tag>con<caret>tent</tag> bar")
+        whenKeys("]t")
+        thenSelection("tent")
+        thenCaretAtSelectionEnd()
+    }
+
     fun `test given a double quoted string when comma g then the quoted run is selected`() {
         given("string", "say \"hi th<caret>ere\" now")
         whenKeys(",g")

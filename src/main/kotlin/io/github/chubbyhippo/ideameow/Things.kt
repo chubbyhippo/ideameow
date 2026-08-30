@@ -48,6 +48,7 @@ private fun compute(
         'r' -> pair(text, offset, '(', ')', inner)
         's' -> pair(text, offset, '[', ']', inner)
         'c' -> pair(text, offset, '{', '}', inner)
+        't' -> tag(text, offset, inner)
         'g' -> string(text, offset, inner)
         'e' -> symbol(text, offset)
         'w' -> window(editor)
