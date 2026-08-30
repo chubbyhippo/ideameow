@@ -150,6 +150,61 @@ class ThingsSpec : MeowSpec() {
         thenCaretAtSelectionEnd()
     }
 
+    fun `test given angle pair when comma dot or brackets with a or angle brackets then selects inner bounds start end`() {
+        given("angle pair", "foo <b<caret>ar baz> qux")
+        whenKeys(",a")
+        thenSelection("bar baz")
+        thenSelType(SelType.TRANSIENT)
+        thenCaretAtSelectionEnd()
+
+        given("angle pair", "foo <b<caret>ar baz> qux")
+        whenKeys(".a")
+        thenSelection("<bar baz>")
+        thenCaretAtSelectionStart()
+
+        given("angle pair", "foo <b<caret>ar baz> qux")
+        whenKeys(",<")
+        thenSelection("bar baz")
+        thenSelType(SelType.TRANSIENT)
+        thenCaretAtSelectionEnd()
+
+        given("angle pair", "foo <b<caret>ar baz> qux")
+        whenKeys(",>")
+        thenSelection("bar baz")
+        thenSelType(SelType.TRANSIENT)
+        thenCaretAtSelectionEnd()
+
+        given("angle pair", "foo <b<caret>ar baz> qux")
+        whenKeys(".<")
+        thenSelection("<bar baz>")
+        thenCaretAtSelectionStart()
+
+        given("angle pair", "foo <b<caret>ar baz> qux")
+        whenKeys(".>")
+        thenSelection("<bar baz>")
+        thenCaretAtSelectionStart()
+
+        given("angle pair", "foo <b<caret>ar baz> qux")
+        whenKeys("[a")
+        thenSelection("b")
+        thenCaretAtSelectionStart()
+
+        given("angle pair", "foo <b<caret>ar baz> qux")
+        whenKeys("]a")
+        thenSelection("ar baz")
+        thenCaretAtSelectionEnd()
+
+        given("angle pair", "foo <b<caret>ar baz> qux")
+        whenKeys("[<")
+        thenSelection("b")
+        thenCaretAtSelectionStart()
+
+        given("angle pair", "foo <b<caret>ar baz> qux")
+        whenKeys("]>")
+        thenSelection("ar baz")
+        thenCaretAtSelectionEnd()
+    }
+
     fun `test given tag thing when comma t then selects between angle brackets and dot t selects the whole tag`() {
         given("tag", "foo <tag>con<caret>tent</tag> bar")
         whenKeys(",t")

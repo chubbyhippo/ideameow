@@ -174,7 +174,7 @@ gradle buildPlugin          # or: gradle runIde  (sandbox IDE for a test drive)
 
 | Thing | Char |
 |---|---|
-| round / square / curly / tag | `r` (or `(` / `)`) / `s` (or `[` / `]`) / `c` (or `{` / `}`) / `t` |
+| round / square / curly / angle / tag | `r` (or `(` / `)`) / `s` (or `[` / `]`) / `c` (or `{` / `}`) / `a` (or `<` / `>`) / `t` |
 | string / slash / question | `g` (or `'` / `"`) / `/` / `?` |
 | symbol / window / buffer | `e` / `w` / `b` |
 | paragraph / line / visual line | `p` / `l` / `v` |
