@@ -82,6 +82,40 @@ class ThingsSpec : MeowSpec() {
         thenSelection("{b c}")
     }
 
+    fun `test given caret inside square brackets when comma or dot with square brackets then performs same as s`() {
+        given("square pair", "foo [b<caret>ar baz] qux")
+        whenKeys(",[")
+        thenSelection("bar baz")
+        thenSelType(SelType.TRANSIENT)
+        thenCaretAtSelectionEnd()
+
+        given("square pair", "foo [b<caret>ar baz] qux")
+        whenKeys(",]")
+        thenSelection("bar baz")
+        thenSelType(SelType.TRANSIENT)
+        thenCaretAtSelectionEnd()
+
+        given("square pair", "foo [b<caret>ar baz] qux")
+        whenKeys(".[")
+        thenSelection("[bar baz]")
+        thenCaretAtSelectionStart()
+
+        given("square pair", "foo [b<caret>ar baz] qux")
+        whenKeys(".]")
+        thenSelection("[bar baz]")
+        thenCaretAtSelectionStart()
+
+        given("square pair", "foo [b<caret>ar baz] qux")
+        whenKeys("[[")
+        thenSelection("b")
+        thenCaretAtSelectionStart()
+
+        given("square pair", "foo [b<caret>ar baz] qux")
+        whenKeys("]]")
+        thenSelection("ar baz")
+        thenCaretAtSelectionEnd()
+    }
+
     fun `test given tag thing when comma t then selects between angle brackets and dot t selects the whole tag`() {
         given("tag", "foo <tag>con<caret>tent</tag> bar")
         whenKeys(",t")

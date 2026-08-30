@@ -46,7 +46,7 @@ private fun compute(
     val text = editor.document.charsSequence
     return when (char) {
         'r', '(', ')' -> pair(text, offset, '(', ')', inner)
-        's' -> pair(text, offset, '[', ']', inner)
+        's', '[', ']' -> pair(text, offset, '[', ']', inner)
         'c' -> pair(text, offset, '{', '}', inner)
         't' -> tag(text, offset, inner)
         'g' -> string(text, offset, inner)
