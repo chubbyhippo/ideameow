@@ -49,6 +49,8 @@ object WhichKey {
             "c, {}" to "curly { }",
             "t" to "tag < >",
             "g, '\"" to "string",
+            "/" to "slash / /",
+            "?" to "question ? ?",
             "e" to "symbol",
             "w" to "window",
             "b" to "buffer",

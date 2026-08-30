@@ -62,6 +62,46 @@ private fun stringEnd(
     return -1
 }
 
+internal fun delimited(
+    text: CharSequence,
+    offset: Int,
+    delim: Char,
+    inner: Boolean,
+): Things.Bounds? {
+    var i = 0
+    while (i < text.length) {
+        if (text[i] != delim) {
+            i++
+            continue
+        }
+        val open = i
+        val closeEnd = delimitedEnd(text, i + 1, delim)
+        if (closeEnd >= 0 && offset in open until closeEnd) {
+            return if (inner) Things.Bounds(open + 1, closeEnd - 1) else Things.Bounds(open, closeEnd)
+        }
+        i = if (closeEnd < 0) open + 1 else closeEnd
+    }
+    return null
+}
+
+private fun delimitedEnd(
+    text: CharSequence,
+    contentStart: Int,
+    delim: Char,
+): Int {
+    var j = contentStart
+    while (j < text.length && text[j] != '\n') {
+        val char = text[j]
+        if (char == '\\') {
+            j += 2
+            continue
+        }
+        if (char == delim) return j + 1
+        j++
+    }
+    return -1
+}
+
 internal fun isWordChar(char: Char) = Character.isLetterOrDigit(char)
 
 internal fun isSymbolChar(char: Char) = isWordChar(char) || char == '_' || char == '$'

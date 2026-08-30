@@ -50,6 +50,8 @@ private fun compute(
         'c', '{', '}' -> pair(text, offset, '{', '}', inner)
         't' -> tag(text, offset, inner)
         'g', '\'', '"' -> string(text, offset, inner)
+        '/' -> delimited(text, offset, '/', inner)
+        '?' -> delimited(text, offset, '?', inner)
         'e' -> symbol(text, offset)
         'w' -> window(editor)
         'b' -> Things.Bounds(0, text.length)

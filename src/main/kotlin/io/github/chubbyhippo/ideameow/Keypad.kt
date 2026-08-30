@@ -147,8 +147,8 @@ object Keypad {
           f / t    find / till char (inclusive / exclusive)
           o / O    block / to end of block       m        select join region
           , / .    inner / bounds of thing       [ / ]    to beginning / end of thing
-             things: r/() round  s/[] square  c/{} curly  t tag  g/'" string  e symbol  w window
-                     b buffer  p paragraph  l line  v visual line  d defun  . sentence
+             things: r/() round  s/[] square  c/{} curly  t tag  g/'" string  / slash  ? question
+                     e symbol  w window  b buffer  p paragraph  l line  v visual line  d defun  . sentence
           1-9, 0   expand selection by N units (0 = 10); without selection: count
           -        negative argument              ;        reverse selection
           i / a    insert at start / end          I / A    open line above / below

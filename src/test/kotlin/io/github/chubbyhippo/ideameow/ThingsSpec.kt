@@ -268,6 +268,50 @@ class ThingsSpec : MeowSpec() {
         thenCaretAtSelectionEnd()
     }
 
+    fun `test given slash or question delimiters when comma or dot then selects inner and bounds`() {
+        given("slash pair", "val regex = /foo\\/b<caret>ar/g")
+        whenKeys(",/")
+        thenSelection("foo\\/bar")
+        thenSelType(SelType.TRANSIENT)
+        thenCaretAtSelectionEnd()
+
+        given("slash pair", "val regex = /foo\\/b<caret>ar/g")
+        whenKeys("./")
+        thenSelection("/foo\\/bar/")
+        thenCaretAtSelectionStart()
+
+        given("slash pair", "val regex = /foo\\/b<caret>ar/g")
+        whenKeys("[/")
+        thenSelection("foo\\/b")
+        thenCaretAtSelectionStart()
+
+        given("slash pair", "val regex = /foo\\/b<caret>ar/g")
+        whenKeys("]/")
+        thenSelection("ar")
+        thenCaretAtSelectionEnd()
+
+        given("question pair", "pattern ?foo\\?b<caret>ar? flag")
+        whenKeys(",?")
+        thenSelection("foo\\?bar")
+        thenSelType(SelType.TRANSIENT)
+        thenCaretAtSelectionEnd()
+
+        given("question pair", "pattern ?foo\\?b<caret>ar? flag")
+        whenKeys(".?")
+        thenSelection("?foo\\?bar?")
+        thenCaretAtSelectionStart()
+
+        given("question pair", "pattern ?foo\\?b<caret>ar? flag")
+        whenKeys("[?")
+        thenSelection("foo\\?b")
+        thenCaretAtSelectionStart()
+
+        given("question pair", "pattern ?foo\\?b<caret>ar? flag")
+        whenKeys("]?")
+        thenSelection("ar")
+        thenCaretAtSelectionEnd()
+    }
+
     fun `test given a backtick string when comma g then inner selects the run and dot g keeps the backticks`() {
         given("backticks", "say `hi th<caret>ere` now")
         whenKeys(",g")
