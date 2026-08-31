@@ -20,9 +20,7 @@ internal fun startsWith(
     text: CharSequence,
     offset: Int,
     prefix: String,
-): Boolean {
-    return offset + prefix.length <= text.length && prefix.indices.all { text[offset + it] == prefix[it] }
-}
+): Boolean = offset + prefix.length <= text.length && prefix.indices.all { text[offset + it] == prefix[it] }
 
 internal fun indexOf(
     text: CharSequence,
