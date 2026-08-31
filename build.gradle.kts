@@ -1,3 +1,5 @@
+import io.gitlab.arturbosch.detekt.Detekt
+import org.gradle.jvm.toolchain.JavaLanguageVersion
 import org.jetbrains.intellij.platform.gradle.TestFrameworkType
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
@@ -66,6 +68,17 @@ ktlint {
 
 detekt {
     buildUponDefaultConfig = true
+}
+
+tasks.withType<Detekt>().configureEach {
+    // detekt 1.23.8 bundles a Kotlin compiler that cannot parse JDK 25+ version
+    // strings (fails with IllegalArgumentException in JavaVersion.parse), so the
+    // analysis process itself must run on an older JDK regardless of the host JVM.
+    jdkHome.set(
+        javaToolchains
+            .launcherFor { languageVersion = JavaLanguageVersion.of(21) }
+            .map { it.metadata.installationPath },
+    )
 }
 
 kotlin {
