@@ -43,13 +43,17 @@ object Engine {
             put("negative-argument", MeowCommand { _, state -> state.negative = true })
             put("meow-quit", MeowCommand { editor, _ -> Ide.act(editor, "CloseContent") })
             put("meow-keypad", MeowCommand { editor, state -> enterKeypad(editor, state) })
-            put("repeat", MeowCommand { editor, state -> repeatLast(editor, state) })
+            put("repeat", MeowCommand { editor, state -> DotRepeat.repeatLast(editor, state) })
             put("ignore", MeowCommand { _, _ -> })
         }
 
     private val KEYPAD_BINDING = Rc.Binding(command = "meow-keypad")
 
-    var repeatMap: Map<Char, Rc.Binding>? = null
+    var repeatMap: Map<Char, Rc.Binding>?
+        get() = RepeatRun.map
+        set(value) {
+            RepeatRun.map = value
+        }
 
     fun enterKeypad(
         editor: Editor,
@@ -60,52 +64,13 @@ object Engine {
         WhichKey.scheduleKeypad(editor, "")
     }
 
-    private fun routeSession(
-        editor: Editor,
-        state: MeowState,
-        key: Char,
-    ): Boolean {
-        when {
-            state.mode == MeowMode.KEYPAD -> {
-                Keypad.key(editor, state, key)
-                state.lastCommand = "keypad"
-            }
-
-            state.avy != null -> {
-                Avy.key(editor, state, key)
-                state.lastCommand = "avy"
-            }
-
-            state.aceWindow != null -> {
-                AceWindow.key(editor, state, key)
-                state.lastCommand = "ace-window"
-            }
-
-            state.aceClick != null -> {
-                AceClick.key(editor, state, key)
-                state.lastCommand = "ace-click"
-            }
-
-            state.aceResize != null -> {
-                AceResize.key(editor, state, key)
-                state.lastCommand = "ace-resize"
-            }
-
-            else -> {
-                return false
-            }
-        }
-        Meow.updateWidgets()
-        return true
-    }
-
     fun handleChar(
         editor: Editor,
         key: Char,
     ): Boolean =
         run {
             val state = Meow.state(editor) ?: return@run false
-            if (routeSession(editor, state, key)) return@run true
+            if (OverlaySessions.routeKey(editor, state, key)) return@run true
             if (state.mode == MeowMode.INSERT) return@run false
 
             WhichKey.hide()
@@ -115,9 +80,9 @@ object Engine {
             val binding = resolveBinding(state, key, pending)
             val command = binding?.command
 
-            recordUnitKey(state, key, command, pending)
+            DotRepeat.recordUnitKey(state, key, command, pending)
             executeStep(editor, state, pending, binding, key)
-            recordLastKeys(state, command)
+            DotRepeat.recordLastKeys(state, command)
 
             Meow.updateWidgets()
             true
@@ -129,8 +94,7 @@ object Engine {
         pending: Pending?,
     ): Rc.Binding? {
         if (pending != null) return null
-        val repeatBinding = repeatMap?.get(key)
-        if (repeatBinding == null) repeatMap = null
+        val repeatBinding = RepeatRun.consume(key)
         val motion = state.mode == MeowMode.MOTION
         return repeatBinding ?: resolve(state, key, motion)
     }
@@ -196,31 +160,13 @@ object Engine {
         }
     }
 
-    private fun repeatLast(
-        editor: Editor,
-        state: MeowState,
-    ) {
-        val keys = state.lastKeys
-        if (keys.isEmpty()) return
-        state.replaying = true
-        try {
-            for (key in keys) handleChar(editor, key)
-        } finally {
-            state.replaying = false
-        }
-    }
-
     fun runBinding(
         editor: Editor,
         state: MeowState,
         binding: Rc.Binding,
     ) {
         dispatch(editor, state, binding)
-        val repeatKeymap = RcLookups.repeatMapFor(binding) ?: return
-        if (repeatMap == null) {
-            Ide.hint(editor, "Repeat with ${repeatKeymap.keys.joinToString(", ")}")
-        }
-        repeatMap = repeatKeymap
+        RepeatRun.armAfter(editor, binding)
     }
 
     internal fun dispatch(
@@ -259,32 +205,3 @@ object Engine {
         }
     }
 }
-
-private fun recordUnitKey(
-    state: MeowState,
-    key: Char,
-    command: String?,
-    pending: Pending?,
-) {
-    if (state.replaying || command == "repeat") return
-    if (pending == null && state.pendingCount == 0 && !state.negative) state.unitKeys.clear()
-    state.unitKeys.add(key)
-}
-
-private fun recordLastKeys(
-    state: MeowState,
-    command: String?,
-) {
-    if (!state.replaying && command != "repeat" && !isPrefixCommand(state, command)) {
-        state.lastKeys = state.unitKeys.toList()
-    }
-}
-
-private fun isPrefixCommand(
-    state: MeowState,
-    command: String?,
-): Boolean =
-    state.pending != null ||
-        (state.pendingCount != 0 && command?.startsWith("meow-expand-") == true) ||
-        (state.negative && command == "meow-negative-argument") ||
-        command == "meow-keypad"
