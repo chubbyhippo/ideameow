@@ -21,8 +21,7 @@ internal fun startsWith(
     offset: Int,
     prefix: String,
 ): Boolean {
-    if (offset + prefix.length > text.length) return false
-    return prefix.indices.all { text[offset + it] == prefix[it] }
+    return offset + prefix.length <= text.length && prefix.indices.all { text[offset + it] == prefix[it] }
 }
 
 internal fun indexOf(
@@ -33,19 +32,6 @@ internal fun indexOf(
     val max = text.length - target.length
     for (i in fromIndex..max) {
         if (startsWith(text, i, target)) return i
-    }
-    return -1
-}
-
-internal fun skipUntilChar(
-    text: CharSequence,
-    start: Int,
-    target: Char,
-): Int {
-    var j = start
-    while (j < text.length) {
-        if (text[j] == target) return j
-        j++
     }
     return -1
 }
