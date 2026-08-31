@@ -37,6 +37,24 @@ object Things {
     ): Bounds? = compute(editor, char, offset, inner = false)
 }
 
+private val PAIR_DELIMITERS: Map<Char, Pair<Char, Char>> =
+    mapOf(
+        'r' to ('(' to ')'),
+        '(' to ('(' to ')'),
+        ')' to ('(' to ')'),
+        's' to ('[' to ']'),
+        '[' to ('[' to ']'),
+        ']' to ('[' to ']'),
+        'c' to ('{' to '}'),
+        '{' to ('{' to '}'),
+        '}' to ('{' to '}'),
+        'a' to ('<' to '>'),
+        '<' to ('<' to '>'),
+        '>' to ('<' to '>'),
+    )
+
+private val STRING_CHARS = setOf('g', '\'', '"')
+
 private fun compute(
     editor: Editor,
     char: Char,
@@ -44,13 +62,8 @@ private fun compute(
     inner: Boolean,
 ): Things.Bounds? {
     val text = editor.document.charsSequence
-    return when (char) {
-        'r', '(', ')' -> pair(text, offset, '(', ')', inner)
-        's', '[', ']' -> pair(text, offset, '[', ']', inner)
-        'c', '{', '}' -> pair(text, offset, '{', '}', inner)
-        'a', '<', '>' -> pair(text, offset, '<', '>', inner)
+    return computeDelimited(text, char, offset, inner) ?: when (char) {
         't' -> tag(text, offset, inner)
-        'g', '\'', '"' -> string(text, offset, inner)
         '/' -> delimited(text, offset, '/', inner)
         '?' -> delimited(text, offset, '?', inner)
         'e' -> symbol(text, offset)
@@ -63,6 +76,17 @@ private fun compute(
         '.' -> sentence(text, offset, inner)
         else -> null
     }
+}
+
+private fun computeDelimited(
+    text: CharSequence,
+    char: Char,
+    offset: Int,
+    inner: Boolean,
+): Things.Bounds? {
+    val delimiters = PAIR_DELIMITERS[char]
+    if (delimiters != null) return pair(text, offset, delimiters.first, delimiters.second, inner)
+    return if (char in STRING_CHARS) string(text, offset, inner) else null
 }
 
 internal fun pair(

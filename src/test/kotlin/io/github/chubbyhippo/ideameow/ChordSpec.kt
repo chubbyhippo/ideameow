@@ -200,7 +200,7 @@ class ChordSpec : MeowSpec() {
         thenNoSelection()
     }
 
-    fun `test given a chord targeting expand region then running it arms repeat and comma and dot repeat in normal mode`() {
+    fun `test given a chord targeting expand region then running it arms comma and dot repeat in normal mode`() {
         given("nested structure", "foo(\"<caret>bar\")")
         Engine.runBinding(ed, state, RcLookups.chords()[altR]!!)
         thenSelection("bar")

@@ -150,7 +150,7 @@ class ThingsSpec : MeowSpec() {
         thenCaretAtSelectionEnd()
     }
 
-    fun `test given angle pair when comma dot or brackets with a or angle brackets then selects inner bounds start end`() {
+    fun `test given angle pair when comma dot or a brackets then selects inner bounds start end`() {
         given("angle pair", "foo <b<caret>ar baz> qux")
         whenKeys(",a")
         thenSelection("bar baz")
