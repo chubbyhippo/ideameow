@@ -38,16 +38,16 @@ class SpaceLeaderSpec : MeowSpec() {
         c: Char,
     ) = KeyEvent(source, KeyEvent.KEY_TYPED, System.currentTimeMillis(), 0, KeyEvent.VK_UNDEFINED, c)
 
-    fun `test given trees tables and panels then space stays a leader surface`() {
+    fun `test given trees tables panels and buttons then space stays a leader surface`() {
         assertFalse(nativeSpace(JTree()))
         assertFalse(nativeSpace(JTable()))
         assertFalse(nativeSpace(JPanel()))
+        assertFalse(nativeSpace(JButton()))
     }
 
-    fun `test given inputs buttons combos and checkbox lists then space stays native`() {
+    fun `test given inputs combos and checkbox lists then space stays native`() {
         assertTrue(nativeSpace(JTextField()))
         assertTrue(nativeSpace(JTextArea().apply { isEditable = false }))
-        assertTrue(nativeSpace(JButton()))
         assertTrue(nativeSpace(JComboBox<String>()))
         assertTrue(nativeSpace(CheckBoxList<String>()))
     }

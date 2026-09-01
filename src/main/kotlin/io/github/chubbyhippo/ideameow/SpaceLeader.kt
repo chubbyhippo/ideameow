@@ -31,7 +31,6 @@ import java.awt.KeyboardFocusManager
 import java.awt.Window
 import java.awt.event.InputEvent
 import java.awt.event.KeyEvent
-import javax.swing.AbstractButton
 import javax.swing.JComboBox
 import javax.swing.MenuSelectionManager
 import javax.swing.SwingUtilities
@@ -173,7 +172,6 @@ internal fun nativeSpace(focus: Component): Boolean {
     while (component != null && component !is Window) {
         val consumesSpace =
             component is JTextComponent ||
-                component is AbstractButton ||
                 component is JComboBox<*> ||
                 component is CheckBoxList<*> ||
                 nativeSpaceTreeOrTerminal(component)
