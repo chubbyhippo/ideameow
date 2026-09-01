@@ -17,7 +17,9 @@
 package io.github.chubbyhippo.ideameow
 
 import com.intellij.openapi.actionSystem.IdeActions
+import com.intellij.openapi.command.undo.UndoManager
 import com.intellij.openapi.editor.Editor
+import com.intellij.openapi.fileEditor.impl.text.TextEditorProvider
 
 private const val TIGHT_FOLLOWERS = CLOSE_BRACKETS + ".,;:"
 
@@ -137,10 +139,18 @@ internal fun undo(
     editor: Editor,
     state: MeowState,
 ) {
-    if (editor.selectionModel.hasSelection()) Selections.cancel(editor, state)
-    Ide.act(editor, IdeActions.ACTION_UNDO)
+    val hadSelection = editor.selectionModel.hasSelection()
+    performUndo(editor)
+    if (hadSelection) Selections.cancel(editor, state)
 }
 
 internal fun undoInSelection(editor: Editor) {
-    if (editor.selectionModel.hasSelection()) Ide.act(editor, IdeActions.ACTION_UNDO)
+    if (editor.selectionModel.hasSelection()) performUndo(editor)
+}
+
+private fun performUndo(editor: Editor) {
+    val project = editor.project ?: return
+    val fileEditor = TextEditorProvider.getInstance().getTextEditor(editor)
+    val manager = UndoManager.getInstance(project)
+    if (manager.isUndoAvailable(fileEditor)) manager.undo(fileEditor)
 }

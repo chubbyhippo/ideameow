@@ -262,6 +262,31 @@ class EditingSpec : MeowSpec() {
         thenMode(MeowMode.NORMAL)
     }
 
+    fun `test given u then an action-invoked edit is undone via IDE UndoManager`() {
+        myFixture.configureByText("Probe.java", "class Probe {\n    <caret>int x;\n}\n")
+        state = MeowState()
+        ed.putUserData(Meow.KEY, state)
+        Ide.act(ed, "CommentByLineComment")
+        val afterComment = ed.document.text
+        whenKeys("u")
+        val afterUndo = ed.document.text
+        assertTrue("comment action changed nothing, probe invalid: $afterComment", afterComment.contains("//"))
+        assertEquals("class Probe {\n    int x;\n}\n", afterUndo)
+    }
+
+    fun `test given x x then comment toggle then u undoes it`() {
+        myFixture.configureByText("Probe.java", "class Probe {\n    <caret>int x;\n    int y;\n}\n")
+        state = MeowState()
+        ed.putUserData(Meow.KEY, state)
+        whenKeys("xx")
+        Ide.act(ed, "CommentByLineComment")
+        val afterComment = ed.document.text
+        whenKeys("u")
+        val afterUndo = ed.document.text
+        assertTrue("comment action changed nothing, probe invalid: $afterComment", afterComment.contains("//"))
+        assertEquals("class Probe {\n    int x;\n    int y;\n}\n", afterUndo)
+    }
+
     fun `test given quote then the last command repeats`() {
         given("chars", "<caret>abcdef")
         whenKeys("d")
