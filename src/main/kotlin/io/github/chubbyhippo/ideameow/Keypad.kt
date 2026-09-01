@@ -172,8 +172,8 @@ object Keypad {
           C-;        ace-click — reaches SPC SPC's session from ANY focus,
                      checkbox trees included (the one chord that also fires
                      outside a NORMAL/MOTION editor focus)
-          M-;        ace-window in NORMAL/MOTION — Alt+; instead opens the
-                     keypad from INSERT/KEYPAD, where this chord never claims it
+          M-;        comment-toggle line in NORMAL/MOTION — Alt+; instead opens
+                     the keypad from INSERT/KEYPAD, where this chord never claims it
 
         KEYPAD (SPC — or Alt+; from INSERT/KEYPAD; NORMAL/MOTION's Alt+; is M-; above)
           SPC b bookmarks/buffers   SPC x file/buffer/window   SPC c commands   SPC m meta

@@ -107,7 +107,7 @@ class ChordSpec : MeowSpec() {
         assertEquals("backward-paragraph", chords[altShiftOpenBracket]?.command)
         assertEquals("Find", chords[ctrlS]?.action)
         assertEquals("ace-click", chords[ctrlSemicolon]?.command)
-        assertEquals("ace-window", chords[altSemicolon]?.command)
+        assertEquals("CommentByLineComment", chords[altSemicolon]?.action)
         assertEquals("the whole chord layer is present", 39, chords.size)
     }
 
