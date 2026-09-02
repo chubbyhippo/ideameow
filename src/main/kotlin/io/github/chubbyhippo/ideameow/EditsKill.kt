@@ -21,7 +21,7 @@ import com.intellij.openapi.command.undo.UndoManager
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.fileEditor.impl.text.TextEditorProvider
 
-private const val TIGHT_FOLLOWERS = CLOSE_BRACKETS + ".,;:"
+private const val TIGHT_FOLLOWERS = "$CLOSE_BRACKETS.,;:"
 
 private fun prepareLineSelectionsForKill(
     editor: Editor,
