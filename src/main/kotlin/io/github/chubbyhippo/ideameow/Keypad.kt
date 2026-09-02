@@ -44,10 +44,10 @@ object Keypad {
         state: MeowState,
         char: Char,
     ) {
-        when {
-            char in '0'..'9' -> takeCountDigit(editor, state, char)
-            char == '?' -> showCheatsheet(editor, state)
-            char == '/' -> state.keypad.append('/')
+        when (char) {
+            in '0'..'9' -> takeCountDigit(editor, state, char)
+            '?' -> showCheatsheet(editor, state)
+            '/' -> state.keypad.append('/')
             else -> extendSequence(editor, state, char)
         }
     }
