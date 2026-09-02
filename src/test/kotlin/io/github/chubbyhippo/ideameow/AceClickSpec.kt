@@ -21,9 +21,15 @@ import com.intellij.openapi.editor.Caret
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.editor.actionSystem.EditorActionHandler
 import com.intellij.openapi.editor.ex.EditorEx
+import com.intellij.ui.CheckBoxList
+import com.intellij.ui.CheckboxTree
+import com.intellij.ui.CheckboxTreeBase
+import com.intellij.ui.CheckedTreeNode
 import com.intellij.ui.components.labels.LinkLabel
 import com.intellij.util.ui.UIUtil
 import java.awt.Rectangle
+import java.awt.event.MouseAdapter
+import java.awt.event.MouseEvent
 import javax.swing.JButton
 import javax.swing.JComboBox
 import javax.swing.JLabel
@@ -99,6 +105,68 @@ class AceClickSpec : MeowSpec() {
     fun `test given a tree or list then ace-click routes them through row enumeration not one badge`() {
         assertNull(AceClick.clicker(JTree()))
         assertNull(AceClick.clicker(JList<String>()))
+    }
+
+    private fun rowMousePresses(tree: JTree): MutableList<Int> {
+        val presses = mutableListOf<Int>()
+        tree.setBounds(0, 0, 300, 300)
+        tree.addMouseListener(
+            object : MouseAdapter() {
+                override fun mousePressed(e: MouseEvent) {
+                    presses.add(e.x)
+                }
+            },
+        )
+        return presses
+    }
+
+    fun `test given a checkbox tree row then ace-click toggles its checkbox not just its selection`() {
+        val root = CheckedTreeNode("root")
+        val file = CheckedTreeNode("file")
+        root.add(file)
+        val tree =
+            CheckboxTree(
+                object : CheckboxTree.CheckboxTreeCellRenderer() {},
+                root,
+                CheckboxTreeBase.CheckPolicy.PROPAGATE_EVERYTHING_POLICY,
+            )
+        tree.setBounds(0, 0, 300, 300)
+        val checkedBefore = file.isChecked
+        val targets = treeRows(tree, JLayeredPane())
+        assertEquals(1, targets.size)
+        targets[0].click()
+        assertEquals(!checkedBefore, file.isChecked)
+        assertEquals(0, tree.selectionRows!![0])
+    }
+
+    fun `test given a plain tree row then ace-click only selects it`() {
+        val tree = JTree()
+        val presses = rowMousePresses(tree)
+        val targets = treeRows(tree, JLayeredPane())
+        assertTrue(targets.isNotEmpty())
+        targets[0].click()
+        assertEquals(0, presses.size)
+        assertEquals(0, tree.selectionRows!![0])
+    }
+
+    fun `test given a checkbox list row then ace-click ticks its checkbox not just its selection`() {
+        val list = CheckBoxList<String>()
+        list.addItem("item", "item", false)
+        list.setBounds(0, 0, 300, 300)
+        val targets = listCells(list, JLayeredPane())
+        assertEquals(1, targets.size)
+        targets[0].click()
+        assertTrue(list.isItemSelected(0))
+        assertEquals(0, list.selectedIndex)
+    }
+
+    fun `test given a plain list cell then ace-click only selects it`() {
+        val list = JList(arrayOf("a", "b"))
+        list.setBounds(0, 0, 300, 300)
+        val targets = listCells(list, JLayeredPane())
+        assertTrue(targets.isNotEmpty())
+        targets[0].click()
+        assertEquals(0, list.selectedIndex)
     }
 
     fun `test given combo spinner and scrollbar internals then ace-click skips the child buttons`() {
