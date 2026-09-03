@@ -16,7 +16,13 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package io.github.chubbyhippo.ideameow
 
+import com.intellij.openapi.actionSystem.CommonDataKeys
+import com.intellij.openapi.actionSystem.DataSink
+import com.intellij.openapi.actionSystem.UiDataProvider
 import com.intellij.ui.CheckBoxList
+import com.intellij.ui.CheckboxTree
+import com.intellij.ui.CheckboxTreeBase
+import com.intellij.ui.CheckedTreeNode
 import java.awt.Rectangle
 import java.awt.event.KeyEvent
 import javax.swing.JButton
@@ -52,10 +58,15 @@ class SpaceLeaderSpec : MeowSpec() {
         assertTrue(nativeSpace(CheckBoxList<String>()))
     }
 
-    fun `test given a tree whose space toggles then space stays native`() {
-        assertTrue("com.intellij.openapi.vcs.changes.ui.ChangesTree" in SpaceLeader.SPACE_TREES)
-        assertTrue("com.intellij.ui.CheckboxTree" in SpaceLeader.SPACE_TREES)
-        assertFalse(treeConsumesSpace(JTree::class.java))
+    fun `test given a checkbox tree then space no longer stays native`() {
+        val root = CheckedTreeNode("root")
+        val tree =
+            CheckboxTree(
+                object : CheckboxTree.CheckboxTreeCellRenderer() {},
+                root,
+                CheckboxTreeBase.CheckPolicy.PROPAGATE_EVERYTHING_POLICY,
+            )
+        assertFalse(nativeSpace(tree))
     }
 
     fun `test given a component nested in a native-space ancestor then space stays native`() {
@@ -163,6 +174,28 @@ class SpaceLeaderSpec : MeowSpec() {
         val tree = JTree()
         routeIfOutsideEditor(ed, state, tree)
         assertSame(tree, SpaceLeader.surfaceFor(ed))
+    }
+
+    fun `test given focus with no shared window ancestor then leaderTarget still resolves it`() {
+        given("space leader unrelated window", "text")
+        val panel =
+            object : JPanel(), UiDataProvider {
+                override fun uiDataSnapshot(sink: DataSink) {
+                    sink[CommonDataKeys.PROJECT] = project
+                }
+            }
+        val target = SpaceLeader.leaderTarget(panel)
+        assertSame(ed, target?.editor)
+        assertSame(panel, target?.surface)
+    }
+
+    fun `test given no speed search text or an empty filter then activeSpeedSearch stays false`() {
+        assertFalse(activeSpeedSearch(null))
+        assertFalse(activeSpeedSearch(""))
+    }
+
+    fun `test given a non-empty speed search filter then activeSpeedSearch is true`() {
+        assertTrue(activeSpeedSearch("fo"))
     }
 
     fun `test given a focus inside the editor then routeIfOutsideEditor arms nothing`() {

@@ -220,9 +220,10 @@ cmap alt shift R <action>(EditorUnSelectWord)
 " C-; ace-click: not a stock-Emacs chord (no init.el analog — nearest kin is
 " ace-link), ideameow-only, free on $default. Unlike every other chord above,
 " this one is allowed to fire even when the keyboard focus sits OUTSIDE any
-" editor — checkbox trees included, where a lone SPC toggles the row's own
-" checkbox instead of reaching the SPC SPC leader. SPC SPC still works from
-" inside an editor; C-; is the one way to reach ace-click from anywhere else.
+" editor — checkbox trees included. SPC SPC now also reaches those trees
+" (checkbox-toggle-on-space was dropped in favor of the leader everywhere);
+" C-; remains useful for windows whose focus doesn't chain back to an editor
+" at all, or wherever SPC SPC is otherwise unreachable.
 cmap control SEMICOLON ace-click
 
 " M-; comment-toggle: alt SEMICOLON is ALSO the plugin.xml `Ideameow.Keypad`

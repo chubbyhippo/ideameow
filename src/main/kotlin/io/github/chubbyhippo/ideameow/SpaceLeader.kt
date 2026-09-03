@@ -37,15 +37,12 @@ import javax.swing.SwingUtilities
 import javax.swing.text.JTextComponent
 
 internal object SpaceLeader {
-    private const val CHECKBOX_TREE = "com.intellij.ui.CheckboxTree"
-    private const val CHANGES_TREE = "com.intellij.openapi.vcs.changes.ui.ChangesTree"
     internal const val TERMINAL_PACKAGE = "com.jediterm"
-    internal val SPACE_TREES = listOf(CHECKBOX_TREE, CHANGES_TREE)
 
     private var routed: Routed? = null
     private var swallowNextTyped = false
 
-    private class Routed(
+    internal class Routed(
         val editor: Editor,
         val state: MeowState,
         val surface: Component,
@@ -119,16 +116,14 @@ internal object SpaceLeader {
 
     private fun wantsKeys(state: MeowState) = state.mode == MeowMode.KEYPAD || state.hasActiveOverlaySession
 
-    private fun leaderTarget(focus: Component): Routed? =
+    internal fun leaderTarget(focus: Component): Routed? =
         run {
             val context = DataManager.getInstance().getDataContext(focus)
-            if (PlatformDataKeys.SPEED_SEARCH_TEXT.getData(context) != null) return@run null
+            if (activeSpeedSearch(PlatformDataKeys.SPEED_SEARCH_TEXT.getData(context))) return@run null
             val project = CommonDataKeys.PROJECT.getData(context) ?: return@run null
             val editor = FileEditorManager.getInstance(project).selectedTextEditor ?: return@run null
             val state = Meow.state(editor) ?: return@run null
             if (state.mode == MeowMode.KEYPAD) return@run null
-            val editorWindow = SwingUtilities.getWindowAncestor(editor.component)
-            if (!windowChainContains(SwingUtilities.getWindowAncestor(focus), editorWindow)) return@run null
             Routed(editor, state, focus)
         }
 
@@ -162,6 +157,8 @@ internal object SpaceLeader {
 
 private fun menuOpen(): Boolean = MenuSelectionManager.defaultManager().selectedPath.isNotEmpty()
 
+internal fun activeSpeedSearch(text: String?): Boolean = !text.isNullOrEmpty()
+
 internal fun blocksArming(
     menuOpen: Boolean,
     focus: Component,
@@ -174,21 +171,9 @@ internal fun nativeSpace(focus: Component): Boolean {
             component is JTextComponent ||
                 component is JComboBox<*> ||
                 component is CheckBoxList<*> ||
-                nativeSpaceTreeOrTerminal(component)
+                component.javaClass.name.startsWith(SpaceLeader.TERMINAL_PACKAGE)
         if (consumesSpace) return true
         component = component.parent
-    }
-    return false
-}
-
-private fun nativeSpaceTreeOrTerminal(component: Component): Boolean =
-    component.javaClass.name.startsWith(SpaceLeader.TERMINAL_PACKAGE) || treeConsumesSpace(component.javaClass)
-
-internal fun treeConsumesSpace(start: Class<*>): Boolean {
-    var current: Class<*>? = start
-    while (current != null) {
-        if (current.name in SpaceLeader.SPACE_TREES) return true
-        current = current.superclass
     }
     return false
 }
@@ -205,8 +190,3 @@ internal fun routeIfOutsideEditor(
 ) {
     if (focus != null && !inAnyEditor(focus)) SpaceLeader.routeTo(editor, state, focus)
 }
-
-private fun windowChainContains(
-    from: Window?,
-    target: Window?,
-): Boolean = generateSequence(from) { it.owner }.any { it === target }
