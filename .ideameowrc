@@ -84,6 +84,7 @@ nmap D meow-backward-delete
 nmap e meow-next-word
 nmap E meow-next-symbol
 nmap f meow-find
+nmap F meow-find-expand
 nmap g meow-cancel-selection
 nmap G meow-grab
 nmap h meow-left
@@ -106,6 +107,7 @@ nmap r meow-replace
 nmap R meow-swap-grab
 nmap s meow-kill
 nmap t meow-till
+nmap T meow-till-expand
 nmap u meow-undo
 nmap U meow-undo-in-selection
 nmap v meow-visit

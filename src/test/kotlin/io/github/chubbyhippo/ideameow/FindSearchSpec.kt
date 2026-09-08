@@ -77,6 +77,56 @@ class FindSearchSpec : MeowSpec() {
         thenCaretAtSelectionStart()
     }
 
+    fun `test given F with no active selection then it behaves like a fresh find`() {
+        given("marker text", "<caret>abcXdef")
+        whenKeys("FX")
+        thenSelection("abcX")
+        thenSelType(SelType.FIND)
+        thenCaretAtSelectionEnd()
+    }
+
+    fun `test given T with no active selection then it behaves like a fresh till`() {
+        given("marker text", "<caret>abcXdef")
+        whenKeys("TX")
+        thenSelection("abc")
+        thenSelType(SelType.TILL)
+    }
+
+    fun `test given w then F then the selection extends from the word start through the char`() {
+        given("comma separated", "w<caret>ord1, word2 word3")
+        whenKeys("w")
+        thenSelection("word1")
+        whenKeys("F3")
+        thenSelection("word1, word2 word3")
+        thenSelType(SelType.FIND)
+        thenCaretAtSelectionEnd()
+    }
+
+    fun `test given w then T then the selection extends from the word start up to the char`() {
+        given("comma separated", "w<caret>ord1, word2 word3")
+        whenKeys("w")
+        thenSelection("word1")
+        whenKeys("T3")
+        thenSelection("word1, word2 word")
+        thenSelType(SelType.TILL)
+    }
+
+    fun `test given w then a backward F inside the selection then the anchor snaps to the far (max) end`() {
+        given("comma separated", "w<caret>ord1, word2 word3")
+        whenKeys("w")
+        thenSelection("word1")
+        whenKeys("-F1")
+        thenSelection("1")
+        thenSelType(SelType.FIND)
+    }
+
+    fun `test given F when the char is absent then nothing changes`() {
+        given("plain", "<caret>hello")
+        whenKeys("FZ")
+        thenNoSelection()
+        thenCaretAt(0)
+    }
+
     fun `test given w then n repeats the pushed word search forward (meow-search)`() {
         given("repeats", "<caret>foo bar foo baz foo")
         whenKeys("w")

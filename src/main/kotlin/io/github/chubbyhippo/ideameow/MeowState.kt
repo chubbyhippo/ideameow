@@ -28,7 +28,7 @@ val MeowMode.takesChords: Boolean
 
 enum class SelType { NONE, CHAR, WORD, SYMBOL, LINE, BLOCK, FIND, TILL, VISIT, JOIN, TRANSIENT }
 
-enum class Pending { FIND, TILL, INNER, BOUNDS, BEGIN, END }
+enum class Pending { FIND, TILL, FIND_EXPAND, TILL_EXPAND, INNER, BOUNDS, BEGIN, END }
 
 data class SavedSelection(
     val type: SelType?,

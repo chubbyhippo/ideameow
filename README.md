@@ -162,6 +162,7 @@ gradle buildPlugin          # or: gradle runIde  (sandbox IDE for a test drive)
 | `x` | select the line — repeat or press digits to take more |
 | `Q` / `X` | go to a line |
 | `f` / `t` | find / till a character |
+| `F` / `T` | extend to / up to a character — anchors to the active selection's far end |
 | `o` / `O` | select the enclosing block / to its end |
 | `m` | select the join region |
 | `,` `.` `[` `]` | inner / bounds / begin / end of a *thing* |

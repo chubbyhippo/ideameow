@@ -64,6 +64,8 @@ internal object Motions {
             put("meow-goto-line", MeowCommand { editor, state -> gotoLine(editor, state) })
             put("meow-find", MeowCommand { _, state -> state.pending = Pending.FIND })
             put("meow-till", MeowCommand { _, state -> state.pending = Pending.TILL })
+            put("meow-find-expand", MeowCommand { _, state -> state.pending = Pending.FIND_EXPAND })
+            put("meow-till-expand", MeowCommand { _, state -> state.pending = Pending.TILL_EXPAND })
             put("forward-char", MeowCommand { editor, state -> charOrExpand(editor, state, state.takeCount(1)) })
             put("backward-char", MeowCommand { editor, state -> charOrExpand(editor, state, -state.takeCount(1)) })
             put(
@@ -119,6 +121,7 @@ internal object Motions {
         state: MeowState,
         char: Char,
         till: Boolean,
+        expand: Boolean = false,
     ) {
         val count = state.takeCount(1)
         val text = editor.document.charsSequence
@@ -129,7 +132,19 @@ internal object Motions {
             return
         }
         state.lastFind = char
-        val spec = Selections.SelectionSpec(if (till) SelType.TILL else SelType.FIND, caret, target, expand = false)
+        val mark = findExpandMark(editor, caret, target, expand)
+        val spec = Selections.SelectionSpec(if (till) SelType.TILL else SelType.FIND, mark, target, expand)
         Selections.select(editor, state, spec)
+    }
+
+    private fun findExpandMark(
+        editor: Editor,
+        mark: Int,
+        pos: Int,
+        expand: Boolean,
+    ): Int {
+        if (!expand || !editor.selectionModel.hasSelection()) return mark
+        val selectionModel = editor.selectionModel
+        return if (mark < pos) selectionModel.selectionStart else selectionModel.selectionEnd
     }
 }

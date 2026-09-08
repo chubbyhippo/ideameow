@@ -154,6 +154,14 @@ object Engine {
                 Motions.findTill(editor, state, key, till = true)
             }
 
+            Pending.FIND_EXPAND -> {
+                Motions.findTill(editor, state, key, till = false, expand = true)
+            }
+
+            Pending.TILL_EXPAND -> {
+                Motions.findTill(editor, state, key, till = true, expand = true)
+            }
+
             Pending.INNER, Pending.BOUNDS, Pending.BEGIN, Pending.END -> {
                 Structures.thingSelect(editor, state, pending, key)
             }
