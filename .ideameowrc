@@ -141,22 +141,34 @@ mmap q <action>(HideActiveWindow)
 " The Emacs chord layer — modifier-key bindings, like the vanilla Emacs keymap
 " ----------------------------------------------------------------------------
 " Unlike the single-key layout above, these are Ctrl-/Alt- CHORDS. They fire
-" in NORMAL, MOTION and INSERT — never mid-keypad — and, like meow's own
-" motions, EXTEND an active selection instead of replacing it (so C-f after a
-" selection grows it). Either spelling works: the Emacs one (C-f, M-<, M-SPC)
-" or the IntelliJ keystroke format shown by SPC i d and Settings > Keymap
-" (zero or more of "control" / "alt" / "shift" / "meta", then a key name — F,
-" COMMA, OPEN_BRACKET, ...). cnoremap resolves its target through these
-" bundled defaults; cmap through your own maps. A chord bound to `ignore` is
-" handed back to the IDE — e.g. `cmap control F ignore` restores Find.
-" Modifier chords never reach the modal engine as typing, so they live here,
-" not on the nmap layout; ESC and un-mapped chords keep their native IDE
-" meaning. Alt+; is the one chord that never claims in INSERT, no matter what
+" in every mode — NORMAL, MOTION, INSERT and even mid-keypad — and, like
+" meow's own motions, EXTEND an active selection instead of replacing it (so
+" C-f after a selection grows it). Either spelling works: the Emacs one
+" (C-f, M-<, M-SPC) or the IntelliJ keystroke format shown by SPC i d and
+" Settings > Keymap (zero or more of "control" / "alt" / "shift" / "meta",
+" then a key name — F, COMMA, OPEN_BRACKET, ...). cnoremap resolves its
+" target through these bundled defaults; cmap through your own maps. A chord
+" bound to `ignore` is handed back to the IDE — e.g. `cmap control F ignore`
+" restores Find. Modifier chords never reach the modal engine as typing, so
+" they live here, not on the nmap layout; ESC and un-mapped chords keep their
+" native IDE meaning. Firing a chord while a SPC sequence is pending cancels
+" that prefix cleanly (as if ESC had been pressed) before running the chord.
+" Alt+; is the one chord that never claims in INSERT or KEYPAD, no matter what
 " it is bound to — that keystroke stays reserved there for the Ideameow.Keypad
 " action shortcut (see M-; below). A chord bound to `ace-click` (below) is
 " also reachable when the keyboard focus sits outside any editor entirely
 " (checkbox trees, tool windows, dialogs) — everywhere else, the focus must
-" still be a meow editor.
+" still be a meow editor, a tool-window tree, OR a list: chords with a
+" tree-shaped meaning (the point motions below, plus every <action>(...)
+" chord) also work on any focused JTree — project view, Maven, Gradle,
+" bookmarks, and every other tree-backed tool window — and the ones with a
+" flat-list meaning (C-n/C-p and every <action>(...) chord) work on any
+" focused JList too, the Welcome Screen's Recent Projects / Reopen Project
+" list included. Chords with no tree/list analog (kill-word, upcase-word,
+" ...) are simply not registered there, so they stay native (speed search,
+" etc.) instead of swallowing the key for nothing. This whole layer, and the
+" keypad itself, is armed as soon as the IDE frame is created — including on
+" the Welcome Screen, before any project is open.
 " ============================================================================
 
 " point motions (C-f C-b C-n C-p C-a C-e, M-f M-b M-a M-e)
@@ -232,10 +244,11 @@ cmap control SEMICOLON ace-click
 " M-; comment-toggle: alt SEMICOLON is ALSO the plugin.xml `Ideameow.Keypad`
 " action's $default shortcut (the M-SPC-from-INSERT analog) — this exact
 " ChordKey is hardcoded as the one chord ChordDispatcher never claims while
-" INSERT, regardless of what it is bound to here, so INSERT's alt+; always
-" falls through to the IDE action and opens the keypad. In NORMAL/MOTION it
-" runs the cmap below like any other chord. ace-window used to live on this
-" key; it's still reachable via `SPC x o` and `SPC w w` below.
+" INSERT or KEYPAD, regardless of what it is bound to here, so alt+; from
+" either always falls through to the IDE action and opens (or re-enters) the
+" keypad. In NORMAL/MOTION it runs the cmap below like any other chord.
+" ace-window used to live on this key; it's still reachable via `SPC x o` and
+" `SPC w w` below.
 cmap alt SEMICOLON <action>(CommentByLineComment)
 
 " stock-Emacs whitespace and line chords. M-^ is meow-join + kill: killing the

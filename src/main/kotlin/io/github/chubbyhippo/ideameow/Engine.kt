@@ -173,6 +173,7 @@ object Engine {
         state: MeowState,
         binding: Rc.Binding,
     ) {
+        if (state.mode == MeowMode.KEYPAD) Keypad.exit(editor, state)
         dispatch(editor, state, binding)
         RepeatRun.armAfter(editor, binding)
     }

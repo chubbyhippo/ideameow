@@ -22,13 +22,10 @@ import com.intellij.ide.IdeEventQueue
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.actionSystem.CommonDataKeys
 import com.intellij.openapi.actionSystem.DataContext
-import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.WriteIntentReadAction
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.editor.EditorFactory
-import com.intellij.openapi.project.Project
-import com.intellij.openapi.startup.ProjectActivity
 import com.intellij.openapi.wm.ToolWindowManager
 import java.awt.AWTEvent
 import java.awt.Component
@@ -158,11 +155,5 @@ internal class ToolWindowEscapeLifecycle : Disposable {
         ToolWindowEscape.reset()
         SpaceLeader.reset()
         ChordDispatcher.reset()
-    }
-}
-
-internal class ToolWindowEscapeStartup : ProjectActivity {
-    override suspend fun execute(project: Project) {
-        ApplicationManager.getApplication().getService(ToolWindowEscapeLifecycle::class.java)
     }
 }

@@ -23,8 +23,6 @@
         <rawEditorTypedHandler implementationClass="io.github.chubbyhippo.ideameow.MeowTypedHandler"/>
         <editorActionHandler action="EditorEscape" implementationClass="io.github.chubbyhippo.ideameow.MeowEscapeHandler"/>
         <editorFactoryListener implementation="io.github.chubbyhippo.ideameow.MeowEditorFactoryListener"/>
-        <postStartupActivity implementation="io.github.chubbyhippo.ideameow.TreeMeowStartup"/>
-        <postStartupActivity implementation="io.github.chubbyhippo.ideameow.ToolWindowEscapeStartup"/>
         <statusBarWidgetFactory id="MeowMode" implementation="io.github.chubbyhippo.ideameow.MeowWidgetFactory"/>
         <notificationGroup id="ideameow" displayType="BALLOON"/>
         <editorFloatingToolbarProvider implementation="io.github.chubbyhippo.ideameow.RcReloadFloatingToolbar"/>
@@ -33,6 +31,8 @@
     <applicationListeners>
         <listener class="io.github.chubbyhippo.ideameow.MeowActionIdListener"
                   topic="com.intellij.openapi.actionSystem.ex.AnActionListener"/>
+        <listener class="io.github.chubbyhippo.ideameow.MeowAppLifecycleListener"
+                  topic="com.intellij.ide.AppLifecycleListener"/>
     </applicationListeners>
     <actions>
         <action id="Ideameow.ReloadRc" class="io.github.chubbyhippo.ideameow.ReloadRcAction"

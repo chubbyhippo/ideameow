@@ -139,7 +139,7 @@ class ChordSpec : MeowSpec() {
         )
     }
 
-    fun `test given NORMAL MOTION or INSERT then a mapped chord is claimed but KEYPAD is not`() {
+    fun `test given every mode then a mapped chord is claimed`() {
         given("chord modes", "<caret>hello")
         assertTrue(ChordDispatcher.claims(state, pressed(KeyEvent.VK_F, InputEvent.CTRL_DOWN_MASK)))
         state.mode = MeowMode.MOTION
@@ -147,16 +147,21 @@ class ChordSpec : MeowSpec() {
         state.mode = MeowMode.INSERT
         assertTrue("emacs chords also work while typing", ChordDispatcher.claims(state, pressed(KeyEvent.VK_F, InputEvent.CTRL_DOWN_MASK)))
         state.mode = MeowMode.KEYPAD
-        assertFalse(ChordDispatcher.claims(state, pressed(KeyEvent.VK_F, InputEvent.CTRL_DOWN_MASK)))
+        assertTrue("emacs chords also work mid-keypad-sequence", ChordDispatcher.claims(state, pressed(KeyEvent.VK_F, InputEvent.CTRL_DOWN_MASK)))
         state.mode = MeowMode.NORMAL
         assertFalse(ChordDispatcher.claims(state, pressed(KeyEvent.VK_A, 0)))
     }
 
-    fun `test given INSERT then Alt-semicolon is never claimed so the keypad shortcut still opens it`() {
+    fun `test given INSERT or KEYPAD then Alt-semicolon is never claimed so the keypad shortcut still opens or stays`() {
         given("chord modes insert keypad entry", "<caret>hello")
         state.mode = MeowMode.INSERT
         assertFalse(
             "Alt+; stays reserved for the Ideameow.Keypad action shortcut from INSERT",
+            ChordDispatcher.claims(state, pressed(KeyEvent.VK_SEMICOLON, InputEvent.ALT_DOWN_MASK)),
+        )
+        state.mode = MeowMode.KEYPAD
+        assertFalse(
+            "Alt+; stays reserved for the Ideameow.Keypad action shortcut mid-sequence too",
             ChordDispatcher.claims(state, pressed(KeyEvent.VK_SEMICOLON, InputEvent.ALT_DOWN_MASK)),
         )
         state.mode = MeowMode.NORMAL
@@ -164,6 +169,16 @@ class ChordSpec : MeowSpec() {
             "NORMAL still claims it for comment-toggle",
             ChordDispatcher.claims(state, pressed(KeyEvent.VK_SEMICOLON, InputEvent.ALT_DOWN_MASK)),
         )
+    }
+
+    fun `test given a chord fired mid-keypad-sequence then it cancels the pending prefix and runs`() {
+        given("chord cancels keypad", "<caret>hello")
+        whenKeys(" ")
+        thenMode(MeowMode.KEYPAD)
+        Engine.runBinding(ed, state, RcLookups.chords()[ctrlF]!!)
+        thenMode(MeowMode.NORMAL)
+        thenCaretAt(1)
+        assertEquals("the pending SPC prefix was cleared", 0, state.keypad.length)
     }
 
     fun `test given the Emacs spelling then it resolves to the same chord as the host one`() {

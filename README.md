@@ -117,9 +117,12 @@ ace-window's extra dispatch keys (`x`, `m`, `c`…) are not ported — the keypa
 | Fact | Value |
 |---|---|
 | Where they live | the IDE keymap — rebind under *Settings → Keymap* |
-| Active in | NORMAL, MOTION and INSERT alike — just like real Emacs |
+| Active in | every mode — NORMAL, MOTION, INSERT, and even mid-keypad — just like real Emacs |
 | Displacement | the four `Alt+letter` chords and the `Alt+Shift+[` / `]` pair are unbound in the IDE default keymap; `Alt+Shift+,` / `.` shadow font-size zoom everywhere they're active, which keeps `Ctrl+wheel` and `SPC w` |
-| Exception | `Alt+;` never claims in INSERT no matter what it's bound to — that keystroke stays reserved for the `Ideameow.Keypad` action shortcut, so INSERT always opens the keypad on it |
+| Exception | `Alt+;` never claims in INSERT or KEYPAD no matter what it's bound to — that keystroke stays reserved for the `Ideameow.Keypad` action shortcut, so it always opens (or re-enters) the keypad there |
+| Mid-keypad | firing any other chord while `SPC ...` is pending cancels that prefix cleanly first, then runs the chord |
+| Tool-window trees | chords with a tree-shaped meaning (`Ctrl+f/b/n/p` and every `<action>(...)` chord) also work when focus is a `JTree` — project view, Maven, Gradle, bookmarks, and any other tree-backed tool window — the same way the `mmap` layout does; chords with no tree analog (`kill-word`, `upcase-word`, ...) are simply not registered there, so they stay native instead of swallowing the key for nothing |
+| Lists, Welcome Screen | the same applies to any focused `JList` (`Ctrl+n/p` and every `<action>(...)` chord) — including the Welcome Screen's Recent Projects / Reopen Project list. This whole layer is armed as soon as the IDE frame is created, so it works even before any project is open |
 
 ## No keys in code
 

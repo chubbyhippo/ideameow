@@ -20,6 +20,10 @@ import com.intellij.openapi.actionSystem.ActionManager
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.project.DumbAware
+import java.awt.event.InputEvent
+import java.awt.event.KeyEvent
+import javax.swing.DefaultListModel
+import javax.swing.JList
 import javax.swing.JTree
 import javax.swing.tree.DefaultMutableTreeNode
 import javax.swing.tree.DefaultTreeModel
@@ -154,5 +158,110 @@ class TreeMeowSpec : MeowSpec() {
         givenRc("mmap q ignore")
         assertFalse("an ignored key leaves the shortcut set", 'q' in TreeMeow.boundChars())
         assertTrue("the other defaults stay", 'j' in TreeMeow.boundChars())
+    }
+
+    private val ctrlN = ChordKey.of(KeyEvent.VK_N, InputEvent.CTRL_DOWN_MASK)
+    private val ctrlP = ChordKey.of(KeyEvent.VK_P, InputEvent.CTRL_DOWN_MASK)
+    private val ctrlF = ChordKey.of(KeyEvent.VK_F, InputEvent.CTRL_DOWN_MASK)
+    private val ctrlB = ChordKey.of(KeyEvent.VK_B, InputEvent.CTRL_DOWN_MASK)
+    private val altD = ChordKey.of(KeyEvent.VK_D, InputEvent.ALT_DOWN_MASK)
+    private val ctrlS = ChordKey.of(KeyEvent.VK_S, InputEvent.CTRL_DOWN_MASK)
+
+    fun `test given the bundled chord defaults then boundChords keeps the ones with a tree meaning`() {
+        val bound = TreeMeow.boundChords()
+        assertTrue("C-n has a tree analog (selectNext)", ctrlN in bound)
+        assertTrue("C-p has a tree analog (selectPrevious)", ctrlP in bound)
+        assertTrue("C-f has a tree analog (selectChild)", ctrlF in bound)
+        assertTrue("C-b has a tree analog (selectParent)", ctrlB in bound)
+        assertTrue("action chords forward generically through Ide.actOn", ctrlS in bound)
+        assertFalse("kill-word has no tree meaning", altD in bound)
+    }
+
+    fun `test given C-n and C-p chords on a tree then the selection moves like j and k`() {
+        val tree = givenTree()
+        TreeMeow.dispatchChord(tree, ctrlN)
+        assertEquals("a", tree.selectedText())
+        TreeMeow.dispatchChord(tree, ctrlN)
+        assertEquals("b", tree.selectedText())
+        TreeMeow.dispatchChord(tree, ctrlP)
+        assertEquals("a", tree.selectedText())
+    }
+
+    fun `test given C-f and C-b chords on a collapsed node then they expand and collapse like l and h`() {
+        val tree = givenTree()
+        tree.setSelectionRow(1)
+        TreeMeow.dispatchChord(tree, ctrlF)
+        assertTrue("C-f on a collapsed node expands it", tree.isExpanded(1))
+        assertEquals("a", tree.selectedText())
+        TreeMeow.dispatchChord(tree, ctrlF)
+        assertEquals("a1", tree.selectedText())
+        TreeMeow.dispatchChord(tree, ctrlB)
+        assertEquals("a", tree.selectedText())
+    }
+
+    fun `test given a chord with no tree meaning then dispatchChord is inert`() {
+        val tree = givenTree()
+        TreeMeow.dispatchChord(tree, altD)
+        assertEquals("kill-word has no tree meaning", "root", tree.selectedText())
+    }
+
+    fun `test given an unmapped chord then dispatchChord is a no-op`() {
+        val tree = givenTree()
+        val unmapped = ChordKey.of(KeyEvent.VK_Z, InputEvent.CTRL_DOWN_MASK)
+        TreeMeow.dispatchChord(tree, unmapped)
+        assertEquals("root", tree.selectedText())
+    }
+
+    fun `test given a chord ignored via cmap then it drops out of boundChords`() {
+        givenRc("cmap control N ignore")
+        assertFalse("an ignored chord leaves the shortcut set", ctrlN in TreeMeow.boundChords())
+        assertTrue("the other defaults stay", ctrlP in TreeMeow.boundChords())
+    }
+
+    private fun givenList(): JList<String> {
+        val model = DefaultListModel<String>()
+        model.addElement("first")
+        model.addElement("second")
+        model.addElement("third")
+        return JList(model).apply { selectedIndex = 0 }
+    }
+
+    fun `test given a JList then its ActionMap provides the row actions`() {
+        val list = givenList()
+        for (name in listOf("selectNextRow", "selectPreviousRow", "selectFirstRow", "selectLastRow")) {
+            assertNotNull("JList ActionMap must provide '$name'", list.actionMap.get(name))
+        }
+    }
+
+    fun `test given the bundled chord defaults then boundListChords keeps the ones with a list meaning`() {
+        val bound = TreeMeow.boundListChords()
+        assertTrue("C-n has a list analog (selectNextRow)", ctrlN in bound)
+        assertTrue("C-p has a list analog (selectPreviousRow)", ctrlP in bound)
+        assertTrue("action chords forward generically through Ide.actOn", ctrlS in bound)
+        assertFalse("C-f has no flat-list analog (no parent/child)", ctrlF in bound)
+        assertFalse("kill-word has no list meaning", altD in bound)
+    }
+
+    fun `test given C-n and C-p chords on a JList then the selection moves like the arrow keys`() {
+        val list = givenList()
+        TreeMeow.dispatchListChord(list, ctrlN)
+        assertEquals(1, list.selectedIndex)
+        TreeMeow.dispatchListChord(list, ctrlN)
+        assertEquals(2, list.selectedIndex)
+        TreeMeow.dispatchListChord(list, ctrlP)
+        assertEquals(1, list.selectedIndex)
+    }
+
+    fun `test given a chord with no list meaning then dispatchListChord is inert`() {
+        val list = givenList()
+        TreeMeow.dispatchListChord(list, altD)
+        assertEquals("kill-word has no list meaning", 0, list.selectedIndex)
+    }
+
+    fun `test given an unmapped chord then dispatchListChord is a no-op`() {
+        val list = givenList()
+        val unmapped = ChordKey.of(KeyEvent.VK_Z, InputEvent.CTRL_DOWN_MASK)
+        TreeMeow.dispatchListChord(list, unmapped)
+        assertEquals(0, list.selectedIndex)
     }
 }

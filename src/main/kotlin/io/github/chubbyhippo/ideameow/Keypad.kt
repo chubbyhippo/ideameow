@@ -165,7 +165,12 @@ object Keypad {
                    a caret lands on every match — edit them all, ESC to finish
 
         EMACS CHORDS (cmap/cnoremap in ~/.ideameowrc — every one rebindable)
-          Work in NORMAL, MOTION and INSERT alike — just like real Emacs
+          Work in every mode — NORMAL, MOTION, INSERT and mid-keypad alike —
+          just like real Emacs; firing one while SPC is pending cancels that
+          prefix cleanly first (as if ESC had been pressed), then runs.
+          Chords with a tree-shaped meaning (C-f/b/n/p and every <action>)
+          also work when focus is a tool-window tree (project view, Maven,
+          Gradle, bookmarks, ...); the rest stay native there (speed search)
           C-f/b/n/p  char/line move            C-a/e      beginning/end of line
           M-f/b      word move                 M-a/e      backward/forward sentence
                      no selection: just moves; with one active: extends it

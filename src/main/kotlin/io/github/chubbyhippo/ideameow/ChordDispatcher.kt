@@ -34,10 +34,12 @@ private const val REACH_ANY_FOCUS_COMMAND = "ace-click"
 
 private val KEYPAD_ENTRY_CHORD = ChordKey.of(KeyEvent.VK_SEMICOLON, InputEvent.ALT_DOWN_MASK)
 
-private fun isKeypadEntryFromInsert(
+private fun isKeypadEntryChord(
     state: MeowState,
     event: KeyEvent,
-): Boolean = state.mode == MeowMode.INSERT && ChordKey.of(event.keyCode, event.modifiersEx) == KEYPAD_ENTRY_CHORD
+): Boolean =
+    (state.mode == MeowMode.INSERT || state.mode == MeowMode.KEYPAD) &&
+        ChordKey.of(event.keyCode, event.modifiersEx) == KEYPAD_ENTRY_CHORD
 
 internal object ChordDispatcher {
     private var swallowNextTyped = false
@@ -76,7 +78,7 @@ internal object ChordDispatcher {
             if (IdeEventQueue.getInstance().isPopupActive) return@run false
             val focus = KeyboardFocusManager.getCurrentKeyboardFocusManager().focusOwner ?: return@run false
             val (editor, state) = resolveTarget(focus, binding) ?: return@run false
-            if (isKeypadEntryFromInsert(state, event)) return@run false
+            if (isKeypadEntryChord(state, event)) return@run false
             swallowNextTyped = true
             WriteIntentReadAction.compute {
                 perform(editor, state, binding, focus)
@@ -106,7 +108,7 @@ internal object ChordDispatcher {
     internal fun claims(
         state: MeowState,
         event: KeyEvent,
-    ): Boolean = state.mode.takesChords && bindingFor(event) != null && !isKeypadEntryFromInsert(state, event)
+    ): Boolean = state.mode.takesChords && bindingFor(event) != null && !isKeypadEntryChord(state, event)
 }
 
 internal fun resolveTarget(
