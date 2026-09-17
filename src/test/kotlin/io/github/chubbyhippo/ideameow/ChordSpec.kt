@@ -139,17 +139,31 @@ class ChordSpec : MeowSpec() {
         )
     }
 
-    fun `test given NORMAL or MOTION then a mapped chord is claimed but INSERT and KEYPAD are not`() {
+    fun `test given NORMAL MOTION or INSERT then a mapped chord is claimed but KEYPAD is not`() {
         given("chord modes", "<caret>hello")
         assertTrue(ChordDispatcher.claims(state, pressed(KeyEvent.VK_F, InputEvent.CTRL_DOWN_MASK)))
         state.mode = MeowMode.MOTION
         assertTrue(ChordDispatcher.claims(state, pressed(KeyEvent.VK_F, InputEvent.CTRL_DOWN_MASK)))
         state.mode = MeowMode.INSERT
-        assertFalse(ChordDispatcher.claims(state, pressed(KeyEvent.VK_F, InputEvent.CTRL_DOWN_MASK)))
+        assertTrue("emacs chords also work while typing", ChordDispatcher.claims(state, pressed(KeyEvent.VK_F, InputEvent.CTRL_DOWN_MASK)))
         state.mode = MeowMode.KEYPAD
         assertFalse(ChordDispatcher.claims(state, pressed(KeyEvent.VK_F, InputEvent.CTRL_DOWN_MASK)))
         state.mode = MeowMode.NORMAL
         assertFalse(ChordDispatcher.claims(state, pressed(KeyEvent.VK_A, 0)))
+    }
+
+    fun `test given INSERT then Alt-semicolon is never claimed so the keypad shortcut still opens it`() {
+        given("chord modes insert keypad entry", "<caret>hello")
+        state.mode = MeowMode.INSERT
+        assertFalse(
+            "Alt+; stays reserved for the Ideameow.Keypad action shortcut from INSERT",
+            ChordDispatcher.claims(state, pressed(KeyEvent.VK_SEMICOLON, InputEvent.ALT_DOWN_MASK)),
+        )
+        state.mode = MeowMode.NORMAL
+        assertTrue(
+            "NORMAL still claims it for comment-toggle",
+            ChordDispatcher.claims(state, pressed(KeyEvent.VK_SEMICOLON, InputEvent.ALT_DOWN_MASK)),
+        )
     }
 
     fun `test given the Emacs spelling then it resolves to the same chord as the host one`() {
@@ -233,10 +247,12 @@ class ChordSpec : MeowSpec() {
         assertNull(resolveTarget(JTree(), Rc.Binding(command = "forward-char")))
     }
 
-    fun `test given focus inside an editor in INSERT then resolveTarget rejects ace-click too`() {
+    fun `test given focus inside an editor in INSERT then resolveTarget resolves ace-click too`() {
         given("chord resolve insert ace-click", "<caret>hello")
         state.mode = MeowMode.INSERT
-        assertNull(resolveTarget(ed.contentComponent, Rc.Binding(command = "ace-click")))
+        val target = resolveTarget(ed.contentComponent, Rc.Binding(command = "ace-click"))
+        assertSame(ed, target?.first)
+        assertSame(state, target?.second)
     }
 
     fun `test given the bundled defaults then SPC m exposes the M- motion and edit layer`() {

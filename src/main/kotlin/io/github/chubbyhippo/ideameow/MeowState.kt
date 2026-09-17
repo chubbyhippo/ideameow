@@ -24,7 +24,7 @@ import javax.swing.Timer
 enum class MeowMode { NORMAL, INSERT, MOTION, KEYPAD }
 
 val MeowMode.takesChords: Boolean
-    get() = this == MeowMode.NORMAL || this == MeowMode.MOTION
+    get() = this == MeowMode.NORMAL || this == MeowMode.MOTION || this == MeowMode.INSERT
 
 enum class SelType { NONE, CHAR, WORD, SYMBOL, LINE, BLOCK, FIND, TILL, VISIT, JOIN, TRANSIENT }
 

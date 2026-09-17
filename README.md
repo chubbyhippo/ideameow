@@ -117,8 +117,9 @@ ace-window's extra dispatch keys (`x`, `m`, `c`…) are not ported — the keypa
 | Fact | Value |
 |---|---|
 | Where they live | the IDE keymap — rebind under *Settings → Keymap* |
-| Active in | NORMAL; they yield to the IDE's own chords in INSERT |
-| Displacement | the four `Alt+letter` chords and the `Alt+Shift+[` / `]` pair are unbound in the IDE default keymap; `Alt+Shift+,` / `.` shadow font-size zoom in NORMAL only, which keeps `Ctrl+wheel`, `SPC w` and INSERT |
+| Active in | NORMAL, MOTION and INSERT alike — just like real Emacs |
+| Displacement | the four `Alt+letter` chords and the `Alt+Shift+[` / `]` pair are unbound in the IDE default keymap; `Alt+Shift+,` / `.` shadow font-size zoom everywhere they're active, which keeps `Ctrl+wheel` and `SPC w` |
+| Exception | `Alt+;` never claims in INSERT no matter what it's bound to — that keystroke stays reserved for the `Ideameow.Keypad` action shortcut, so INSERT always opens the keypad on it |
 
 ## No keys in code
 
