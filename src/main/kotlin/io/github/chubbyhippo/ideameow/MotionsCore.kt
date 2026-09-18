@@ -23,7 +23,16 @@ import com.intellij.openapi.editor.ScrollType
 internal fun wordType(symbol: Boolean) = if (symbol) SelType.SYMBOL else SelType.WORD
 
 private val VERTICAL =
-    setOf("meow-next", "meow-prev", "meow-next-expand", "meow-prev-expand", "next-line", "previous-line")
+    setOf(
+        "meow-next",
+        "meow-prev",
+        "meow-next-expand",
+        "meow-prev-expand",
+        "next-line",
+        "previous-line",
+        View.SCROLL_UP_COMMAND,
+        View.SCROLL_DOWN_COMMAND,
+    )
 
 internal fun charSelActive(
     editor: Editor,

@@ -214,6 +214,15 @@ cmap control G meow-cancel-selection
 " restarting whenever the previous command differs).
 cmap control L recenter-top-bottom
 
+" C-v scroll-up-command / M-v scroll-down-command: real Emacs page motions —
+" they move point forward/backward by one screenful (minus a 2-line overlap,
+" Emacs' own next-screen-context-lines default) rather than only scrolling the
+" viewport, so they compose with the goal-column tracking next-line/
+" previous-line use and, like every other point motion in this layer, extend
+" an active selection instead of replacing it.
+cmap control V scroll-up-command
+cmap alt V scroll-down-command
+
 " C-s isearch-forward: no incremental-search action exists on the platform, so
 " this reaches for the same Find action the SPC s s / SPC m s s keypad slots
 " use (the closest analog: live highlighting as you type). C-r isearch-backward

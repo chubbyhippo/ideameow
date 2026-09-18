@@ -107,11 +107,12 @@ ace-window's extra dispatch keys (`x`, `m`, `c`…) are not ported — the keypa
 | `Alt+Shift+[` / `Alt+Shift+]` | `backward/forward-paragraph` (`M-{` / `M-}`) — blank-line-delimited; forward lands on the separator line, backward on the paragraph start with one adjacent empty line joining it |
 | `Alt+u` / `Alt+l` / `Alt+c` | `upcase/downcase/capitalize-word` — from the caret through the word's end; `-` then the chord reaches back without moving the caret |
 | `Alt+d` | `kill-word` into the clipboard; a negative count kills backward |
+| `Ctrl+v` / `Alt+v` | `scroll-up-command` / `scroll-down-command` — real Emacs page motions: point moves one screenful forward/backward (minus a 2-line overlap), not just the viewport |
 
 | Chord | Why not bound |
 |---|---|
 | `Alt+n` / `Alt+p` | stock Emacs has no default binding either — only the unrelated `M-g n` / `M-g p` prefix |
-| `Ctrl+v`, `Ctrl+o`, `Ctrl+l`, `Alt+Backspace`, `Alt+q` … | the IDE default matters more |
+| `Ctrl+o`, `Ctrl+l`, `Alt+Backspace`, `Alt+q` … | the IDE default matters more |
 | `Alt+/` | needs no port — the IDE's own `Alt+/` is HippieCompletion, named after the hippie-expand it implements |
 
 | Fact | Value |

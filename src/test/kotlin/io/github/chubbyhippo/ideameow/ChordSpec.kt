@@ -46,6 +46,8 @@ class ChordSpec : MeowSpec() {
     private val altSemicolon = ChordKey.of(KeyEvent.VK_SEMICOLON, InputEvent.ALT_DOWN_MASK)
     private val altR = ChordKey.of(KeyEvent.VK_R, InputEvent.ALT_DOWN_MASK)
     private val altShiftR = ChordKey.of(KeyEvent.VK_R, InputEvent.ALT_DOWN_MASK or InputEvent.SHIFT_DOWN_MASK)
+    private val ctrlV = ChordKey.of(KeyEvent.VK_V, InputEvent.CTRL_DOWN_MASK)
+    private val altV = ChordKey.of(KeyEvent.VK_V, InputEvent.ALT_DOWN_MASK)
 
     fun `test given the host spelling then it normalizes to the same key as the pressed event`() {
         assertEquals(ChordKey.fromKeyStroke(KeyStroke.getKeyStroke("control F")), ctrlF)
@@ -109,7 +111,9 @@ class ChordSpec : MeowSpec() {
         assertEquals("Find", chords[ctrlS]?.action)
         assertEquals("ace-click", chords[ctrlSemicolon]?.command)
         assertEquals("CommentByLineComment", chords[altSemicolon]?.action)
-        assertEquals("the whole chord layer is present", 39, chords.size)
+        assertEquals("scroll-up-command", chords[ctrlV]?.command)
+        assertEquals("scroll-down-command", chords[altV]?.command)
+        assertEquals("the whole chord layer is present", 41, chords.size)
     }
 
     fun `test given a home cmap override then it wins over the bundled default`() {
@@ -239,6 +243,35 @@ class ChordSpec : MeowSpec() {
         thenSelection("\"bar\"")
         whenKeys(",")
         thenSelection("bar")
+    }
+
+    private fun givenWideViewport() {
+        val editorEx = ed as com.intellij.openapi.editor.ex.EditorEx
+        editorEx.contentComponent.setSize(800, 600)
+        editorEx.scrollPane.viewport.extentSize = java.awt.Dimension(800, 600)
+    }
+
+    fun `test given a multi-line buffer then C-v and M-v page the caret forward and back`() {
+        given("scroll page chords", "<caret>" + (1..200).joinToString("\n") { "line $it" })
+        givenWideViewport()
+        val startLine = doc.getLineNumber(ed.caretModel.offset)
+        Engine.dispatch(ed, state, RcLookups.chords()[ctrlV]!!)
+        val afterDown = doc.getLineNumber(ed.caretModel.offset)
+        assertTrue("C-v moves the caret forward by more than one line", afterDown > startLine + 1)
+        thenNoSelection()
+
+        Engine.dispatch(ed, state, RcLookups.chords()[altV]!!)
+        val afterUp = doc.getLineNumber(ed.caretModel.offset)
+        assertTrue("M-v moves the caret back up", afterUp < afterDown)
+        thenNoSelection()
+    }
+
+    fun `test given an active selection then C-v extends it instead of replacing it`() {
+        given("scroll page chord expand", "<caret>" + (1..200).joinToString("\n") { "line $it" })
+        state.selType = SelType.CHAR
+        ed.selectionModel.setSelection(ed.caretModel.offset, ed.caretModel.offset + 1)
+        Engine.dispatch(ed, state, RcLookups.chords()[ctrlV]!!)
+        assertTrue("the selection grew instead of collapsing", ed.selectionModel.selectedText!!.length > 1)
     }
 
     fun `test given focus inside an editor's content component then it counts as any-editor focus`() {

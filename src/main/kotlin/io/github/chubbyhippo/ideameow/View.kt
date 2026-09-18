@@ -28,6 +28,10 @@ enum class RevealAt {
 
 internal object View {
     const val RECENTER_COMMAND = "recenter-top-bottom"
+    const val SCROLL_UP_COMMAND = "scroll-up-command"
+    const val SCROLL_DOWN_COMMAND = "scroll-down-command"
+
+    private const val SCREEN_CONTEXT_LINES = 2
 
     val RECENTER_POSITIONS = listOf(RevealAt.CENTER, RevealAt.TOP, RevealAt.BOTTOM)
 
@@ -38,6 +42,12 @@ internal object View {
         phase: Int,
     ): Int = if (previousCommand == RECENTER_COMMAND) phase + 1 else 0
 
+    fun pageLineCount(editor: Editor): Int {
+        val lineHeight = editor.lineHeight.coerceAtLeast(1)
+        val visibleLines = editor.scrollingModel.visibleArea.height / lineHeight
+        return (visibleLines - SCREEN_CONTEXT_LINES).coerceAtLeast(1)
+    }
+
     val commands: Map<String, MeowCommand> =
         buildMap {
             put(
@@ -46,6 +56,20 @@ internal object View {
                     state.recenterPhase = nextRecenterPhase(state.lastCommand, state.recenterPhase)
                     state.lastCommand = RECENTER_COMMAND
                     revealCaret(editor, recenterPosition(state.recenterPhase))
+                },
+            )
+            put(
+                SCROLL_UP_COMMAND,
+                MeowCommand { editor, state ->
+                    lineOrExpand(editor, state, pageLineCount(editor) * state.takeCount(1))
+                    state.lastCommand = SCROLL_UP_COMMAND
+                },
+            )
+            put(
+                SCROLL_DOWN_COMMAND,
+                MeowCommand { editor, state ->
+                    lineOrExpand(editor, state, -pageLineCount(editor) * state.takeCount(1))
+                    state.lastCommand = SCROLL_DOWN_COMMAND
                 },
             )
         }
