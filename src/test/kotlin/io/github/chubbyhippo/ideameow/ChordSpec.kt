@@ -16,6 +16,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package io.github.chubbyhippo.ideameow
 
+import com.intellij.codeInsight.lookup.LookupManager
 import java.awt.event.InputEvent
 import java.awt.event.KeyEvent
 import javax.swing.JPanel
@@ -291,5 +292,30 @@ class ChordSpec : MeowSpec() {
         whenKeys(" mf")
         assertTrue("M-f (forward-word) advanced the caret", ed.caretModel.offset > 0)
         thenMode(MeowMode.NORMAL)
+    }
+
+    fun `test given an active completion lookup then C-n and C-p cycle the lookup selection`() {
+        given("lookup navigation", "alphabet alphanumeric alp<caret>")
+        myFixture.completeBasic()
+        val lookup = LookupManager.getActiveLookup(ed)!!
+        assertEquals(listOf("alphabet", "alphanumeric"), lookup.items.map { it.lookupString })
+        assertEquals("alphabet", lookup.currentItem?.lookupString)
+
+        assertTrue("C-n moves to the next candidate", navigateLookup(ed, "next-line"))
+        assertEquals("alphanumeric", lookup.currentItem?.lookupString)
+
+        assertTrue("C-n wraps back to the first candidate", navigateLookup(ed, "next-line"))
+        assertEquals("alphabet", lookup.currentItem?.lookupString)
+
+        assertTrue("C-p wraps to the last candidate", navigateLookup(ed, "previous-line"))
+        assertEquals("alphanumeric", lookup.currentItem?.lookupString)
+
+        assertFalse("an unrelated chord command is left alone", navigateLookup(ed, "forward-char"))
+    }
+
+    fun `test given no active lookup then navigateLookup does nothing`() {
+        given("lookup navigation none", "<caret>hello")
+        assertFalse(navigateLookup(ed, "next-line"))
+        assertFalse(navigateLookup(ed, "previous-line"))
     }
 }

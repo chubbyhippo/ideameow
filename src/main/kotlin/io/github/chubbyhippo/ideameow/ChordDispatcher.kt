@@ -16,6 +16,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package io.github.chubbyhippo.ideameow
 
+import com.intellij.codeInsight.lookup.LookupManager
 import com.intellij.ide.DataManager
 import com.intellij.ide.IdeEventQueue
 import com.intellij.openapi.actionSystem.CommonDataKeys
@@ -31,6 +32,22 @@ import java.awt.event.KeyEvent
 import javax.swing.SwingUtilities
 
 private const val REACH_ANY_FOCUS_COMMAND = "ace-click"
+
+private val LOOKUP_CHORD_MOTIONS = mapOf("next-line" to 1, "previous-line" to -1)
+
+internal fun navigateLookup(
+    editor: Editor,
+    command: String?,
+): Boolean {
+    val delta = LOOKUP_CHORD_MOTIONS[command] ?: return false
+    val lookup = LookupManager.getActiveLookup(editor) ?: return false
+    val items = lookup.items
+    if (items.isEmpty()) return false
+    val current = items.indexOf(lookup.currentItem).let { if (it < 0) 0 else it }
+    val next = ((current + delta) % items.size + items.size) % items.size
+    lookup.setCurrentItem(items[next])
+    return true
+}
 
 private val KEYPAD_ENTRY_CHORD = ChordKey.of(KeyEvent.VK_SEMICOLON, InputEvent.ALT_DOWN_MASK)
 
@@ -75,9 +92,13 @@ internal object ChordDispatcher {
     private fun handlePress(event: KeyEvent): Boolean =
         run {
             val binding = bindingFor(event) ?: return@run false
-            if (IdeEventQueue.getInstance().isPopupActive) return@run false
             val focus = KeyboardFocusManager.getCurrentKeyboardFocusManager().focusOwner ?: return@run false
             val (editor, state) = resolveTarget(focus, binding) ?: return@run false
+            if (IdeEventQueue.getInstance().isPopupActive) {
+                if (!navigateLookup(editor, binding.command)) return@run false
+                swallowNextTyped = true
+                return@run true
+            }
             if (isKeypadEntryChord(state, event)) return@run false
             swallowNextTyped = true
             WriteIntentReadAction.compute {
