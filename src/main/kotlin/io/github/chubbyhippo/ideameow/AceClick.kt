@@ -21,6 +21,7 @@ import com.intellij.openapi.actionSystem.ex.ActionUtil
 import com.intellij.openapi.actionSystem.impl.ActionButton
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.editor.Editor
+import com.intellij.openapi.editor.ex.EditorGutterComponentEx
 import com.intellij.ui.HyperlinkLabel
 import com.intellij.ui.InplaceButton
 import com.intellij.ui.components.labels.LinkLabel
@@ -141,6 +142,7 @@ object AceClick {
             component is HyperlinkLabel -> ({ component.doClick() })
             component is JComboBox<*> -> ({ component.showPopup() })
             component is TabLabel -> ({ mouseClick(component) })
+            component is EditorGutterComponentEx -> ({ mouseClick(component) })
             standaloneTextInput(component) -> ({ mouseClick(component) })
             else -> null
         }

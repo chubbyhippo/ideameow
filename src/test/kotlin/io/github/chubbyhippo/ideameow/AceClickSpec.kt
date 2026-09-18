@@ -107,6 +107,15 @@ class AceClickSpec : MeowSpec() {
         assertNull(AceClick.clicker(JList<String>()))
     }
 
+    fun `test given the editor gutter then ace-click classifies it clickable so its context menu is reachable`() {
+        given("gutter click", "<caret>hello")
+        val gutter = (ed as EditorEx).gutterComponentEx
+        assertNotNull(
+            "the gutter must become a target so C-; right-click reaches Annotate with Git Blame",
+            AceClick.clicker(gutter),
+        )
+    }
+
     private fun rowMousePresses(tree: JTree): MutableList<Int> {
         val presses = mutableListOf<Int>()
         tree.setBounds(0, 0, 300, 300)

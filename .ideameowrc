@@ -280,7 +280,10 @@ cmap alt shift 6 ms
 " ============================================================================
 
 " SPC SPC: ace-click — label every clickable UI element, then pick one:
-" buttons, toolbar icons, tab labels, tree and list rows, menus, fields.
+" buttons, toolbar icons, tab labels, tree and list rows, menus, fields, and
+" the editor gutter (line numbers / breakpoints / VCS annotations) — its
+" capital label right-clicks it to open the native gutter context menu, the
+" same way "Annotate with Git Blame" is normally reached with a mouse.
 " Picking a menu (or a capital label, which right-clicks the target and opens
 " its context menu) labels whatever pops open, so a whole menu path is
 " keyboard-walkable without tapping SPC SPC again. The `cmap control
