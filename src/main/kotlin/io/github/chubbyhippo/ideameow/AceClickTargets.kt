@@ -76,12 +76,22 @@ internal fun rowTarget(
 
 internal fun centerOf(rect: Rectangle) = Point(rect.x + rect.width / 2, rect.y + rect.height / 2)
 
-private fun popupClick(
+internal fun popupClick(
     component: JComponent,
     point: Point,
 ) {
     val time = System.currentTimeMillis()
     for (id in intArrayOf(MouseEvent.MOUSE_PRESSED, MouseEvent.MOUSE_RELEASED)) {
         component.dispatchEvent(MouseEvent(component, id, time, 0, point.x, point.y, 1, true, MouseEvent.BUTTON3))
+    }
+}
+
+internal fun pointClick(
+    component: JComponent,
+    point: Point,
+) {
+    val time = System.currentTimeMillis()
+    for (id in intArrayOf(MouseEvent.MOUSE_PRESSED, MouseEvent.MOUSE_RELEASED)) {
+        component.dispatchEvent(MouseEvent(component, id, time, 0, point.x, point.y, 1, false, MouseEvent.BUTTON1))
     }
 }

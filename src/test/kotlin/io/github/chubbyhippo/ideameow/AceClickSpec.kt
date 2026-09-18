@@ -116,6 +116,77 @@ class AceClickSpec : MeowSpec() {
         )
     }
 
+    private class FakeAnnotationProvider : com.intellij.openapi.editor.TextAnnotationGutterProvider {
+        override fun getLineText(
+            line: Int,
+            editor: Editor,
+        ) = "chubbyhippo"
+
+        override fun getToolTip(
+            line: Int,
+            editor: Editor,
+        ): String? = null
+
+        override fun getStyle(
+            line: Int,
+            editor: Editor,
+        ) = com.intellij.openapi.editor.colors.EditorFontType.PLAIN
+
+        override fun getColor(
+            line: Int,
+            editor: Editor,
+        ): com.intellij.openapi.editor.colors.ColorKey? = null
+
+        override fun getBgColor(
+            line: Int,
+            editor: Editor,
+        ): java.awt.Color? = null
+
+        override fun getPopupActions(
+            line: Int,
+            editor: Editor,
+        ): List<com.intellij.openapi.actionSystem.AnAction> = emptyList()
+
+        override fun gutterClosed() = Unit
+    }
+
+    fun `test given no active annotations then annotationRows steps aside so the whole gutter stays clickable`() {
+        given("gutter rows none", "<caret>hello")
+        val gutter = (ed as EditorEx).gutterComponentEx
+        assertNull(
+            "with no blame column active, the single whole-gutter target keeps handling the context menu",
+            annotationRows(gutter, JLayeredPane()),
+        )
+    }
+
+    private fun growZeroSizedAncestors(component: java.awt.Component) {
+        var current: java.awt.Component? = component.parent
+        while (current != null) {
+            if (current.width == 0 || current.height == 0) current.setBounds(0, 0, 800, 600)
+            current = current.parent
+        }
+    }
+
+    fun `test given Annotate with Git Blame active then annotationRows labels each visible line`() {
+        given("gutter rows shown", "<caret>" + (1..30).joinToString("\n") { "line $it" })
+        val editorEx = ed as EditorEx
+        val gutter = editorEx.gutterComponentEx
+        editorEx.contentComponent.setSize(800, 600)
+        editorEx.scrollPane.setBounds(0, 0, 800, 600)
+        editorEx.scrollPane.viewport.extentSize = java.awt.Dimension(800, 600)
+        gutter.setBounds(0, 0, 60, 600)
+        editorEx.scrollPane.rowHeader?.extentSize = java.awt.Dimension(60, 600)
+        growZeroSizedAncestors(gutter)
+        ed.gutter.registerTextAnnotation(FakeAnnotationProvider())
+        try {
+            val rows = annotationRows(gutter, JLayeredPane())
+            assertNotNull("an active blame column must produce per-line targets", rows)
+            assertTrue("at least one visible line becomes a target", rows!!.isNotEmpty())
+        } finally {
+            ed.gutter.closeAllAnnotations()
+        }
+    }
+
     private fun rowMousePresses(tree: JTree): MutableList<Int> {
         val presses = mutableListOf<Int>()
         tree.setBounds(0, 0, 300, 300)

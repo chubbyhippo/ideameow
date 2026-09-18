@@ -127,6 +127,7 @@ object AceClick {
         return when (component) {
             is JTree -> treeRows(component, layer)
             is JList<*> -> listCells(component, layer)
+            is EditorGutterComponentEx -> annotationRows(component, layer)
             else -> null
         }
     }
