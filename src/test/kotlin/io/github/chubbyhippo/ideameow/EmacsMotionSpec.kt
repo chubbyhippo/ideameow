@@ -17,6 +17,52 @@
 package io.github.chubbyhippo.ideameow
 
 class EmacsMotionSpec : MeowSpec() {
+    private fun givenWideViewport() {
+        val editorEx = ed as com.intellij.openapi.editor.ex.EditorEx
+        editorEx.contentComponent.setSize(800, 600)
+        editorEx.scrollPane.viewport.extentSize = java.awt.Dimension(800, 600)
+    }
+
+    fun `test given no selection when scroll-up-command then the caret pages forward by a screenful`() {
+        given("many lines", "<caret>" + (1..200).joinToString("\n") { "line $it" })
+        givenWideViewport()
+        val before = doc.getLineNumber(ed.caretModel.offset)
+        whenCommand(View.SCROLL_UP_COMMAND)
+        val after = doc.getLineNumber(ed.caretModel.offset)
+        assertTrue("scroll-up-command pages forward by more than one line", after > before + 1)
+        thenNoSelection()
+    }
+
+    fun `test given no selection when scroll-down-command then the caret pages backward by a screenful`() {
+        given("many lines", "<caret>" + (1..200).joinToString("\n") { "line $it" })
+        givenWideViewport()
+        whenCommand(View.SCROLL_UP_COMMAND)
+        val afterDown = doc.getLineNumber(ed.caretModel.offset)
+        whenCommand(View.SCROLL_DOWN_COMMAND)
+        assertTrue("scroll-down-command pages back up", doc.getLineNumber(ed.caretModel.offset) < afterDown)
+        thenNoSelection()
+    }
+
+    fun `test given a mixed-column buffer then scroll-up-command then next-line keeps the goal column`() {
+        given(
+            "long short long for page motion",
+            "0123456789<caret>\n" + (1..300).joinToString("\n") { if (it % 2 == 0) "ab" else "0123456789" },
+        )
+        givenWideViewport()
+        whenCommand(View.SCROLL_UP_COMMAND)
+        whenCommand("next-line")
+        assertEquals("the goal column is preserved across a page motion", 10, state.goalColumn)
+    }
+
+    fun `test given w then scroll-up-command extends the selection instead of replacing it`() {
+        given("many lines", "<caret>" + (1..200).joinToString("\n") { "line $it" })
+        givenWideViewport()
+        whenKeys("w")
+        thenSelection("line")
+        whenCommand(View.SCROLL_UP_COMMAND)
+        assertTrue("the selection grew past the first word", ed.selectionModel.selectedText!!.length > "line".length)
+    }
+
     fun `test given an indented line then back-to-indentation lands on the first real char`() {
         given("indented", "    hel<caret>lo")
         whenCommand("back-to-indentation")

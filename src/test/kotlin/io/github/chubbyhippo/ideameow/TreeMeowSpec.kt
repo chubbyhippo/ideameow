@@ -166,6 +166,8 @@ class TreeMeowSpec : MeowSpec() {
     private val ctrlB = ChordKey.of(KeyEvent.VK_B, InputEvent.CTRL_DOWN_MASK)
     private val altD = ChordKey.of(KeyEvent.VK_D, InputEvent.ALT_DOWN_MASK)
     private val ctrlS = ChordKey.of(KeyEvent.VK_S, InputEvent.CTRL_DOWN_MASK)
+    private val ctrlV = ChordKey.of(KeyEvent.VK_V, InputEvent.CTRL_DOWN_MASK)
+    private val altV = ChordKey.of(KeyEvent.VK_V, InputEvent.ALT_DOWN_MASK)
 
     fun `test given the bundled chord defaults then boundChords keeps the ones with a tree meaning`() {
         val bound = TreeMeow.boundChords()
@@ -175,6 +177,8 @@ class TreeMeowSpec : MeowSpec() {
         assertTrue("C-b has a tree analog (selectParent)", ctrlB in bound)
         assertTrue("action chords forward generically through Ide.actOn", ctrlS in bound)
         assertFalse("kill-word has no tree meaning", altD in bound)
+        assertFalse("scroll-up-command has no tree meaning", ctrlV in bound)
+        assertFalse("scroll-down-command has no tree meaning", altV in bound)
     }
 
     fun `test given C-n and C-p chords on a tree then the selection moves like j and k`() {
@@ -240,6 +244,8 @@ class TreeMeowSpec : MeowSpec() {
         assertTrue("action chords forward generically through Ide.actOn", ctrlS in bound)
         assertFalse("C-f has no flat-list analog (no parent/child)", ctrlF in bound)
         assertFalse("kill-word has no list meaning", altD in bound)
+        assertFalse("scroll-up-command has no list meaning", ctrlV in bound)
+        assertFalse("scroll-down-command has no list meaning", altV in bound)
     }
 
     fun `test given C-n and C-p chords on a JList then the selection moves like the arrow keys`() {
