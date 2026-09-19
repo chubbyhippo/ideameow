@@ -150,14 +150,20 @@ class ChordSpec : MeowSpec() {
         state.mode = MeowMode.MOTION
         assertTrue(ChordDispatcher.claims(state, pressed(KeyEvent.VK_F, InputEvent.CTRL_DOWN_MASK)))
         state.mode = MeowMode.INSERT
-        assertTrue("emacs chords also work while typing", ChordDispatcher.claims(state, pressed(KeyEvent.VK_F, InputEvent.CTRL_DOWN_MASK)))
+        assertTrue(
+            "emacs chords also work while typing",
+            ChordDispatcher.claims(state, pressed(KeyEvent.VK_F, InputEvent.CTRL_DOWN_MASK)),
+        )
         state.mode = MeowMode.KEYPAD
-        assertTrue("emacs chords also work mid-keypad-sequence", ChordDispatcher.claims(state, pressed(KeyEvent.VK_F, InputEvent.CTRL_DOWN_MASK)))
+        assertTrue(
+            "emacs chords also work mid-keypad-sequence",
+            ChordDispatcher.claims(state, pressed(KeyEvent.VK_F, InputEvent.CTRL_DOWN_MASK)),
+        )
         state.mode = MeowMode.NORMAL
         assertFalse(ChordDispatcher.claims(state, pressed(KeyEvent.VK_A, 0)))
     }
 
-    fun `test given INSERT or KEYPAD then Alt-semicolon is never claimed so the keypad shortcut still opens or stays`() {
+    fun `test given INSERT or KEYPAD then Alt-semicolon is not claimed`() {
         given("chord modes insert keypad entry", "<caret>hello")
         state.mode = MeowMode.INSERT
         assertFalse(

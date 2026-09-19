@@ -34,6 +34,7 @@ import javax.swing.JList
 import javax.swing.JTree
 import javax.swing.KeyStroke
 
+@Suppress("TooManyFunctions")
 object TreeMeow {
     private val SWING_MOTIONS =
         mapOf(
@@ -67,14 +68,18 @@ object TreeMeow {
         }
 
     fun boundChords(): Set<ChordKey> =
-        RcLookups.chords().filterValues { binding ->
-            binding.action != null || CHORD_SWING_MOTIONS.containsKey(binding.command)
-        }.keys
+        RcLookups
+            .chords()
+            .filterValues { binding ->
+                binding.action != null || CHORD_SWING_MOTIONS.containsKey(binding.command)
+            }.keys
 
     fun boundListChords(): Set<ChordKey> =
-        RcLookups.chords().filterValues { binding ->
-            binding.action != null || LIST_CHORD_SWING_MOTIONS.containsKey(binding.command)
-        }.keys
+        RcLookups
+            .chords()
+            .filterValues { binding ->
+                binding.action != null || LIST_CHORD_SWING_MOTIONS.containsKey(binding.command)
+            }.keys
 
     fun dispatch(
         tree: JTree,
@@ -211,7 +216,10 @@ object TreeMeow {
                 chordDispatcher.unregisterCustomShortcutSet(component)
             }
 
-            is JList<*> -> listChordDispatcher.unregisterCustomShortcutSet(component)
+            is JList<*> -> {
+                listChordDispatcher.unregisterCustomShortcutSet(component)
+            }
+
             else -> {}
         }
     }
@@ -234,7 +242,10 @@ object TreeMeow {
                 listChordDispatcher.unregisterCustomShortcutSet(component)
                 val chordShortcuts =
                     boundListChords().map { KeyboardShortcut(KeyStroke.getKeyStroke(it.keyCode, it.modifiers), null) }
-                listChordDispatcher.registerCustomShortcutSet(CustomShortcutSet(*chordShortcuts.toTypedArray()), component)
+                listChordDispatcher.registerCustomShortcutSet(
+                    CustomShortcutSet(*chordShortcuts.toTypedArray()),
+                    component,
+                )
             }
 
             else -> {}

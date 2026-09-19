@@ -39,14 +39,13 @@ internal fun navigateLookup(
     editor: Editor,
     command: String?,
 ): Boolean {
-    val delta = LOOKUP_CHORD_MOTIONS[command] ?: return false
-    val lookup = LookupManager.getActiveLookup(editor) ?: return false
+    val delta = LOOKUP_CHORD_MOTIONS[command]
+    val lookup = LookupManager.getActiveLookup(editor)
+    if (delta == null || lookup == null) return false
     val items = lookup.items
-    if (items.isEmpty()) return false
     val current = items.indexOf(lookup.currentItem).let { if (it < 0) 0 else it }
     val next = ((current + delta) % items.size + items.size) % items.size
-    lookup.setCurrentItem(items[next])
-    return true
+    return items.isNotEmpty().also { if (it) lookup.setCurrentItem(items[next]) }
 }
 
 private val KEYPAD_ENTRY_CHORD = ChordKey.of(KeyEvent.VK_SEMICOLON, InputEvent.ALT_DOWN_MASK)

@@ -28,18 +28,19 @@ internal fun annotationRows(
     if (!gutter.isAnnotationsShown) return null
     val visible = gutter.visibleRect
     val width = gutter.annotationsAreaWidth
-    if (visible.width <= 0 || visible.height <= 0 || width <= 0) return emptyList()
     val editor = gutter.editor
     val x = gutter.annotationsAreaOffset
     val first = editor.yToVisualLine(visible.y).coerceAtLeast(0)
     val last = editor.yToVisualLine(visible.y + visible.height - 1)
-    val out = mutableListOf<AceClick.Target>()
-    for (visualLine in first..last) {
-        val range = editor.visualLineToYRange(visualLine)
-        val rowRect = Rectangle(x, range[0], width, range[1] - range[0]).intersection(visible)
-        if (!rowRect.isEmpty) out.add(annotationTarget(gutter, rowRect, layer))
+    return if (visible.width <= 0 || visible.height <= 0 || width <= 0) {
+        emptyList()
+    } else {
+        (first..last).mapNotNull { visualLine ->
+            val range = editor.visualLineToYRange(visualLine)
+            val rowRect = Rectangle(x, range[0], width, range[1] - range[0]).intersection(visible)
+            if (!rowRect.isEmpty) annotationTarget(gutter, rowRect, layer) else null
+        }
     }
-    return out
 }
 
 private fun annotationTarget(
