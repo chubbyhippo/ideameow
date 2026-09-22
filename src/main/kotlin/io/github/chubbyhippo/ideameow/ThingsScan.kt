@@ -68,38 +68,76 @@ internal fun delimited(
     delim: Char,
     inner: Boolean,
 ): Things.Bounds? {
-    var i = 0
-    while (i < text.length) {
-        if (text[i] != delim) {
-            i++
-            continue
-        }
-        val open = i
-        val closeEnd = delimitedEnd(text, i + 1, delim)
-        if (closeEnd >= 0 && offset in open until closeEnd) {
-            return if (inner) Things.Bounds(open + 1, closeEnd - 1) else Things.Bounds(open, closeEnd)
-        }
-        i = if (closeEnd < 0) open + 1 else closeEnd
-    }
-    return null
+    val lineStart = lineStartBefore(text, offset)
+    val lineEnd = lineEndAfter(text, offset)
+    val open = scanBackwardToDelim(text, offset - 1, lineStart, delim) ?: return null
+    val close = scanForwardToDelim(text, maxOf(offset, open + 1), lineEnd, delim) ?: return null
+    return if (inner) Things.Bounds(open + 1, close) else Things.Bounds(open, close + 1)
 }
 
-private fun delimitedEnd(
+private fun lineStartBefore(
     text: CharSequence,
-    contentStart: Int,
-    delim: Char,
+    offset: Int,
 ): Int {
-    var j = contentStart
-    while (j < text.length && text[j] != '\n') {
+    var i = offset - 1
+    while (i >= 0 && text[i] != '\n') i--
+    return i + 1
+}
+
+private fun lineEndAfter(
+    text: CharSequence,
+    offset: Int,
+): Int {
+    var i = offset
+    while (i < text.length && text[i] != '\n') i++
+    return i
+}
+
+private fun scanForwardToDelim(
+    text: CharSequence,
+    start: Int,
+    end: Int,
+    delim: Char,
+): Int? {
+    var j = start
+    while (j < end) {
         val char = text[j]
         if (char == '\\') {
             j += 2
             continue
         }
-        if (char == delim) return j + 1
+        if (char == delim) return j
         j++
     }
-    return -1
+    return null
+}
+
+private fun scanBackwardToDelim(
+    text: CharSequence,
+    start: Int,
+    lineStart: Int,
+    delim: Char,
+): Int? {
+    var i = start
+    while (i >= lineStart) {
+        if (text[i] == delim && !isEscapedAt(text, i, lineStart)) return i
+        i--
+    }
+    return null
+}
+
+private fun isEscapedAt(
+    text: CharSequence,
+    index: Int,
+    lineStart: Int,
+): Boolean {
+    var count = 0
+    var j = index - 1
+    while (j >= lineStart && text[j] == '\\') {
+        count++
+        j--
+    }
+    return count % 2 == 1
 }
 
 internal fun isWordChar(char: Char) = Character.isLetterOrDigit(char)

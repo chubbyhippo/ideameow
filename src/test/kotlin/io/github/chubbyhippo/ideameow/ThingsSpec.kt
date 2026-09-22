@@ -367,6 +367,20 @@ class ThingsSpec : MeowSpec() {
         thenCaretAtSelectionEnd()
     }
 
+    fun `test given a url with a double slash when comma slash then selects between the surrounding slashes`() {
+        given("url with double slash", "http://mav<caret>en.apache.org/POM/4.0.0")
+        whenKeys(",/")
+        thenSelection("maven.apache.org")
+        thenSelType(SelType.TRANSIENT)
+        thenCaretAtSelectionEnd()
+
+        given("url with double slash", "http://maven.apache.org/PO<caret>M/4.0.0")
+        whenKeys(",/")
+        thenSelection("POM")
+        thenSelType(SelType.TRANSIENT)
+        thenCaretAtSelectionEnd()
+    }
+
     fun `test given a backtick string when comma g then inner selects the run and dot g keeps the backticks`() {
         given("backticks", "say `hi th<caret>ere` now")
         whenKeys(",g")
