@@ -83,6 +83,7 @@ private fun enterInsert(
         caret.removeSelection()
     }
     state.selType = SelType.NONE
+    SearchCounter.clear(editor, state)
     Selections.resetSelectionMemory(state)
     Meow.setMode(editor, state, MeowMode.INSERT)
 }

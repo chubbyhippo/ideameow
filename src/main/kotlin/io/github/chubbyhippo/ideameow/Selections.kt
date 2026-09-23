@@ -101,6 +101,7 @@ internal object Selections {
         editor.scrollingModel.scrollToCaret(ScrollType.RELATIVE)
         Grab.beacon(editor, state)
         ExpandHints.show(editor, state)
+        SearchCounter.update(editor, state)
     }
 
     fun resetSelectionMemory(state: MeowState) {
@@ -115,6 +116,7 @@ internal object Selections {
         editor.selectionModel.removeSelection()
         state.selType = SelType.NONE
         state.selExpand = false
+        SearchCounter.clear(editor, state)
     }
 
     fun cancel(

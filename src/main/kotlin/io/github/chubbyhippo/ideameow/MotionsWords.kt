@@ -139,8 +139,8 @@ internal fun markWord(
             }
     val (start, end) = bounds
     val (mark, point) = if (negative) end to start else start to end
-    Selections.select(editor, state, Selections.SelectionSpec(wordType(symbol), mark, point, expand = true))
     val quoted = Regex.escape(text.subSequence(start, end).toString())
     val pattern = if (symbol) "(?<![\\w$])$quoted(?![\\w$])" else "\\b$quoted\\b"
     Search.push(state, Regex(pattern))
+    Selections.select(editor, state, Selections.SelectionSpec(wordType(symbol), mark, point, expand = true))
 }

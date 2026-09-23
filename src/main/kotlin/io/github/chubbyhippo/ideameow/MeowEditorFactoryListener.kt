@@ -52,6 +52,7 @@ class MeowEditorFactoryListener : EditorFactoryListener {
         WhichKey.hide()
         ExpandHints.clear(state)
         Grab.clear(editor, state)
+        SearchCounter.clear(editor, state)
         state.savedBlockCursor?.let { editor.settings.isBlockCursor = it }
         editor.putUserData(Meow.KEY, null)
     }

@@ -63,6 +63,9 @@ class MeowState {
     var grab: RangeMarker? = null
     var grabHighlighter: RangeHighlighter? = null
 
+    val searchMatchHighlighters = mutableListOf<RangeHighlighter>()
+    var searchCounterOverlay: JComponent? = null
+
     val keypad = StringBuilder()
 
     var keypadPreviousMode = MeowMode.NORMAL

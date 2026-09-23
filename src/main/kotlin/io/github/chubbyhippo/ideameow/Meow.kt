@@ -35,6 +35,7 @@ object Meow {
     ) {
         state.mode = mode
         if (mode != MeowMode.KEYPAD) state.keypad.setLength(0)
+        if (mode != MeowMode.NORMAL) SearchCounter.clear(editor, state)
         editor.settings.isBlockCursor = mode != MeowMode.INSERT
         updateWidgets()
     }

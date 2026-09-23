@@ -72,6 +72,8 @@ object Rc {
         var overlayTextColor: Color? = null
         var expandHintColor: Color? = null
         var grabColor: Color? = null
+        var searchMatchColor: Color? = null
+        var searchCounterColor: Color? = null
         val errors = mutableListOf<String>()
     }
 

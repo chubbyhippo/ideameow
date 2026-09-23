@@ -25,11 +25,17 @@ internal object RcColors {
     private const val EXPAND_HINT_DARK_RGB = 0xFFB050
     private const val GRAB_LIGHT_RGB = 0xC0F0CD
     private const val GRAB_DARK_RGB = 0x0C331C
+    private const val SEARCH_MATCH_LIGHT_RGB = 0xCFE8FA
+    private const val SEARCH_MATCH_DARK_RGB = 0x1F4B6E
+    private const val SEARCH_COUNTER_LIGHT_RGB = 0x8A8A8A
+    private const val SEARCH_COUNTER_DARK_RGB = 0xAAAAAA
 
     private val DEFAULT_OVERLAY_COLOR = JBColor(Color(OVERLAY_RGB), Color(OVERLAY_RGB))
     private val DEFAULT_OVERLAY_TEXT_COLOR = JBColor(Color.WHITE, Color.WHITE)
     private val DEFAULT_EXPAND_HINT_COLOR = JBColor(Color(EXPAND_HINT_LIGHT_RGB), Color(EXPAND_HINT_DARK_RGB))
     private val DEFAULT_GRAB_COLOR = JBColor(Color(GRAB_LIGHT_RGB), Color(GRAB_DARK_RGB))
+    private val DEFAULT_SEARCH_MATCH_COLOR = JBColor(Color(SEARCH_MATCH_LIGHT_RGB), Color(SEARCH_MATCH_DARK_RGB))
+    private val DEFAULT_SEARCH_COUNTER_COLOR = JBColor(Color(SEARCH_COUNTER_LIGHT_RGB), Color(SEARCH_COUNTER_DARK_RGB))
 
     fun overlayColor(): JBColor = resolveColor(DEFAULT_OVERLAY_COLOR) { it.overlayColor }
 
@@ -38,6 +44,10 @@ internal object RcColors {
     fun expandHintColor(): JBColor = resolveColor(DEFAULT_EXPAND_HINT_COLOR) { it.expandHintColor }
 
     fun grabColor(): JBColor = resolveColor(DEFAULT_GRAB_COLOR) { it.grabColor }
+
+    fun searchMatchColor(): JBColor = resolveColor(DEFAULT_SEARCH_MATCH_COLOR) { it.searchMatchColor }
+
+    fun searchCounterColor(): JBColor = resolveColor(DEFAULT_SEARCH_COUNTER_COLOR) { it.searchCounterColor }
 
     private fun resolveColor(
         fallback: JBColor,

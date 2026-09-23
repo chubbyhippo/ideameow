@@ -127,12 +127,16 @@ class RcSpec : MeowSpec() {
                     "set overlay-text-color=#ffffff",
                     "set expand-hint-color=#d05c0a",
                     "set grab-color=#CDE8CD",
+                    "set search-match-color=#CFE8FA",
+                    "set search-counter-color=#8A8A8A",
                 ),
             )
         assertEquals(Color(0xE5, 0x2B, 0x50), c.overlayColor)
         assertEquals(Color(0xFF, 0xFF, 0xFF), c.overlayTextColor)
         assertEquals(Color(0xD0, 0x5C, 0x0A), c.expandHintColor)
         assertEquals(Color(0xCD, 0xE8, 0xCD), c.grabColor)
+        assertEquals(Color(0xCF, 0xE8, 0xFA), c.searchMatchColor)
+        assertEquals(Color(0x8A, 0x8A, 0x8A), c.searchCounterColor)
         assertTrue(c.errors.isEmpty())
     }
 
@@ -155,6 +159,12 @@ class RcSpec : MeowSpec() {
         givenRc("set overlay-color=#010203\nset grab-color=#040506")
         assertEquals(Color(0x01, 0x02, 0x03).rgb, RcColors.overlayColor().rgb)
         assertEquals(Color(0x04, 0x05, 0x06).rgb, RcColors.grabColor().rgb)
+    }
+
+    fun `test search counter colors layer user over the bundled default`() {
+        givenRc("set search-match-color=#010203\nset search-counter-color=#040506")
+        assertEquals(Color(0x01, 0x02, 0x03).rgb, RcColors.searchMatchColor().rgb)
+        assertEquals(Color(0x04, 0x05, 0x06).rgb, RcColors.searchCounterColor().rgb)
     }
 
     fun `test given a trailing comment then it is stripped from the line`() {

@@ -213,6 +213,24 @@ gradle buildPlugin          # or: gradle runIde  (sandbox IDE for a test drive)
 | `R` | swap-grab: exchange the selection and grab texts |
 | `Y` | sync-grab: re-stash |
 
+### Search indicator
+
+A native port of meow's own `meow--highlight-regexp-in-buffer` /
+`meow--show-indicator` (`meow-visual.el` — meow never depends on `anzu.el`,
+so this isn't "anzu-style", it's meow's own feature). Marking a word/symbol
+(`w`, `W`) or landing a `meow-search` (`n`) / `meow-visit` (`v`) match
+highlights every other occurrence of the ACTIVE search regexp in the buffer
+and draws a `[current/total]` counter past the end of the line the current
+match sits on. Because it counts matches of the regexp itself — the same
+`\<...\>` / `\_<..._>` word/symbol-boundary-wrapped pattern `meow-mark-word` /
+`meow-mark-symbol` push onto the search ring, ported here as
+`Search.searchHistory` — a word mark only counts standalone occurrences of
+that exact word, never a substring match inside a longer word; a freeform
+`meow-visit` regex is counted exactly as typed, with no boundary added. It
+clears itself as soon as the selection changes into anything else (a
+different selection type, a plain motion, `ESC`, or entering INSERT).
+Colors: `search-match-color` / `search-counter-color` in `~/.ideameowrc`.
+
 ### Keypad
 
 | Sequence | Does |
@@ -264,6 +282,8 @@ gradle buildPlugin          # or: gradle runIde  (sandbox IDE for a test drive)
 | `set overlay-text-color=#ffffff` | the jump-label text color |
 | `set expand-hint-color=#d05c0a` | the `0`–`9` expand-hint color (theme-split by default) |
 | `set grab-color=#c0f0cd` | the grab / beacon highlight color (theme-split by default) |
+| `set search-match-color=#cfe8fa` | search indicator's highlight for every other occurrence of the current word/symbol/search match (theme-split by default) |
+| `set search-counter-color=#8a8a8a` | search indicator's `[current/total]` counter drawn past the end of the line (theme-split by default) |
 
 | Item | Value |
 |---|---|

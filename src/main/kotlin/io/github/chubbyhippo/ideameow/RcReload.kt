@@ -55,6 +55,8 @@ internal object RcFileState {
             config.overlayTextColor,
             config.expandHintColor,
             config.grabColor,
+            config.searchMatchColor,
+            config.searchCounterColor,
         ).hashCode()
 
     fun saveParsed(config: Rc.Config) {

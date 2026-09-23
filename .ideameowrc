@@ -28,19 +28,24 @@
 "   set overlay-text-color=#ffffff    avy/ace label text
 "   set expand-hint-color=#d05c0a     0-9 expand-hint color
 "   set grab-color=#c0f0cd            grab / beacon highlight
+"   set search-match-color=#cfe8fa    search indicator other-match highlight
+"   set search-counter-color=#8a8a8a  search indicator [n/total] counter text
 " ============================================================================
 
 set which-key
 set timeoutlen=300
 
 " Overlay colors — #RRGGBB, applied to both the light and dark themes. The
-" two label colors below sit at their defaults; expand-hint and grab are
-" theme-split by default (their two-theme defaults live in the plugin), so
-" uncomment them to pin one color across both themes.
+" two label colors below sit at their defaults; expand-hint, grab and the
+" search indicator counter/highlight are theme-split by default (their
+" two-theme defaults live in the plugin), so uncomment them to pin one color
+" across both themes.
 set overlay-color=#2ECC71
 set overlay-text-color=#ffffff
 " set expand-hint-color=#d05c0a
 " set grab-color=#c0f0cd
+" set search-match-color=#cfe8fa
+" set search-counter-color=#8a8a8a
 
 " ============================================================================
 " The meow layout — QWERTY by default, every key rebindable

@@ -296,6 +296,8 @@ private val COLOR_SETTERS: Map<String, (Rc.Config, Color) -> Unit> =
         "overlay-text-color" to { config, color -> config.overlayTextColor = color },
         "expand-hint-color" to { config, color -> config.expandHintColor = color },
         "grab-color" to { config, color -> config.grabColor = color },
+        "search-match-color" to { config, color -> config.searchMatchColor = color },
+        "search-counter-color" to { config, color -> config.searchCounterColor = color },
     )
 
 private val HEX_COLOR_REGEX = Regex("[0-9a-fA-F]{6}")
